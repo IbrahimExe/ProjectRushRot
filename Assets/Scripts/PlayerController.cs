@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(PlayerInput))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -9,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public float maxSpeed = 20f;             // Speed cap (m/s)
     public float turnTorque = 300f;          // Torque for steering
     public float brakeForce = 50f;           // Force for braking
+    [Range(0f, 1f)]
     public float driftFactor = 0.8f;         // 0 = full slide, 1 = no slide (high grip)
     public float jumpForce = 5f;             // Impulse force for jump
     public float coyoteTime = 0.2f;          // Allow jump shortly after leaving ground
@@ -18,27 +20,69 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayers;           // Layers considered ground (e.g. "Ground")
 
     Rigidbody rb;
-    Vector2 moveInput = Vector2.zero;
+    PlayerInput playerInput;
+
+    // Input state
+    Vector2 moveInput = Vector2.zero; // X = steer, Y = accel/brake
+    Vector2 lookInput = Vector2.zero;
     bool jumpPressed = false;
+    bool braking = false;
+
     float lastGroundTime;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        playerInput = GetComponent<PlayerInput>();
     }
 
-    // Called by Input System
-    public void OnMove(InputAction.CallbackContext ctx)
+    void OnEnable()
     {
-        moveInput = ctx.ReadValue<Vector2>(); // X = steer, Y = accel/brake
+        if (playerInput != null)
+            playerInput.onActionTriggered += OnActionTriggered;
     }
-    public void OnJump(InputAction.CallbackContext ctx)
+
+    void OnDisable()
     {
-        if (ctx.performed) jumpPressed = true;
+        if (playerInput != null)
+            playerInput.onActionTriggered -= OnActionTriggered;
     }
-    public void OnBrake(InputAction.CallbackContext ctx)
+
+    // This receives all action callbacks when PlayerInput.Behavior = Invoke C# Events
+    void OnActionTriggered(InputAction.CallbackContext ctx)
     {
-        // e.g. set a flag or use moveInput.y negative
+        // Match actions by name — these must match your InputAction asset exactly (case sensitive).
+        var name = ctx.action.name;
+
+        if (name == "Move")
+        {
+            // continuous vector2
+            moveInput = ctx.ReadValue<Vector2>();
+        }
+        else if (name == "Look")
+        {
+            // camera look vector (mouse delta or right stick)
+            lookInput = ctx.ReadValue<Vector2>();
+        }
+        else if (name == "Jump")
+        {
+            // typically a button; use performed to mark jump
+            if (ctx.performed) jumpPressed = true;
+        }
+        else if (name == "Brake")
+        {
+            // could be button or axis; treat as pressed when value > deadzone
+            if (ctx.control != null && ctx.action.expectedControlType == "Button")
+            {
+                braking = ctx.ReadValueAsButton();
+            }
+            else
+            {
+                // fallback: read as float and threshold
+                float val = ctx.ReadValue<float>();
+                braking = val > 0.1f;
+            }
+        }
     }
 
     void FixedUpdate()
@@ -54,16 +98,19 @@ public class PlayerController : MonoBehaviour
 
         // 2. Acceleration / Braking
         float accel = moveInput.y;  // Forward/back input from W/S or stick Y
-        if (accel > 0)
+        if (accel > 0f)
         {
-            // Apply forward force
+            // Apply forward force if under max speed
             if (rb.linearVelocity.magnitude < maxSpeed)
                 rb.AddForce(transform.forward * accel * accelerationForce);
         }
-        else if (accel < 0)
+        else if (accel < 0f || braking)
         {
             // Brake by counter force
-            rb.AddForce(-transform.forward * (-accel) * brakeForce);
+            float brakeAmount = brakeForce;
+            // if using accel negative, scale by that
+            if (accel < 0f) brakeAmount *= -accel;
+            rb.AddForce(-transform.forward * brakeAmount);
         }
 
         // 3. Steering
@@ -71,7 +118,8 @@ public class PlayerController : MonoBehaviour
         if (Mathf.Abs(rb.linearVelocity.magnitude) > 0.1f)
         {
             // Apply torque around up axis for turning
-            rb.AddTorque(transform.up * steer * turnTorque * rb.linearVelocity.magnitude / maxSpeed);
+            float speedFactor = Mathf.Clamp01(rb.linearVelocity.magnitude / Mathf.Max(0.0001f, maxSpeed));
+            rb.AddTorque(transform.up * steer * turnTorque * speedFactor);
         }
 
         // 4. Drift / Lateral Friction
@@ -79,7 +127,7 @@ public class PlayerController : MonoBehaviour
         Vector3 forwardVel = Vector3.Project(rb.linearVelocity, transform.forward);
         Vector3 lateralVel = rb.linearVelocity - forwardVel;
         // Reduce lateral velocity based on driftFactor and turning
-        float grip = Mathf.Lerp(1f, driftFactor, rb.linearVelocity.magnitude / maxSpeed);
+        float grip = Mathf.Lerp(1f, driftFactor, rb.linearVelocity.magnitude / Mathf.Max(0.0001f, maxSpeed));
         rb.linearVelocity = forwardVel + lateralVel * grip;
 
         // 5. Jump
@@ -90,14 +138,16 @@ public class PlayerController : MonoBehaviour
         }
         else if (jumpPressed)
         {
+            // consumed or timed out
             jumpPressed = false;
         }
 
-        // 6. Limit speed (optional caps)
-        Vector3 horizVel = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        // 6. Limit speed (optional caps) — only horizontal speed clamped
+        Vector3 horizVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         if (horizVel.magnitude > maxSpeed)
         {
-            rb.linearVelocity = horizVel.normalized * maxSpeed + Vector3.up * rb.linearVelocity.y;
+            Vector3 newVel = horizVel.normalized * maxSpeed;
+            rb.linearVelocity = new Vector3(newVel.x, rb.linearVelocity.y, newVel.z);
         }
     }
 
@@ -109,4 +159,27 @@ public class PlayerController : MonoBehaviour
         // Apply rotation with slerp for smoothness
         rb.MoveRotation(Quaternion.Slerp(rb.rotation, toSlope * rb.rotation, 0.1f));
     }
+
+    void OnDrawGizmosSelected()
+    {
+        // Draw 'forward' of the board
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, transform.position + transform.forward * 2f);
+        Gizmos.DrawSphere(transform.position + transform.forward * 2f, 0.05f);
+
+        // Draw velocity vector (red)
+        if (rb != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(transform.position, transform.position + rb.linearVelocity.normalized * 2f);
+            Gizmos.DrawSphere(transform.position + rb.linearVelocity.normalized * 2f, 0.05f);
+        }
+    }
+
+    void UpdateDebug()
+    {
+        if (rb != null)
+            Debug.Log($"transform.forward = {transform.forward}, velocity = {rb.linearVelocity}");
+    }
+
 }
