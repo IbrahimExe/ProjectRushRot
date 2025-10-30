@@ -1,16 +1,22 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
-public class ZombieBehaciour : MonoBehaviour
+public class ZombieBehaviour : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+  
+    [SerializeField] private float moveSpeed = 5;
+    public Transform playerTarget;
+ 
     void Start()
     {
         
+        Debug.Log($"Zombie speed is {moveSpeed}");
     }
 
-    // Update is called once per frame
+ 
     void Update()
     {
-        
+        transform.LookAt(playerTarget.position);
+        transform.position = Vector3.MoveTowards(transform.position, playerTarget.position, moveSpeed * Time.deltaTime);
     }
 }
