@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Cinemachine; // Unity 6 / Cinemachine 3
+using Unity.Cinemachine;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMotorAdvanced : MonoBehaviour
@@ -8,13 +8,13 @@ public class PlayerMotorAdvanced : MonoBehaviour
     [Header("Camera Rig (Cinemachine)")]
     [SerializeField] private Transform cameraYawPivot;    
     [SerializeField] private Transform cameraPitchPivot;  
-    [SerializeField] private Camera playerCamera;         // Main Camera (with CinemachineBrain)
+    [SerializeField] private Camera playerCamera;         
 
     [Header("Look")]
     [SerializeField] private float lookSensitivity = 120f;
     [SerializeField] private float minPitch = -75f;
     [SerializeField] private float maxPitch = 75f;
-    [SerializeField] private float maxYawOffset = 90f;    // ±90°
+    [SerializeField] private float maxYawOffset = 90f;            
     [SerializeField] private KeyCode rearviewKey = KeyCode.LeftAlt;
 
     [Header("Ground Move")]
@@ -41,6 +41,18 @@ public class PlayerMotorAdvanced : MonoBehaviour
     [SerializeField] private float wallStickMaxSpeed = 3.5f;
     [SerializeField] private float wallJumpCooldown = 0.15f;
 
+    [Header("Wall Run")]
+    [SerializeField] private bool wallRunEnabled = true;
+    [SerializeField] private float wallRunSpeed = 10f;
+    [SerializeField] private float wallRunDuration = 1.4f;        
+    [SerializeField] private float wallRunGravityScale = 0.2f;    
+    [SerializeField] private float wallRunMinHeight = 1.1f;       
+    [SerializeField] private float wallRunMinForwardDot = 0.2f;   
+    [SerializeField] private float wallRunCooldown = 0.35f;       
+    [SerializeField] private float wallRunStick = 2.0f;           
+    [SerializeField] private float cameraTiltOnRun = 8f;          
+    [SerializeField] private float cameraTiltLerp = 10f;
+
     [Header("Gravity / Slope")]
     [SerializeField] private float gravity = -24f;
     [SerializeField] private float terminalVelocity = -60f;
@@ -57,10 +69,17 @@ public class PlayerMotorAdvanced : MonoBehaviour
     private PlayerControls controls;
     private Vector2 moveInput, lookInput;
     private Vector3 velocity;
-    private float yawOffset;   // relative to player forward (clamped)
-    private float pitch;
+    private float yawOffset, pitch;
     private float lastGroundedTime, lastJumpPressedTime, wallJumpLockUntil;
     private bool usesCinemachine;
+
+    // Wall run state
+    private bool isWallRunning;
+    private float wallRunEndTime;
+    private float nextWallRunReadyTime;
+    private Vector3 wallRunNormal;
+    private Vector3 wallRunTangent;
+    private float cameraRoll; // cosmetic
 
     void Awake()
     {
@@ -68,7 +87,6 @@ public class PlayerMotorAdvanced : MonoBehaviour
         if (!playerCamera) playerCamera = Camera.main;
         usesCinemachine = playerCamera && playerCamera.GetComponent<CinemachineBrain>() != null;
 
-        // Input
         controls = new PlayerControls();
         controls.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         controls.Player.Move.canceled += ctx => moveInput = Vector2.zero;
@@ -85,85 +103,156 @@ public class PlayerMotorAdvanced : MonoBehaviour
 
     void Update()
     {
-        // ----- LOOK: update yaw/pitch pivots -----
+        // --- LOOK (yaw/pitch pivots) ---
         Vector2 mouse = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
         Vector2 delta = (lookInput + mouse) * (lookSensitivity * Time.deltaTime);
-
         yawOffset = Mathf.Clamp(yawOffset + delta.x, -maxYawOffset, maxYawOffset);
         pitch = Mathf.Clamp(pitch - delta.y, minPitch, maxPitch);
 
         bool rearview = Input.GetKey(rearviewKey);
         float yawWithRear = yawOffset + (rearview ? 180f : 0f);
-
         if (cameraYawPivot) cameraYawPivot.localRotation = Quaternion.Euler(0f, yawWithRear, 0f);
         if (cameraPitchPivot) cameraPitchPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-
-        // If Cinemachine Brain is active, set Main Camera's rotation to our pitch pivot
         if (usesCinemachine && playerCamera && cameraPitchPivot)
             playerCamera.transform.rotation = cameraPitchPivot.rotation;
 
-        // ----- MOVE: camera-yaw-relative WASD -----
+        // --- Wish direction (camera-yaw-relative) ---
         Vector3 moveForward = cameraYawPivot ? cameraYawPivot.forward : transform.forward;
         Vector3 moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
-
         Vector3 wishDir = (moveForward * moveInput.y + moveRight * moveInput.x);
         if (wishDir.sqrMagnitude > 1f) wishDir.Normalize();
 
+        // --- Grounding ---
         bool grounded = controller.isGrounded;
         if (grounded) lastGroundedTime = Time.time;
 
+        // Split velocity
         Vector3 horizVel = new Vector3(velocity.x, 0f, velocity.z);
 
-        float currMax = grounded ? maxSpeed : airMaxSpeed;
-        float accel = grounded ? acceleration : airAcceleration;
-        float friction = grounded ? groundFriction : airFriction;
+        // ===== WALL RUN LOGIC =====
+        bool wantsJump = (Time.time - lastJumpPressedTime) <= jumpBuffer;
 
-        if (wishDir.sqrMagnitude < 0.0001f)
-            horizVel *= Mathf.Clamp01(1f - friction * Time.deltaTime);
-
-        if (wishDir.sqrMagnitude > 0f)
+        // Try start wall run
+        if (wallRunEnabled && !grounded && !isWallRunning && Time.time >= nextWallRunReadyTime && Time.time >= wallJumpLockUntil)
         {
-            float proj = Vector3.Dot(horizVel, wishDir);
-            float add = currMax - proj;
-            if (add > 0f)
+            // Must be near a viable wall and at least some input along wall
+            if (TryGetWall(out Vector3 n))
             {
-                float step = Mathf.Min(accel * Time.deltaTime, add);
-                horizVel += wishDir * step;
+                // Tangent along wall surface (choose side that aligns with wishDir)
+                Vector3 t = Vector3.Cross(Vector3.up, n).normalized;
+                if (Vector3.Dot(t, wishDir) < 0f) t = -t;
+
+                // Require some forward intent along tangent and a little height from ground
+                bool hasIntent = Vector3.Dot(t, wishDir) > wallRunMinForwardDot || Vector3.Dot(t, horizVel.normalized) > wallRunMinForwardDot;
+                if (hasIntent && HighEnoughForWallRun())
+                {
+                    isWallRunning = true;
+                    wallRunNormal = n;
+                    wallRunTangent = t;
+                    wallRunEndTime = Time.time + wallRunDuration;
+                }
             }
         }
 
-        velocity = horizVel + Vector3.up * velocity.y;
-
-        // Gravity + jump (with coyote and buffer)
-        bool wantsJump = (Time.time - lastJumpPressedTime) <= jumpBuffer;
-        if (grounded && velocity.y < 0f) velocity.y = -slopeStickForce;
-        else velocity.y = Mathf.Max(terminalVelocity, velocity.y + gravity * Time.deltaTime);
-
-        bool canCoyote = (Time.time - lastGroundedTime) <= coyoteTime;
-        if (wantsJump && (grounded || canCoyote))
+        // While wall running
+        if (isWallRunning)
         {
-            velocity.y = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
-            lastJumpPressedTime = -999f;
+            // Cancel conditions
+            bool timeUp = Time.time >= wallRunEndTime;
+            bool lostWall = !TryGetWall(out Vector3 n2) || Vector3.Dot(n2, wallRunNormal) < 0.7f; // deviated
+            if (grounded || timeUp || lostWall)
+            {
+                ExitWallRun();
+            }
+            else
+            {
+                // Move along tangent at target speed, lightly stick to wall
+                float target = wallRunSpeed;
+                Vector3 tangential = Vector3.Project(horizVel, wallRunTangent);
+                float add = target - tangential.magnitude;
+                if (add > 0f)
+                    tangential += wallRunTangent * Mathf.Min(acceleration * Time.deltaTime, add);
+
+                // small inward push to cling
+                Vector3 stick = -wallRunNormal * wallRunStick;
+
+                horizVel = tangential + stick * Time.deltaTime;
+
+                // Damp gravity while running
+                float g = gravity * wallRunGravityScale;
+                velocity.y = Mathf.Max(terminalVelocity, velocity.y + g * Time.deltaTime);
+
+                // Camera cosmetic tilt
+                float side = Mathf.Sign(Vector3.Dot(wallRunTangent, moveRight));
+                float targetRoll = cameraTiltOnRun * side;
+                cameraRoll = Mathf.Lerp(cameraRoll, targetRoll, cameraTiltLerp * Time.deltaTime);
+                if (usesCinemachine && playerCamera)
+                    playerCamera.transform.rotation = Quaternion.AngleAxis(cameraRoll, cameraPitchPivot ? cameraPitchPivot.forward : transform.forward)
+                                                     * (cameraPitchPivot ? cameraPitchPivot.rotation : playerCamera.transform.rotation);
+            }
         }
 
-        // Wall jump
-        if (!grounded && Time.time >= wallJumpLockUntil && wantsJump && TryGetWall(out Vector3 wallNormal))
+        // ===== NORMAL MOVE / JUMP / GRAVITY (when NOT wall running) =====
+        if (!isWallRunning)
         {
-            Vector3 flat = new Vector3(horizVel.x, 0f, horizVel.z);
-            float towardWall = flat.sqrMagnitude > 0.0001f ? Vector3.Dot(flat.normalized, -wallNormal) : 0f;
-            if (towardWall > 0.15f || flat.magnitude < wallStickMaxSpeed)
+            float currMax = grounded ? maxSpeed : airMaxSpeed;
+            float accel = grounded ? acceleration : airAcceleration;
+            float friction = grounded ? groundFriction : airFriction;
+
+            if (wishDir.sqrMagnitude < 0.0001f)
+                horizVel *= Mathf.Clamp01(1f - friction * Time.deltaTime);
+
+            if (wishDir.sqrMagnitude > 0f)
             {
+                float proj = Vector3.Dot(horizVel, wishDir);
+                float add = currMax - proj;
+                if (add > 0f)
+                {
+                    float step = Mathf.Min(accel * Time.deltaTime, add);
+                    horizVel += wishDir * step;
+                }
+            }
+
+            // Gravity & coyote jump
+            if (grounded && velocity.y < 0f) velocity.y = -slopeStickForce;
+            else velocity.y = Mathf.Max(terminalVelocity, velocity.y + gravity * Time.deltaTime);
+        }
+
+        // ===== JUMPING =====
+        bool canCoyote = (Time.time - lastGroundedTime) <= coyoteTime;
+        if (wantsJump)
+        {
+            if (isWallRunning)
+            {
+                // Wall jump cancels wall run
+                ExitWallRun();
                 velocity.y = 0f;
-                velocity += wallNormal.normalized * wallJumpAwayImpulse + Vector3.up * wallJumpUpImpulse;
+                velocity += wallRunNormal.normalized * wallJumpAwayImpulse + Vector3.up * wallJumpUpImpulse;
                 wallJumpLockUntil = Time.time + wallJumpCooldown;
                 lastJumpPressedTime = -999f;
             }
+            else if (grounded || canCoyote)
+            {
+                velocity.y = Mathf.Sqrt(2f * Mathf.Abs(gravity) * jumpHeight);
+                lastJumpPressedTime = -999f;
+            }
+            // else airborne normal jump is ignored (
         }
 
-        // Move + optional face-turn
+        // Reassemble and move
+        velocity = new Vector3(horizVel.x, velocity.y, horizVel.z);
         Vector3 deltaMove = velocity * Time.deltaTime;
         controller.Move(deltaMove + Vector3.down * controllerSkinExtra * Time.deltaTime);
 
+        // Reset cosmetic tilt when not wallrunning
+        if (!isWallRunning && Mathf.Abs(cameraRoll) > 0.01f && usesCinemachine && playerCamera)
+        {
+            cameraRoll = Mathf.Lerp(cameraRoll, 0f, cameraTiltLerp * Time.deltaTime);
+            playerCamera.transform.rotation = Quaternion.AngleAxis(cameraRoll, cameraPitchPivot ? cameraPitchPivot.forward : transform.forward)
+                                             * (cameraPitchPivot ? cameraPitchPivot.rotation : playerCamera.transform.rotation);
+        }
+
+        // Optional: rotate player to movement
         if (faceMoveDirection)
         {
             Vector3 flat = new Vector3(velocity.x, 0f, velocity.z);
@@ -177,6 +266,23 @@ public class PlayerMotorAdvanced : MonoBehaviour
         CurrentSpeed = new Vector2(velocity.x, velocity.z).magnitude;
     }
 
+    void ExitWallRun()
+    {
+        isWallRunning = false;
+        nextWallRunReadyTime = Time.time + wallRunCooldown;
+        cameraRoll = 0f;
+    }
+
+    bool HighEnoughForWallRun()
+    {
+        // quick check: cast down to see if we're high enough
+        Vector3 origin = transform.position + (controller ? controller.center : Vector3.up);
+        float downDist = (controller ? controller.height * 0.5f : 1f) + wallRunMinHeight;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, downDist, ~0, QueryTriggerInteraction.Ignore))
+            return hit.distance > wallRunMinHeight;
+        return true;
+    }
+
     bool TryGetWall(out Vector3 wallNormal)
     {
         wallNormal = Vector3.zero;
@@ -184,13 +290,14 @@ public class PlayerMotorAdvanced : MonoBehaviour
         float radius = controller ? Mathf.Max(controller.radius, wallCheckRadius) : wallCheckRadius;
         float dist = controller ? Mathf.Max(controller.radius + 0.05f, wallCheckDistance) : wallCheckDistance;
 
-        const int rays = 10;
+        const int rays = 12;
         for (int i = 0; i < rays; i++)
         {
             float ang = (Mathf.PI * 2f / rays) * i;
             Vector3 dir = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
             if (Physics.SphereCast(origin, radius * 0.5f, dir, out RaycastHit hit, dist, wallLayers, QueryTriggerInteraction.Ignore))
             {
+                // near-vertical surface
                 if (Vector3.Dot(hit.normal, Vector3.up) < 0.5f)
                 {
                     wallNormal = hit.normal;
