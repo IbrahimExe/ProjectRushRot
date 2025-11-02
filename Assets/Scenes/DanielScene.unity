@@ -9473,6 +9473,7 @@ MonoBehaviour:
   minPitch: -75
   maxPitch: 75
   maxYawOffset: 90
+  rearviewAction: {fileID: 0}
   rearviewKey: 308
   maxSpeed: 90
   acceleration: 30
@@ -9492,6 +9493,18 @@ MonoBehaviour:
   wallJumpAwayImpulse: 50
   wallStickMaxSpeed: 3.5
   wallJumpCooldown: 0.5
+  wallRunEnabled: 1
+  wallRunSpeed: 5
+  wallRunDuration: 3
+  wallRunGravityScale: 0.2
+  wallRunMinHeight: 1.1
+  wallRunMinForwardDot: 0.2
+  wallRunCooldown: 0.35
+  wallRunStick: 2
+  wallRunFaceTurnLerp: 12
+  wallRunLeanDegrees: 15
+  cameraTiltOnRun: 8
+  cameraTiltLerp: 10
   gravity: -24
   terminalVelocity: -60
   slopeStickForce: 8
