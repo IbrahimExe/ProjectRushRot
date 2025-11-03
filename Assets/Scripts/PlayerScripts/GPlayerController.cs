@@ -6,22 +6,32 @@ using UnityEngine;
 public class GPlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 10f;
+    public float startMoveSpeed = 5f;
+    public float maxMoveSpeed = 15f;
+    public float acceleration = 20f;
+    public float deceleration = 25f;
     public float rotationSpeed = 100f;
+    public float linearDrag = 5f;
     public float jumpForce = 5f;
+
+    public float currentMoveSpeed = 1f;
+
+    [Header("Custom Gravity Settings")]
+    public float fallMultiplier = 2f;
+    public float lowJumpMultiplier = 1.5f;
+    public float maxFallSpeed = -20f;
 
     [Header("Ground Check Settings")]
     public Transform feetTransform;
 
     [Header("Visual Tilt Settings")]
-    [SerializeField] private Transform cartModel;
-    [SerializeField] private Transform rayOrigin;
-    [SerializeField] private float rayLength = 1.5f;
-
-    [SerializeField] private float tiltForwardAmount = 10f;
-    [SerializeField] private float tiltSideAmount = 10f;
-    [SerializeField] private float tiltSpeed = 5f;
-    [SerializeField] private float groundAlignSpeed = 8f;
+    public Transform cartModel;
+    public Transform rayOrigin;
+    public float rayLength = 1.5f;
+    public float tiltForwardAmount = 10f;
+    public float tiltSideAmount = 10f;
+    public float tiltSpeed = 5f;
+    public float groundAlignSpeed = 8f;
 
     private Rigidbody rb;
     private Transform cam;
@@ -51,6 +61,7 @@ public class GPlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         Move();
+        ApplyCustomGravity();
         AlignModelToGroundAndTilt();
     }
 
@@ -61,21 +72,44 @@ public class GPlayerController : MonoBehaviour
         float v = Input.GetAxis("Vertical");
         Vector3 inputDir = new Vector3(h, 0f, v).normalized;
 
-        if (inputDir.magnitude >= 0.1f)
+        bool isMoving = inputDir.magnitude >= 0.1f;
+
+        // Horizontal velocity (ignore vertical)
+        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        float currentVelocityMag = horizontalVel.magnitude;
+
+        if (isMoving)
         {
             // Camera-relative movement
             float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, 1f / rotationSpeed);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
+            // Keep current speed from dropping below the actual physical velocity
+            if (currentMoveSpeed < currentVelocityMag)
+                currentMoveSpeed = currentVelocityMag;
+
+            // Set initial move speed if starting from rest
+            if (currentMoveSpeed < startMoveSpeed)
+                currentMoveSpeed = startMoveSpeed;
+            
+
+            // Gradually accelerate toward max speed
+            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, maxMoveSpeed, acceleration * Time.deltaTime);
+
+            // Apply movement
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            Vector3 targetVelocity = moveDir.normalized * moveSpeed;
-            Vector3 velocityChange = targetVelocity - new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            Vector3 targetVelocity = moveDir.normalized * currentMoveSpeed;
+            Vector3 velocityChange = targetVelocity - horizontalVel;
 
             rb.AddForce(velocityChange, ForceMode.VelocityChange);
         }
+        else
+        {
+            // Gradually decelerate when no input
+            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
+        }
     }
-
 
     private void Jump()
     {
@@ -94,11 +128,34 @@ public class GPlayerController : MonoBehaviour
         {
             Debug.DrawLine(transform.position, hit.point, Color.green);
 
+            rb.linearDamping = linearDrag; // Apply drag when grounded
             return true;
         }
 
         // No ground hit
+        rb.linearDamping = 0f; // No drag when in air
         return false;
+    }
+
+    private void ApplyCustomGravity()
+    {
+        // Only modify gravity when falling or going up
+        if (rb.linearVelocity.y < 0)
+        {
+            // Falling — add extra gravity
+            rb.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
+        }
+        else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
+        {
+            // If jump released early, apply low jump gravity for shorter hops
+            rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f), ForceMode.Acceleration);
+        }
+
+        // Clamp fall speed
+        if (rb.linearVelocity.y < maxFallSpeed)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, maxFallSpeed, rb.linearVelocity.z);
+        }
     }
 
     private void AlignModelToGroundAndTilt()
