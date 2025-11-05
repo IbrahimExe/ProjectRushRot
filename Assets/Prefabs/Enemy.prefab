@@ -12,10 +12,9 @@ GameObject:
   - component: {fileID: 5639802540774453667}
   - component: {fileID: 4977970180316261859}
   - component: {fileID: 5063974807087780547}
-  - component: {fileID: 4695533762273925543}
   - component: {fileID: 1651860012497592384}
   m_Layer: 0
-  m_Name: Zombie
+  m_Name: Enemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -118,44 +117,6 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4695533762273925543
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3161564313400662662}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
-  m_Graph: {fileID: 2779055052390172599, guid: e54bc9e4fd9440941947721bdf96ece4, type: 2}
-  m_BlackboardVariableOverridesList:
-  - rid: 7738815434493001978
-  - rid: 3923751392442318976
-  m_OriginalGraph: {fileID: 0}
-  m_IsInitialised: 0
-  m_IsStarted: 0
-  references:
-    version: 2
-    RefIds:
-    - rid: 3923751392442318976
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 11141749043493578026
-          m_Value1: 8907761478728720309
-        Name: Player
-        m_Value: {fileID: 0}
-    - rid: 7738815434493001978
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 1
-          m_Value1: 0
-        Name: Self
-        m_Value: {fileID: 3161564313400662662}
 --- !u!54 &1651860012497592384
 Rigidbody:
   m_ObjectHideFlags: 0
