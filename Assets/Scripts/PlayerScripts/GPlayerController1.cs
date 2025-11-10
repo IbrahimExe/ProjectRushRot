@@ -1,9 +1,7 @@
 using UnityEngine;
 
-//attempt at a physics based player controller
-
 [RequireComponent(typeof(Rigidbody))]
-public class GPlayerController: MonoBehaviour
+public class GPlayerController1 : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float startMoveSpeed = 5f;
@@ -37,16 +35,14 @@ public class GPlayerController: MonoBehaviour
     private Transform cam;
     private bool isGrounded;
     private Vector3 lastGroundNormal = Vector3.up;
-    private float _turnSmoothVelocity;
 
     void Start()
     {
-        Cursor.visible = false; // Hides the cursor
-        Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
         rb = GetComponent<Rigidbody>();
         cam = Camera.main.transform;
     }
-
 
     void Update()
     {
@@ -60,6 +56,7 @@ public class GPlayerController: MonoBehaviour
 
     private void FixedUpdate()
     {
+        
         Move();
         ApplyCustomGravity();
         AlignModelToGroundAndTilt();
@@ -67,73 +64,81 @@ public class GPlayerController: MonoBehaviour
 
     private void Move()
     {
-        // Input
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
-        Vector3 inputDir = new Vector3(h, 0f, v).normalized;
 
-        bool isMoving = inputDir.magnitude >= 0.1f;
+        // Use ground normal for proper slope handling
+        Vector3 up = (lastGroundNormal == Vector3.zero) ? Vector3.up : lastGroundNormal;
 
-        // Horizontal velocity (ignore vertical)
-        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        float currentVelocityMag = horizontalVel.magnitude;
+        // Steer around ground up (decoupled from camera)
+        float yawDelta = h * rotationSpeed * Time.fixedDeltaTime;
+        transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
 
-        if (isMoving)
+        // Planar basis relative to ground
+        Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+        Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
+        float planarSpeed = planarVel.magnitude;
+
+        // Maintain speed floor at actual motion (preserves momentum)
+        if (currentMoveSpeed < planarSpeed)
+            currentMoveSpeed = planarSpeed;
+
+        bool hasThrottle = Mathf.Abs(v) > 0.01f;
+
+        if (hasThrottle)
         {
-            // Camera-relative movement
-            float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, 1f / rotationSpeed);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-            // Keep current speed from dropping below the actual physical velocity
-            if (currentMoveSpeed < currentVelocityMag)
-                currentMoveSpeed = currentVelocityMag;
-
-            // Set initial move speed if starting from rest
+            // Kick off from rest first
             if (currentMoveSpeed < startMoveSpeed)
                 currentMoveSpeed = startMoveSpeed;
-            
 
-            // Gradually accelerate toward max speed
-            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, maxMoveSpeed, acceleration * Time.deltaTime);
-
-            // Apply movement
-            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            Vector3 targetVelocity = moveDir.normalized * currentMoveSpeed;
-            Vector3 velocityChange = targetVelocity - horizontalVel;
-
-            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+            // Constant acceleration toward max when holding W/S
+            // Using Time.deltaTime matches the old behavior
+            currentMoveSpeed = Mathf.MoveTowards(
+                currentMoveSpeed,
+                maxMoveSpeed,
+                acceleration * Time.deltaTime
+            );
         }
         else
         {
-            // Gradually decelerate when no input
-            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
+            // Bleed speed with no throttle
+            currentMoveSpeed = Mathf.MoveTowards(
+                currentMoveSpeed,
+                0f,
+                deceleration * Time.deltaTime
+            );
         }
+
+        // Target planar velocity (forward or reverse)
+        Vector3 moveDir = forwardFlat * Mathf.Sign(v); // Reverse if v < 0
+        Vector3 targetVelocity = moveDir * currentMoveSpeed;
+
+        // Change ONLY planar velocity (vertical stays fully physics-driven)
+        Vector3 velocityChange = targetVelocity - planarVel;
+        rb.AddForce(velocityChange, ForceMode.VelocityChange);
     }
 
     private void Jump()
     {
-        // Reset Y velocity before jump for consistent height
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        // Do NOT zero Y; add impulse on top of current velocity
+        // This preserves upward momentum from ramps
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
     private bool CheckGrounded()
     {
-        float rayLength = 1.0f; // Adjust to match character height
+        float rayLength = 1.0f;
         RaycastHit hit;
 
-        // Cast a ray straight down from player position
-        if (Physics.Raycast(feetTransform.transform.position, Vector3.down, out hit, rayLength))
+        if (Physics.Raycast(feetTransform.position, Vector3.down, out hit, rayLength))
         {
-            Debug.DrawLine(transform.position, hit.point, Color.green);
-
-            rb.linearDamping = linearDrag; // Apply drag when grounded
+            Debug.DrawLine(feetTransform.position, hit.point, Color.green);
+            lastGroundNormal = hit.normal;
+            rb.linearDamping = linearDrag;
             return true;
         }
 
-        // No ground hit
-        rb.linearDamping = 0f; // No drag when in air
+        rb.linearDamping = 0f;
         return false;
     }
 
@@ -176,7 +181,7 @@ public class GPlayerController: MonoBehaviour
             lastGroundNormal = hit.normal;
 
             // Calculate rotation that makes model's up match ground normal
-            Quaternion groundTilt = Quaternion.FromToRotation(cartModel.up,lastGroundNormal) * cartModel.rotation;
+            Quaternion groundTilt = Quaternion.FromToRotation(cartModel.up, lastGroundNormal) * cartModel.rotation;
 
             // Smoothly interpolate to match the ground
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed);
