@@ -96,39 +96,39 @@ MonoBehaviour:
     BindingMode: 1
     PositionDamping: {x: 1, y: 1, z: 1}
     AngularDampingMode: 0
-    RotationDamping: {x: 1, y: 1, z: 1}
+    RotationDamping: {x: 0, y: 0.5, z: 0}
     QuaternionDamping: 1
   OrbitStyle: 0
   Radius: 22
   Orbits:
     Top:
       Radius: 2
-      Height: 5
+      Height: 5.15
     Center:
-      Radius: 4
-      Height: 2.25
+      Radius: 23.01
+      Height: 6.29
     Bottom:
       Radius: 2.5
       Height: 0.1
     SplineCurvature: 0.5
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: 0
-    Center: 0
-    Range: {x: -180, y: 180}
-    Wrap: 1
+    Value: -0
+    Center: -0
+    Range: {x: -45, y: 45}
+    Wrap: 0
     Recentering:
-      Enabled: 0
+      Enabled: 1
       Wait: 1
       Time: 2
     Restrictions: 0
   VerticalAxis:
     Value: 17.5
     Center: 17.5
-    Range: {x: -10, y: 45}
+    Range: {x: 0, y: 30}
     Wrap: 0
     Recentering:
-      Enabled: 0
+      Enabled: 1
       Wait: 1
       Time: 2
     Restrictions: 0

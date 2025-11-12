@@ -43,7 +43,7 @@ public class GPlayerController : MonoBehaviour
     public float groundAlignSpeed = 8f;
 
     private Rigidbody rb;
-    private Transform cam;
+    //private Transform cam;
     private bool isGrounded;
     private Vector3 lastGroundNormal = Vector3.up;
     private float _turnSmoothVelocity;
@@ -53,7 +53,7 @@ public class GPlayerController : MonoBehaviour
         Cursor.visible = false; // Hides the cursor
         Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
         rb = GetComponent<Rigidbody>();
-        cam = Camera.main.transform;
+        //cam = Camera.main.transform;
     }
 
 
@@ -348,6 +348,10 @@ public class GPlayerController : MonoBehaviour
 
             // Smoothly interpolate to match the ground
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed);
+
+            // Align the cartModel horizontally with the camera
+            cartModel.rotation = Quaternion.Euler(cartModel.rotation.eulerAngles.x, rb.rotation.eulerAngles.y, cartModel.rotation.eulerAngles.z);
+
         }
         else
         {
