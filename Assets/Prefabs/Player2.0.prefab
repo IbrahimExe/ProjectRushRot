@@ -29,8 +29,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4636364567374257377}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.1521234, y: 0, z: 0, w: 0.98836154}
-  m_LocalPosition: {x: 0, y: 2.157789, z: -6.8436327}
+  m_LocalRotation: {x: 0.1521234, y: 1.2902686e-10, z: 1.9686562e-10, w: 0.98836154}
+  m_LocalPosition: {x: 0, y: 1.5823786, z: -5.0186634}
   m_LocalScale: {x: 0.23919158, y: 0.23919158, z: 0.23919158}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -93,13 +93,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineOrbitalFollow
   TargetOffset: {x: 0, y: 0, z: 0}
   TrackerSettings:
-    BindingMode: 4
+    BindingMode: 1
     PositionDamping: {x: 1, y: 1, z: 1}
     AngularDampingMode: 0
     RotationDamping: {x: 1, y: 1, z: 1}
     QuaternionDamping: 1
   OrbitStyle: 0
-  Radius: 30
+  Radius: 22
   Orbits:
     Top:
       Radius: 2
@@ -258,6 +258,7 @@ GameObject:
   - component: {fileID: 1119539824516189455}
   - component: {fileID: 2854710723262664737}
   - component: {fileID: 6980665277055680435}
+  - component: {fileID: 6457804267282043099}
   m_Layer: 0
   m_Name: Player2.0
   m_TagString: Player
@@ -343,17 +344,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5c957f8cc3045c4c9ac2d9b3ed28635, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GPlayerController
-  startMoveSpeed: 5
-  maxMoveSpeed: 100
-  acceleration: 3
-  deceleration: 5
-  rotationSpeed: 100
-  linearDrag: 0.1
-  jumpForce: 80
   currentMoveSpeed: 25
-  fallMultiplier: 4
-  lowJumpMultiplier: 2
-  maxFallSpeed: -20
+  startMoveSpeed: 5
+  maxMoveSpeed: 80
+  acceleration: 5
+  deceleration: 15
+  manualDeceleration: 30
+  backwardMaxMoveSpeed: 50
+  backwardAcceleration: 15
+  backwardDeceleration: 20
+  CameraRotationSpeed: 100
+  linearDrag: 0.1
+  jumpForce: 100
+  fallMultiplier: 8
+  lowJumpMultiplier: 4
+  maxFallSpeed: -40
   feetTransform: {fileID: 3971334911968303865}
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}
@@ -362,6 +367,25 @@ MonoBehaviour:
   tiltSideAmount: 20
   tiltSpeed: 5
   groundAlignSpeed: 8
+--- !u!114 &6457804267282043099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18e55486dd71ee14c9c76d12a137c958, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraZoom
+  vcam: {fileID: 2946657206990674743}
+  playerRb: {fileID: 2854710723262664737}
+  baseFOV: 60
+  maxFOV: 80
+  speedForMax: 20
+  lookBackKey: 102
+  rotationSpeed: 10
 --- !u!1 &5568493955418402148
 GameObject:
   m_ObjectHideFlags: 0

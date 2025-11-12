@@ -3,18 +3,27 @@ using UnityEngine;
 //attempt at a physics based player controller
 
 [RequireComponent(typeof(Rigidbody))]
-public class GPlayerController: MonoBehaviour
+public class GPlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
+    public float currentMoveSpeed = 1f;
     public float startMoveSpeed = 5f;
     public float maxMoveSpeed = 15f;
     public float acceleration = 20f;
     public float deceleration = 25f;
-    public float rotationSpeed = 100f;
+
+    private float currentReverseSpeed = 0f;
+    public float manualDeceleration = 30f;
+    public float backwardMaxMoveSpeed = 10f;
+    public float backwardAcceleration = 15f;
+    public float backwardDeceleration = 20f;
+    
+
+    public float CameraRotationSpeed = 100f;
     public float linearDrag = 5f;
     public float jumpForce = 5f;
 
-    public float currentMoveSpeed = 1f;
+
 
     [Header("Custom Gravity Settings")]
     public float fallMultiplier = 2f;
@@ -67,54 +76,213 @@ public class GPlayerController: MonoBehaviour
 
     private void Move()
     {
-        // Input
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
-        Vector3 inputDir = new Vector3(h, 0f, v).normalized;
 
-        bool isMoving = inputDir.magnitude >= 0.1f;
+        // Use ground normal for proper slope handling
+        Vector3 up = (lastGroundNormal == Vector3.zero) ? Vector3.up : lastGroundNormal;
 
-        // Horizontal velocity (ignore vertical)
-        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        float currentVelocityMag = horizontalVel.magnitude;
+        // Steer around ground up (decoupled from camera)
+        float yawDelta = h * CameraRotationSpeed * Time.fixedDeltaTime;
+        transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
 
-        if (isMoving)
+        // Planar basis relative to ground
+        Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+        Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
+        float planarSpeed = planarVel.magnitude;
+
+        // Determine current physical motion direction (1 = forward, -1 = backward, 0 = stopped)
+        float motionSign = (planarVel.sqrMagnitude > 0.001f) ? Mathf.Sign(Vector3.Dot(planarVel, forwardFlat)) : 0f;
+
+        // Keep forward speed floor at actual forward motion (preserves momentum)
+        if (motionSign >= 0f && currentMoveSpeed < planarSpeed)
+            currentMoveSpeed = planarSpeed;
+
+        // If currently moving backwards in physics and reverse speed is smaller, keep reverse speed floor
+        if (motionSign < 0f && currentReverseSpeed < planarSpeed)
+            currentReverseSpeed = planarSpeed;
+
+        bool pressingForward = v > 0.01f;
+        bool pressingBackward = v < -0.01f;
+
+        // input logic
+        if (pressingForward)
         {
-            // Camera-relative movement
-            float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, 1f / rotationSpeed);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-            // Keep current speed from dropping below the actual physical velocity
-            if (currentMoveSpeed < currentVelocityMag)
-                currentMoveSpeed = currentVelocityMag;
-
-            // Set initial move speed if starting from rest
+            // Start forward speed bump if needed
             if (currentMoveSpeed < startMoveSpeed)
                 currentMoveSpeed = startMoveSpeed;
-            
 
-            // Gradually accelerate toward max speed
+            // Accelerate forward
             currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, maxMoveSpeed, acceleration * Time.deltaTime);
 
-            // Apply movement
-            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            Vector3 targetVelocity = moveDir.normalized * currentMoveSpeed;
-            Vector3 velocityChange = targetVelocity - horizontalVel;
+            // While accelerating forward, reset reverse speed
+            currentReverseSpeed = 0f;
+        }
+        else if (pressingBackward)
+        {
+            if (currentMoveSpeed > 0.001f)
+            {
+                // BRAKE: reduce forward speed only (no reverse force yet)
+                currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, manualDeceleration * Time.deltaTime);
 
-            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+                // ensure reverse speed is zero while braking
+                currentReverseSpeed = 0f;
+            }
+            else
+            {
+                // Start reversing.
+                currentReverseSpeed = Mathf.MoveTowards(currentReverseSpeed, backwardMaxMoveSpeed, backwardAcceleration * Time.deltaTime);
+
+                // make sure forward remains zero
+                currentMoveSpeed = 0f;
+            }
         }
         else
         {
-            // Gradually decelerate when no input
+            // No input: natural slowdown for both directions
             currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
+            currentReverseSpeed = Mathf.MoveTowards(currentReverseSpeed, 0f, backwardDeceleration * Time.deltaTime);
         }
+
+        // Movement application
+        // Choose which speed is active (prefer forward if >0, otherwise reverse)
+        Vector3 targetVelocity;
+        if (currentMoveSpeed > 0.001f)
+        {
+            targetVelocity = forwardFlat * currentMoveSpeed; // forward
+        }
+        else if (currentReverseSpeed > 0.001f)
+        {
+            targetVelocity = -forwardFlat * currentReverseSpeed; // reverse
+        }
+        else
+        {
+            targetVelocity = Vector3.zero;
+        }
+
+        // force application
+        Vector3 velocityChange = targetVelocity - planarVel;
+        rb.AddForce(velocityChange, ForceMode.VelocityChange);
     }
+
+    //private void Move()
+    //{
+    //    float h = Input.GetAxis("Horizontal");
+    //    float v = Input.GetAxis("Vertical");
+
+    //    // Use ground normal for proper slope handling
+    //    Vector3 up = (lastGroundNormal == Vector3.zero) ? Vector3.up : lastGroundNormal;
+
+    //    // Steer around ground up (decoupled from camera)
+    //    float yawDelta = h * CameraRotationSpeed * Time.fixedDeltaTime;
+    //    transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
+
+    //    // Planar basis relative to ground
+    //    Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+    //    Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
+    //    float planarSpeed = planarVel.magnitude;
+
+    //    // Maintain speed floor at actual motion (preserves momentum)
+    //    if (currentMoveSpeed < planarSpeed)
+    //        currentMoveSpeed = planarSpeed;
+
+    //    bool pressingForward = v > 0.01f;
+    //    bool pressingBackward = v < -0.01f;
+
+    //    if (pressingForward)
+    //    {
+    //        // Start speed floor
+    //        if (currentMoveSpeed < startMoveSpeed)
+    //            currentMoveSpeed = startMoveSpeed;
+
+    //        // Accelerate toward max
+    //        currentMoveSpeed = Mathf.MoveTowards(
+    //            currentMoveSpeed,
+    //            maxMoveSpeed,
+    //            acceleration * Time.deltaTime
+    //        );
+    //    }
+    //    else if (pressingBackward)
+    //    {
+    //        // Apply braking instead of reversing direction
+    //        currentMoveSpeed = Mathf.MoveTowards(
+    //            currentMoveSpeed,
+    //            0f,
+    //            deceleration * 2f * Time.deltaTime // a bit stronger brake
+    //        );
+    //    }
+    //    else
+    //    {
+    //        // Natural slowdown when no input
+    //        currentMoveSpeed = Mathf.MoveTowards(
+    //            currentMoveSpeed,
+    //            0f,
+    //            deceleration * Time.deltaTime
+    //        );
+    //    }
+
+    //    // Target planar velocity (forward or reverse)
+    //    Vector3 moveDir = forwardFlat * Mathf.Sign(v); // Reverse if v < 0
+
+
+    //    Vector3 targetVelocity = moveDir * currentMoveSpeed;
+
+    //    // Change ONLY planar velocity (vertical stays fully physics-driven)
+    //    Vector3 velocityChange = targetVelocity - planarVel;
+    //    rb.AddForce(velocityChange, ForceMode.VelocityChange);
+    //}
+
+    //private void Move()
+    //    {
+    //        // Input
+    //        float h = Input.GetAxis("Horizontal");
+    //        float v = Input.GetAxis("Vertical");
+    //        Vector3 inputDir = new Vector3(h, 0f, v).normalized;
+
+    //        bool isMoving = inputDir.magnitude >= 0.1f;
+
+    //        // Horizontal velocity (ignore vertical)
+    //        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+    //        float currentVelocityMag = horizontalVel.magnitude;
+
+    //        if (isMoving)
+    //        {
+    //            // Camera-relative movement
+    //            float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+    //            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, 1f / rotationSpeed);
+    //            transform.rotation = Quaternion.Euler(0f, angle, 0f);
+
+    //            // Keep current speed from dropping below the actual physical velocity
+    //            if (currentMoveSpeed < currentVelocityMag)
+    //                currentMoveSpeed = currentVelocityMag;
+
+    //            // Set initial move speed if starting from rest
+    //            if (currentMoveSpeed < startMoveSpeed)
+    //                currentMoveSpeed = startMoveSpeed;
+
+
+    //            // Gradually accelerate toward max speed
+    //            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, maxMoveSpeed, acceleration * Time.deltaTime);
+
+    //            // Apply movement
+    //            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+
+
+    //            Vector3 targetVelocity = moveDir.normalized * currentMoveSpeed;
+    //            Vector3 velocityChange = targetVelocity - horizontalVel;
+
+    //            rb.AddForce(velocityChange, ForceMode.VelocityChange);
+    //        }
+    //        else
+    //        {
+    //            // Gradually decelerate when no input
+    //            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
+    //        }
+
+    //    }
 
     private void Jump()
     {
-        // Reset Y velocity before jump for consistent height
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
