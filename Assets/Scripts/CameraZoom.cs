@@ -35,9 +35,7 @@ public class CameraZoom : MonoBehaviour
         }
         else
         {
-            //reset the horisontal axis to 0,0
-            orbitalFollow.HorizontalAxis.Value = 0f;
-
+            targetYaw = 0f;
         }
 
         // Smooth orbit rotation
