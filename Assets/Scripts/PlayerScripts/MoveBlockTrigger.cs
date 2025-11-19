@@ -21,7 +21,7 @@ public class MoveBlockTrigger : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Wall"))
+        if (other.CompareTag("BlockWall"))
         {
             if (blockType == BlockType.Forward)
             {
