@@ -135,6 +135,9 @@ MonoBehaviour:
   m_BlackboardVariableOverridesList:
   - rid: 7738815434493001978
   - rid: 3923751392442318976
+  - rid: 3923751715010511545
+  - rid: 3923751715010511546
+  - rid: 3923751715010511547
   m_OriginalGraph: {fileID: 0}
   m_IsInitialised: 0
   m_IsStarted: 0
@@ -149,6 +152,30 @@ MonoBehaviour:
           m_Value1: 8907761478728720309
         Name: Player
         m_Value: {fileID: 0}
+    - rid: 3923751715010511545
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 13614338637383493055
+          m_Value1: 925819302940339626
+        Name: MoveSpeed
+        m_Value: 20
+    - rid: 3923751715010511546
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 341693110809891845
+          m_Value1: 5052508334526151843
+        Name: ClimbSpeed
+        m_Value: 20
+    - rid: 3923751715010511547
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 4179563251997170345
+          m_Value1: 12980064774350068622
+        Name: ClimbDistance
+        m_Value: 1.5
     - rid: 7738815434493001978
       type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
       data:
