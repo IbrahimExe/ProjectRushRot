@@ -102,7 +102,7 @@ public class LevelUpImageSelector : MonoBehaviour
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchorMin = new Vector2(0.5f, 1f);
             rt.anchorMax = new Vector2(0.5f, 1f);
-            rt.sizeDelta = new Vector2(220f, 120f); // default card size; change in inspector or prefab
+            rt.sizeDelta = new Vector2(450f, 220f); // default card size; change in inspector or prefab
 
             // place offscreen to the right initially
             float y = -i * verticalSpacing;
