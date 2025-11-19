@@ -66,6 +66,11 @@ public class GPlayerController : MonoBehaviour
         {
             Jump();
         }
+
+        // UI speed update for XP system & Bar
+        float normalized = currentMoveSpeed / maxMoveSpeed; // 1 at top speed
+        if (ExperienceManager.Instance != null)
+            ExperienceManager.Instance.SetSpeedMultiplier(1f + normalized * 0.20f); // +20% XP gain
     }
 
     private void FixedUpdate()
