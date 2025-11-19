@@ -1,17 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dreamteck.Splines.Editor", "Dreamteck.Splines.Editor.csproj", "{49D8C42C-276F-3963-8DD6-9030D359DECA}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dreamteck.Splines", "Dreamteck.Splines.csproj", "{28D901A6-6DDE-903C-6ED1-7390DE4FB86E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dreamteck.Utilities", "Dreamteck.Utilities.csproj", "{AC91EBAB-2631-2DAF-85E0-6736BD3948DF}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dreamteck.Utilities.Editor", "Dreamteck.Utilities.Editor.csproj", "{05726BD2-1CEA-3447-D7E3-974E4EB1070A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,30 +11,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{49D8C42C-276F-3963-8DD6-9030D359DECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{49D8C42C-276F-3963-8DD6-9030D359DECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{49D8C42C-276F-3963-8DD6-9030D359DECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{49D8C42C-276F-3963-8DD6-9030D359DECA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28D901A6-6DDE-903C-6ED1-7390DE4FB86E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28D901A6-6DDE-903C-6ED1-7390DE4FB86E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28D901A6-6DDE-903C-6ED1-7390DE4FB86E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28D901A6-6DDE-903C-6ED1-7390DE4FB86E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC91EBAB-2631-2DAF-85E0-6736BD3948DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC91EBAB-2631-2DAF-85E0-6736BD3948DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC91EBAB-2631-2DAF-85E0-6736BD3948DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC91EBAB-2631-2DAF-85E0-6736BD3948DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{05726BD2-1CEA-3447-D7E3-974E4EB1070A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{05726BD2-1CEA-3447-D7E3-974E4EB1070A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{05726BD2-1CEA-3447-D7E3-974E4EB1070A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{05726BD2-1CEA-3447-D7E3-974E4EB1070A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
