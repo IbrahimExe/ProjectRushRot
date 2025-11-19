@@ -4,39 +4,57 @@ using Unity.Cinemachine;
 public class CameraZoom : MonoBehaviour
 {
     public CinemachineCamera vcam;
-
-    [Header("Speed Sources (pick one)")]
-    public Rigidbody playerRb;                     
-    public PlayerMotorAdvanced playerMotor;        
-
-    [Header("FOV vs Speed")]
+    public Rigidbody playerRb;
     public float baseFOV = 60f, maxFOV = 80f, speedForMax = 20f;
 
-    [Header("Fallback (delta position)")]
-    public Transform target;                       
-    private Vector3 lastPos;
-    private bool hasLast;
+    [Header("Look Back Settings")]
+    public KeyCode lookBackKey = KeyCode.N;
+    public float rotationSpeed = 5f;
 
-    void Update()
+    private CinemachineOrbitalFollow orbitalFollow;
+    private float originalRangeMin;
+    private float originalRangeMax;
+    private float lookBackTarget = 0f;
+
+    void Start()
     {
-        float speed = 0f;
+        orbitalFollow = vcam.GetComponent<CinemachineOrbitalFollow>();
+        // Store the original axis range limits
+        originalRangeMin = orbitalFollow.HorizontalAxis.Range.x;
+        originalRangeMax = orbitalFollow.HorizontalAxis.Range.y;
+    }
 
-        if (playerMotor != null)
-        {
-            speed = playerMotor.CurrentSpeed;      // Works with CharacterController player
-        }
-        else if (playerRb != null)
-        {
-            speed = playerRb.linearVelocity.magnitude; // Works with Rigidbody player
-        }
-        else if (target != null)
-        {
-            Vector3 p = target.position;
-            if (hasLast) speed = (p - lastPos).magnitude / Mathf.Max(Time.deltaTime, 1e-6f);
-            lastPos = p; hasLast = true;
-        }
+    void LateUpdate()
+    {
+        // Speed-based FOV
+        float speed = playerRb.linearVelocity.magnitude;
+        vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, speed / speedForMax);
 
-        float t = Mathf.Clamp01(speed / Mathf.Max(0.001f, speedForMax));
-        vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, t);
+        // Look back control
+        if (Input.GetKey(lookBackKey))
+        {
+            // Expand the range to allow 180 degree rotation
+            orbitalFollow.HorizontalAxis.Range = new Vector2(-180f, 180f);
+
+            // Target is 180 degrees (straight back)
+            lookBackTarget = Mathf.MoveTowards(lookBackTarget, 180f, rotationSpeed * 100f * Time.deltaTime);
+            orbitalFollow.HorizontalAxis.Value = lookBackTarget;
+        }
+        else
+        {
+            // Return to center (0)
+            lookBackTarget = Mathf.MoveTowards(lookBackTarget, 0f, rotationSpeed * 100f * Time.deltaTime);
+
+            // Only override if we're still returning
+            if (Mathf.Abs(lookBackTarget) > 0.1f)
+            {
+                orbitalFollow.HorizontalAxis.Value = lookBackTarget;
+            }
+            else
+            {
+                // Restore original range when back to normal
+                orbitalFollow.HorizontalAxis.Range = new Vector2(originalRangeMin, originalRangeMax);
+            }
+        }
     }
 }

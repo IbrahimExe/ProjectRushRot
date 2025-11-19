@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 5639802540774453667}
   - component: {fileID: 4977970180316261859}
   - component: {fileID: 5063974807087780547}
+  - component: {fileID: 4695533762273925543}
+  - component: {fileID: 1651860012497592384}
   m_Layer: 0
   m_Name: Zombie
   m_TagString: Untagged
@@ -29,9 +31,10 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 4.9421, y: 4.9421, z: 4.9421}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 4524349719962995424}
   - {fileID: 3638406438964474998}
   - {fileID: 3276853518703699619}
   m_Father: {fileID: 0}
@@ -115,6 +118,71 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &4695533762273925543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3161564313400662662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
+  m_Graph: {fileID: 2779055052390172599, guid: e54bc9e4fd9440941947721bdf96ece4, type: 2}
+  m_BlackboardVariableOverridesList:
+  - rid: 7738815434493001978
+  - rid: 3923751392442318976
+  m_OriginalGraph: {fileID: 0}
+  m_IsInitialised: 0
+  m_IsStarted: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 3923751392442318976
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 11141749043493578026
+          m_Value1: 8907761478728720309
+        Name: Player
+        m_Value: {fileID: 0}
+    - rid: 7738815434493001978
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Self
+        m_Value: {fileID: 3161564313400662662}
+--- !u!54 &1651860012497592384
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3161564313400662662}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &4672181221890857533
 GameObject:
   m_ObjectHideFlags: 0
@@ -143,8 +211,8 @@ Transform:
   m_GameObject: {fileID: 4672181221890857533}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.52, y: 0.34, z: 0}
-  m_LocalScale: {x: 0.08224, y: 0.12208, z: 0.3343848}
+  m_LocalPosition: {x: 0.022, y: 0.34, z: 0.486}
+  m_LocalScale: {x: 0.39638034, y: 0.12208, z: 0.124949574}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5987001953501161512}
@@ -270,3 +338,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b689e60a8b978d439f573c688ea6b38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZombieBehaciour
+  moveSpeed: 5
+  playerTarget: {fileID: 0}
+--- !u!1 &7000863100399787910
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4524349719962995424}
+  - component: {fileID: 5439846299458770341}
+  m_Layer: 0
+  m_Name: ZombieBehaviour
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4524349719962995424
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7000863100399787910}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.71467113, z: -0, w: 0.6994607}
+  m_LocalPosition: {x: 0.41393828, y: 0.061386865, z: 0.28045326}
+  m_LocalScale: {x: 0.2023431, y: 0.20234314, z: 0.2023431}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5987001953501161512}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5439846299458770341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7000863100399787910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b689e60a8b978d439f573c688ea6b38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieBehaviour
+  moveSpeed: 5
+  playerTarget: {fileID: 0}

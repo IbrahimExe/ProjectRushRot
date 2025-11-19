@@ -18,9 +18,12 @@ public class GPlayerController : MonoBehaviour
     public float backwardAcceleration = 15f;
     public float backwardDeceleration = 20f;
 
-    public float CameraRotationSpeed = 100f;
+
+    public float rotationSpeed = 100f;
     public float linearDrag = 5f;
     public float jumpForce = 5f;
+
+
 
     [Header("Custom Gravity Settings")]
     public float fallMultiplier = 2f;
@@ -32,79 +35,62 @@ public class GPlayerController : MonoBehaviour
 
     [Header("Visual Tilt Settings")]
     public Transform cartModel;
+    //private Vector3 initialModelLocalPos;
     public Transform rayOrigin;
     public float rayLength = 1.5f;
     public float tiltForwardAmount = 10f;
     public float tiltSideAmount = 10f;
     public float tiltSpeed = 5f;
+    public float airTiltAmount = 5f;
     public float groundAlignSpeed = 8f;
+    public float maxVisualRoll = 25f;
 
     private Rigidbody rb;
     private bool isGrounded;
     private Vector3 lastGroundNormal = Vector3.up;
     private float _turnSmoothVelocity;
 
-    // Wall running
-    [Header("Wall Run Settings")]
-    public LayerMask wallLayers = ~0;
-    public float wallCheckDistance = 1.0f;
-    public float minWallUpDot = 0.2f;           // how vertical the surface must be
-    public float wallRunSpeed = 10f;
-    public float wallRunGravityMultiplier = 0.3f;
-    public float wallStickForce = 20f;
-    public float maxWallRunTime = 3f;
-    public float wallJumpForce = 10f;
-    public float wallJumpUpMultiplier = 1.2f;
-
-    private bool isWallRunning = false;
-    private Vector3 currentWallNormal = Vector3.zero;
-    private Vector3 currentWallForward = Vector3.zero;
-    private float wallRunTimer = 0f;
-
     void Start()
     {
         Cursor.visible = false; // Hides the cursor
-        Cursor.lockState = CursorLockMode.Locked; // Locks cursor to the center of the screen
+        Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
         rb = GetComponent<Rigidbody>();
     }
+
 
     void Update()
     {
         isGrounded = CheckGrounded();
 
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") && isGrounded)
         {
-            if (isWallRunning)
-                WallJump();
-            else if (isGrounded)
-                Jump();
+            Jump();
         }
     }
 
     private void FixedUpdate()
     {
-        HandleWallRun();
         Move();
         ApplyCustomGravity();
         AlignModelToGroundAndTilt();
+        if (!isGrounded)
+        {
+            Quaternion rot = rb.rotation;
+            rot.eulerAngles = new Vector3(0f, rot.eulerAngles.y, 0f);
+            rb.MoveRotation(rot);
+        }
     }
 
     private void Move()
     {
-        if (isWallRunning)
-        {
-            WallRunMove();
-            return;
-        }
-
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // Use ground normal for proper slope handling
-        Vector3 up = (lastGroundNormal == Vector3.zero) ? Vector3.up : lastGroundNormal;
+        // Determine steering axis
+        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
 
-        // Steer around ground up (decoupled from camera)
-        float yawDelta = h * CameraRotationSpeed * Time.fixedDeltaTime;
+        // Only rotate if grounded OR using world upright in air
+        float yawDelta = h * rotationSpeed * Time.fixedDeltaTime;
         transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
 
         // Planar basis relative to ground
@@ -113,9 +99,7 @@ public class GPlayerController : MonoBehaviour
         float planarSpeed = planarVel.magnitude;
 
         // Determine current physical motion direction (1 = forward, -1 = backward, 0 = stopped)
-        float motionSign = (planarVel.sqrMagnitude > 0.001f)
-            ? Mathf.Sign(Vector3.Dot(planarVel, forwardFlat))
-            : 0f;
+        float motionSign = (planarVel.sqrMagnitude > 0.001f) ? Mathf.Sign(Vector3.Dot(planarVel, forwardFlat)) : 0f;
 
         // Keep forward speed floor at actual forward motion (preserves momentum)
         if (motionSign >= 0f && currentMoveSpeed < planarSpeed)
@@ -131,46 +115,22 @@ public class GPlayerController : MonoBehaviour
         // input logic
         if (pressingForward)
         {
-            // If we are physically moving backward, treat 'W' as strong brake
-            if (motionSign < 0f)
-            {
-                // Brake in reverse direction until we stop
-                currentReverseSpeed = Mathf.MoveTowards(
-                    currentReverseSpeed,
-                    0f,
-                    manualDeceleration * Time.deltaTime
-                );
+            // Start forward speed bump if needed
+            if (currentMoveSpeed < startMoveSpeed)
+                currentMoveSpeed = startMoveSpeed;
 
-                // Stop forward speed while braking
-                currentMoveSpeed = 0f;
-            }
-            else
-            {
-                // Start forward speed bump if needed
-                if (currentMoveSpeed < startMoveSpeed)
-                    currentMoveSpeed = startMoveSpeed;
+            // Accelerate forward
+            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, maxMoveSpeed, acceleration * Time.deltaTime);
 
-                // Accelerate forward
-                currentMoveSpeed = Mathf.MoveTowards(
-                    currentMoveSpeed,
-                    maxMoveSpeed,
-                    acceleration * Time.deltaTime
-                );
-
-                // While accelerating forward, reset reverse speed
-                currentReverseSpeed = 0f;
-            }
+            // While accelerating forward, reset reverse speed
+            currentReverseSpeed = 0f;
         }
         else if (pressingBackward)
         {
             if (currentMoveSpeed > 0.001f)
             {
                 // BRAKE: reduce forward speed only (no reverse force yet)
-                currentMoveSpeed = Mathf.MoveTowards(
-                    currentMoveSpeed,
-                    0f,
-                    manualDeceleration * Time.deltaTime
-                );
+                currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, manualDeceleration * Time.deltaTime);
 
                 // ensure reverse speed is zero while braking
                 currentReverseSpeed = 0f;
@@ -178,11 +138,7 @@ public class GPlayerController : MonoBehaviour
             else
             {
                 // Start reversing.
-                currentReverseSpeed = Mathf.MoveTowards(
-                    currentReverseSpeed,
-                    backwardMaxMoveSpeed,
-                    backwardAcceleration * Time.deltaTime
-                );
+                currentReverseSpeed = Mathf.MoveTowards(currentReverseSpeed, backwardMaxMoveSpeed, backwardAcceleration * Time.deltaTime);
 
                 // make sure forward remains zero
                 currentMoveSpeed = 0f;
@@ -190,27 +146,13 @@ public class GPlayerController : MonoBehaviour
         }
         else
         {
-            // natural slowdown when no input
-            if (currentMoveSpeed > 0.001f)
-            {
-                currentMoveSpeed = Mathf.MoveTowards(
-                    currentMoveSpeed,
-                    0f,
-                    deceleration * Time.deltaTime
-                );
-            }
-
-            if (currentReverseSpeed > 0.001f)
-            {
-                currentReverseSpeed = Mathf.MoveTowards(
-                    currentReverseSpeed,
-                    0f,
-                    backwardDeceleration * Time.deltaTime
-                );
-            }
+            // No input: natural slowdown for both directions
+            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
+            currentReverseSpeed = Mathf.MoveTowards(currentReverseSpeed, 0f, backwardDeceleration * Time.deltaTime);
         }
 
-        // Build target velocity along forwardFlat using whichever "mode" is active
+        // Movement application
+        // Choose which speed is active (prefer forward if >0, otherwise reverse)
         Vector3 targetVelocity;
         if (currentMoveSpeed > 0.001f)
         {
@@ -229,135 +171,15 @@ public class GPlayerController : MonoBehaviour
         Vector3 velocityChange = targetVelocity - planarVel;
         rb.AddForce(velocityChange, ForceMode.VelocityChange);
     }
-
-    #region WallRunning
-
-    private void HandleWallRun()
+    public void BlockForwardMovement()
     {
-        // Stop wall run if grounded
-        if (isGrounded)
-        {
-            StopWallRun();
-            return;
-        }
-
-        float v = Input.GetAxis("Vertical");
-
-        // Need some forward input to start/keep wallrunning
-        if (v <= 0.1f)
-        {
-            StopWallRun();
-            return;
-        }
-
-        RaycastHit hit;
-        Vector3 origin = feetTransform.position;
-        bool foundWall = false;
-        Vector3 wallNormal = Vector3.zero;
-
-        // check left
-        if (Physics.Raycast(origin, -transform.right, out hit, wallCheckDistance, wallLayers))
-        {
-            wallNormal = hit.normal;
-            foundWall = true;
-        }
-        // check right
-        else if (Physics.Raycast(origin, transform.right, out hit, wallCheckDistance, wallLayers))
-        {
-            wallNormal = hit.normal;
-            foundWall = true;
-        }
-
-        if (foundWall && Mathf.Abs(Vector3.Dot(wallNormal, Vector3.up)) < minWallUpDot)
-        {
-            StartWallRun(wallNormal);
-            wallRunTimer += Time.fixedDeltaTime;
-            if (wallRunTimer > maxWallRunTime)
-                StopWallRun();
-        }
-        else
-        {
-            StopWallRun();
-        }
+        currentMoveSpeed = 0f;
     }
 
-    private void StartWallRun(Vector3 wallNormal)
+    public void BlockBackwardMovement()
     {
-        isWallRunning = true;
-        currentWallNormal = wallNormal.normalized;
-
-        // direction along the wall
-        Vector3 alongWall = Vector3.Cross(currentWallNormal, Vector3.up);
-        if (alongWall.sqrMagnitude < 0.001f)
-            alongWall = Vector3.Cross(currentWallNormal, transform.up);
-
-        if (Vector3.Dot(alongWall, transform.forward) < 0f)
-            alongWall = -alongWall;
-
-        currentWallForward = alongWall.normalized;
-
-        // Project velocity onto the wall and keep some speed
-        Vector3 vel = rb.linearVelocity;
-        Vector3 velAlongWall = Vector3.ProjectOnPlane(vel, currentWallNormal);
-
-        if (velAlongWall.magnitude < wallRunSpeed)
-            velAlongWall = velAlongWall.normalized * wallRunSpeed;
-
-        rb.linearVelocity = new Vector3(
-            velAlongWall.x,
-            Mathf.Max(vel.y, 0f),
-            velAlongWall.z
-        );
+        currentReverseSpeed = 0f;
     }
-
-    private void StopWallRun()
-    {
-        if (!isWallRunning)
-            return;
-
-        isWallRunning = false;
-        wallRunTimer = 0f;
-        currentWallNormal = Vector3.zero;
-        currentWallForward = Vector3.zero;
-    }
-
-    private void WallRunMove()
-    {
-        if (!isWallRunning)
-            return;
-
-        float v = Mathf.Max(0f, Input.GetAxis("Vertical"));
-
-        Vector3 desiredAlongWall = currentWallForward * wallRunSpeed * v;
-        Vector3 vel = rb.linearVelocity;
-        Vector3 vertical = Vector3.Project(vel, Vector3.up);
-        Vector3 horizontal = Vector3.ProjectOnPlane(vel, Vector3.up);
-
-        horizontal = Vector3.Lerp(horizontal, desiredAlongWall, 0.1f);
-        rb.linearVelocity = horizontal + vertical;
-
-        // Stick a bit to the wall
-        rb.AddForce(-currentWallNormal * wallStickForce, ForceMode.Acceleration);
-    }
-
-    private void WallJump()
-    {
-        if (!isWallRunning || currentWallNormal == Vector3.zero)
-            return;
-
-        // jump away from wall and upwards (Lucio-style)
-        Vector3 jumpDir = (currentWallNormal + Vector3.up * wallJumpUpMultiplier).normalized;
-
-        Vector3 vel = rb.linearVelocity;
-        vel.y = 0f;
-        rb.linearVelocity = vel;
-
-        rb.AddForce(jumpDir * wallJumpForce, ForceMode.VelocityChange);
-
-        StopWallRun();
-    }
-
-    #endregion
 
     private void Jump()
     {
@@ -378,28 +200,17 @@ public class GPlayerController : MonoBehaviour
             return true;
         }
 
-        rb.linearDamping = 0f; // No drag when in the air
+        // No ground hit
+        rb.linearDamping = 0f; // No drag when in air
         return false;
     }
 
     private void ApplyCustomGravity()
     {
-        if (isWallRunning)
-        {
-            // Soften gravity while wall running (wallRunGravityMultiplier < 1 for lighter feel)
-            rb.AddForce(Physics.gravity * (wallRunGravityMultiplier - 1f), ForceMode.Acceleration);
-
-            if (rb.linearVelocity.y < maxFallSpeed)
-            {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, maxFallSpeed, rb.linearVelocity.z);
-            }
-            return;
-        }
-
         // Only modify gravity when falling or going up
         if (rb.linearVelocity.y < 0)
         {
-            // Falling – add extra gravity
+            // Falling — add extra gravity
             rb.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
         }
         else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
@@ -416,75 +227,94 @@ public class GPlayerController : MonoBehaviour
     }
 
     private void AlignModelToGroundAndTilt()
-    {
+    { 
         // Get movement input
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
         bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
 
-        // Calculate tilt rotation from input
+        // Calculate tilt rotation
         float targetForwardTilt = isMoving ? -v * tiltForwardAmount : 0f;
         float targetSideTilt = isMoving ? -h * tiltSideAmount : 0f;
+
         Quaternion moveTilt = Quaternion.Euler(targetForwardTilt, 0f, targetSideTilt);
 
-        // WALL RUN ALIGNMENT (wheels on the wall)
-        if (isWallRunning && currentWallNormal != Vector3.zero)
+        // Raycast to detect ground
+        if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
         {
-            // local -up (wheels direction) should point into the wall,
-            // so local up points away from the wall
-            Vector3 upDir = -currentWallNormal;
-            Vector3 forwardDir = currentWallForward.sqrMagnitude > 0.001f
-                ? currentWallForward
-                : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
-
-            Quaternion targetRot = Quaternion.LookRotation(forwardDir, upDir);
-            cartModel.rotation = Quaternion.Slerp(
-                cartModel.rotation,
-                targetRot,
-                Time.deltaTime * groundAlignSpeed
-            );
-        }
-        else
-        {
-            // GROUND ALIGNMENT
-            if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
-            {
-                lastGroundNormal = hit.normal;
-
-                // align model up to ground normal
-                Quaternion groundTilt =
-                    Quaternion.FromToRotation(cartModel.up, lastGroundNormal) * cartModel.rotation;
-
-                cartModel.rotation = Quaternion.Slerp(
-                    cartModel.rotation,
-                    groundTilt,
-                    Time.deltaTime * groundAlignSpeed
-                );
-
-                // keep yaw matched to rigidbody (so it faces movement/camera)
-                Vector3 euler = cartModel.rotation.eulerAngles;
-                cartModel.rotation = Quaternion.Euler(
-                    euler.x,
-                    rb.rotation.eulerAngles.y,
-                    euler.z
-                );
-            }
-            else
-            {
-                // No ground detected – ease back upright following rb
-                cartModel.rotation = Quaternion.Slerp(
-                    cartModel.rotation,
-                    rb.rotation,
-                    Time.deltaTime * 2f
-                );
-            }
-        }
-
-        // Apply visual input-based tilt on top
-        cartModel.localRotation *= Quaternion.Lerp(
-            Quaternion.identity,
-            moveTilt,
-            Time.deltaTime * tiltSpeed
-        );
+            lastGroundNormal = hit.normal; 
+            
+            // Calculate rotation that makes model's up match ground normal
+            Quaternion groundTilt = Quaternion.FromToRotation(cartModel.up,lastGroundNormal) * cartModel.rotation; 
+            
+            // Smoothly interpolate to match the ground
+            cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed); 
+            
+            // Align the cartModel horizontally with the camera
+            cartModel.rotation = Quaternion.Euler(cartModel.rotation.eulerAngles.x, rb.rotation.eulerAngles.y, cartModel.rotation.eulerAngles.z); 
+        } 
+        else 
+        { 
+            // No ground detected — return to upright
+            cartModel.rotation = Quaternion.Slerp(cartModel.rotation, rb.rotation, Time.deltaTime * 2f); 
+        } 
+        
+        // Apply visual tilt relative to ground alignment
+        cartModel.localRotation *= Quaternion.Lerp(Quaternion.identity, moveTilt, Time.deltaTime * tiltSpeed);
+        
     }
+
+
+        //private void AlignModelToGroundAndTilt()
+        //{
+        //    float h = Input.GetAxis("Horizontal");
+        //    float v = Input.GetAxis("Vertical");
+        //    bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+
+        //    // ----- 1. Detect Ground -----
+        //    Quaternion groundRotation;
+
+        //    if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
+        //    {
+        //        // We are grounded
+        //        lastGroundNormal = hit.normal;
+
+        //        // Align model's UP with ground normal
+        //        groundRotation = Quaternion.FromToRotation(Vector3.up, lastGroundNormal)
+        //                        * Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
+        //    }
+        //    else
+        //    {
+        //        // Use upright rotation while airborne
+        //        groundRotation = Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
+        //    }
+
+        //    // ----- 2. Calculate movement tilt (does NOT accumulate) -----
+        //    float forwardTilt = 0f;
+        //    float sideTilt = 0f;
+
+        //    if (isMoving)
+        //    {
+        //        forwardTilt = -v * tiltForwardAmount;
+        //        sideTilt = -h * tiltSideAmount;
+        //    }
+        //    else if (!isGrounded)
+        //    {
+        //        // Air tilt for jumps
+        //        forwardTilt = -airTiltAmount;
+        //    }
+
+        //    Quaternion tiltRotation = Quaternion.Euler(forwardTilt, 0f, sideTilt);
+
+        //    // ----- 3. Combine cleanly (NO *=) -----
+        //    Quaternion targetRotation = groundRotation * tiltRotation;
+
+        //    // ----- 4. Smooth -----
+        //    cartModel.rotation = Quaternion.Slerp(
+        //        cartModel.rotation,
+        //        targetRotation,
+        //        Time.deltaTime * groundAlignSpeed
+        //    );
+        //}
 }
+

@@ -1,65 +1,65 @@
-//using System;
-//using Unity.Cinemachine;
-//using UnityEngine;
-//using UnityEngine.InputSystem;
+using System;
+using Unity.Cinemachine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-//public class ThirdPersonCameraController : MonoBehaviour
-//{
-//    [SerializeField] private float zoomSpeed = 2f;
-//    [SerializeField] private float zoomLerpSpeed = 10f;
-//    [SerializeField] private float minDistance = 3f;
-//    [SerializeField] private float maxDistance = 15f;
+public class ThirdPersonCameraController : MonoBehaviour
+{
+    [SerializeField] private float zoomSpeed = 2f;
+    [SerializeField] private float zoomLerpSpeed = 10f;
+    [SerializeField] private float minDistance = 3f;
+    [SerializeField] private float maxDistance = 15f;
 
-//    private PlayerControls controls;
+    //private PlayerControls controls;
 
-//    private CinemachineCamera cam;
-//    private CinemachineOrbitalFollow orbital;
-//    private Vector2 scrollDelta;
+    private CinemachineCamera cam;
+    private CinemachineOrbitalFollow orbital;
+    private Vector2 scrollDelta;
 
-//    private float targetZoom;
-//    private float currentZoom;
+    private float targetZoom;
+    private float currentZoom;
 
-//    // Start is called once before the first execution of Update after the MonoBehaviour is created
-//    void Start()
-//    {
-//        controls = new PlayerControls();
-//        controls.Enable();
-//        controls.Camera.MouseZoom.performed += HandleMouseScroll;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        //controls = new PlayerControls();
+        //controls.Enable();
+        //controls.Camera.MouseZoom.performed += HandleMouseScroll;
 
-//        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.Locked;
 
-//        cam = GetComponent<CinemachineCamera>();
-//        orbital = cam.GetComponent<CinemachineOrbitalFollow>();
+        cam = GetComponent<CinemachineCamera>();
+        orbital = cam.GetComponent<CinemachineOrbitalFollow>();
 
-//        targetZoom = currentZoom = orbital.Radius;
-//    }
+        targetZoom = currentZoom = orbital.Radius;
+    }
 
-//    private void HandleMouseScroll(InputAction.CallbackContext context)
-//    {
-//        scrollDelta = context.ReadValue<Vector2>();
-//        Debug.Log($"Mouse is scrolling: {scrollDelta}");
-//    }
+    private void HandleMouseScroll(InputAction.CallbackContext context)
+    {
+        scrollDelta = context.ReadValue<Vector2>();
+        Debug.Log($"Mouse is scrolling: {scrollDelta}");
+    }
 
-//    // Update is called once per frame
-//    void Update()
-//    {
-//        if (scrollDelta.y != 0)
-//        {
-//            if (orbital != null)
-//            {
-//                targetZoom = Mathf.Clamp(orbital.Radius - scrollDelta.y * zoomSpeed, minDistance, maxDistance);
-//                scrollDelta = Vector2.zero;
-//            }
-//        }
+    // Update is called once per frame
+    void Update()
+    {
+        if (scrollDelta.y != 0)
+        {
+            if (orbital != null)
+            {
+                targetZoom = Mathf.Clamp(orbital.Radius - scrollDelta.y * zoomSpeed, minDistance, maxDistance);
+                scrollDelta = Vector2.zero;
+            }
+        }
 
-//        // Gamepad Logic
-//        float bumperDelta = controls.Camera.GamepadZoom.ReadValue<float>();
-//        if (bumperDelta != 0)
-//        {
-//            targetZoom = Mathf.Clamp(orbital.Radius - bumperDelta * zoomSpeed * Time.deltaTime, minDistance, maxDistance);
-//        }
+        // Gamepad Logic
+       // float bumperDelta = controls.Camera.GamepadZoom.ReadValue<float>();
+        //if (bumperDelta != 0)
+        //{
+        //    targetZoom = Mathf.Clamp(orbital.Radius - bumperDelta * zoomSpeed * Time.deltaTime, minDistance, maxDistance);
+        //}
 
-//        currentZoom = Mathf.Lerp(currentZoom, targetZoom, Time.deltaTime * zoomLerpSpeed);
-//        orbital.Radius = currentZoom;
-//    }
-//}
+        //currentZoom = Mathf.Lerp(currentZoom, targetZoom, Time.deltaTime * zoomLerpSpeed);
+        //orbital.Radius = currentZoom;
+    }
+}
