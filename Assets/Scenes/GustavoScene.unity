@@ -10599,7 +10599,7 @@ GameObject:
   - component: {fileID: 983285598}
   - component: {fileID: 983285597}
   - component: {fileID: 983285596}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22405,6 +22405,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallRunSpeed
+      value: 70
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallRunStick
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: airTiltAmount
       value: 30
       objectReference: {fileID: 0}
@@ -22413,12 +22421,44 @@ PrefabInstance:
       value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallCheckRadius
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallRunDuration
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallRunMinHeight
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: tiltForwardAmount
       value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallCheckDistance
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallJumpUpImpulse
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallLayers.m_Bits
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: CameraRotationSpeed
       value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallJumpAwayImpulse
+      value: 75
+      objectReference: {fileID: 0}
+    - target: {fileID: 6980665277055680435, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: wallRunFaceTurnLerp
+      value: -12
       objectReference: {fileID: 0}
     - target: {fileID: 7327210272813586765, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: VerticalAxis.Range.x
