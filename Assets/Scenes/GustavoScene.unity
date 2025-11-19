@@ -13044,6 +13044,9 @@ MonoBehaviour:
   m_SelectedFaces: 
   m_SelectedEdges: []
   m_SelectedVertices: 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 --- !u!1 &1185554438
 GameObject:
@@ -13479,7 +13482,11 @@ Transform:
   - {fileID: 1601953726}
   - {fileID: 983285595}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   - {fileID: 1104312165}
+=======
+  - {fileID: 1141651227}
+>>>>>>> Stashed changes
 =======
   - {fileID: 1141651227}
 >>>>>>> Stashed changes
