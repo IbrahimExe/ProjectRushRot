@@ -456,10 +456,10 @@ MonoBehaviour:
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 0.1
-  jumpForce: 100
-  fallMultiplier: 8
-  lowJumpMultiplier: 4
-  maxFallSpeed: -40
+  jumpForce: 250
+  fallMultiplier: 7
+  lowJumpMultiplier: 2
+  maxFallSpeed: -50
   feetTransform: {fileID: 3971334911968303865}
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}

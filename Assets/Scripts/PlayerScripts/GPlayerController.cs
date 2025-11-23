@@ -18,14 +18,11 @@ public class GPlayerController : MonoBehaviour
     public float backwardAcceleration = 15f;
     public float backwardDeceleration = 20f;
 
-
     public float rotationSpeed = 100f;
     public float linearDrag = 5f;
+
+    [Header("Jump and Gravity Settings")]
     public float jumpForce = 5f;
-
-
-
-    [Header("Custom Gravity Settings")]
     public float fallMultiplier = 2f;
     public float lowJumpMultiplier = 1.5f;
     public float maxFallSpeed = -20f;
@@ -189,6 +186,7 @@ public class GPlayerController : MonoBehaviour
     private void Jump()
     {
         rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+
     }
 
     private bool CheckGrounded()
@@ -212,16 +210,15 @@ public class GPlayerController : MonoBehaviour
 
     private void ApplyCustomGravity()
     {
-        // Only modify gravity when falling or going up
-        if (rb.linearVelocity.y < 0)
+        if (isGrounded) return; // do not modify grounded movement
+
+        // Strong gravity while airborne
+        rb.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
+
+        // Short hop: apply extra gravity when button released early
+        if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
         {
-            // Falling — add extra gravity
-            rb.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
-        }
-        else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
-        {
-            // If jump released early, apply low jump gravity for shorter hops
-            rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f), ForceMode.Acceleration);
+            rb.AddForce(Physics.gravity * lowJumpMultiplier, ForceMode.Acceleration);
         }
 
         // Clamp fall speed
@@ -270,56 +267,56 @@ public class GPlayerController : MonoBehaviour
     }
 
 
-        //private void AlignModelToGroundAndTilt()
-        //{
-        //    float h = Input.GetAxis("Horizontal");
-        //    float v = Input.GetAxis("Vertical");
-        //    bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+    //private void AlignModelToGroundAndTilt()
+    //{
+    //    float h = Input.GetAxis("Horizontal");
+    //    float v = Input.GetAxis("Vertical");
+    //    bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
 
-        //    // ----- 1. Detect Ground -----
-        //    Quaternion groundRotation;
+    //    // ----- 1. Detect Ground -----
+    //    Quaternion groundRotation;
 
-        //    if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
-        //    {
-        //        // We are grounded
-        //        lastGroundNormal = hit.normal;
+    //    if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
+    //    {
+    //        // We are grounded
+    //        lastGroundNormal = hit.normal;
 
-        //        // Align model's UP with ground normal
-        //        groundRotation = Quaternion.FromToRotation(Vector3.up, lastGroundNormal)
-        //                        * Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
-        //    }
-        //    else
-        //    {
-        //        // Use upright rotation while airborne
-        //        groundRotation = Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
-        //    }
+    //        // Align model's UP with ground normal
+    //        groundRotation = Quaternion.FromToRotation(Vector3.up, lastGroundNormal)
+    //                        * Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
+    //    }
+    //    else
+    //    {
+    //        // Use upright rotation while airborne
+    //        groundRotation = Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
+    //    }
 
-        //    // ----- 2. Calculate movement tilt (does NOT accumulate) -----
-        //    float forwardTilt = 0f;
-        //    float sideTilt = 0f;
+    //    // ----- 2. Calculate movement tilt (does NOT accumulate) -----
+    //    float forwardTilt = 0f;
+    //    float sideTilt = 0f;
 
-        //    if (isMoving)
-        //    {
-        //        forwardTilt = -v * tiltForwardAmount;
-        //        sideTilt = -h * tiltSideAmount;
-        //    }
-        //    else if (!isGrounded)
-        //    {
-        //        // Air tilt for jumps
-        //        forwardTilt = -airTiltAmount;
-        //    }
+    //    if (isMoving)
+    //    {
+    //        forwardTilt = -v * tiltForwardAmount;
+    //        sideTilt = -h * tiltSideAmount;
+    //    }
+    //    else if (!isGrounded)
+    //    {
+    //        // Air tilt for jumps
+    //        forwardTilt = -airTiltAmount;
+    //    }
 
-        //    Quaternion tiltRotation = Quaternion.Euler(forwardTilt, 0f, sideTilt);
+    //    Quaternion tiltRotation = Quaternion.Euler(forwardTilt, 0f, sideTilt);
 
-        //    // ----- 3. Combine cleanly (NO *=) -----
-        //    Quaternion targetRotation = groundRotation * tiltRotation;
+    //    // ----- 3. Combine cleanly (NO *=) -----
+    //    Quaternion targetRotation = groundRotation * tiltRotation;
 
-        //    // ----- 4. Smooth -----
-        //    cartModel.rotation = Quaternion.Slerp(
-        //        cartModel.rotation,
-        //        targetRotation,
-        //        Time.deltaTime * groundAlignSpeed
-        //    );
-        //}
+    //    // ----- 4. Smooth -----
+    //    cartModel.rotation = Quaternion.Slerp(
+    //        cartModel.rotation,
+    //        targetRotation,
+    //        Time.deltaTime * groundAlignSpeed
+    //    );
+    //}
 }
 
