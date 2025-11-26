@@ -10,11 +10,13 @@ public class CameraZoom : MonoBehaviour
     [Header("Look Back Settings")]
     public KeyCode lookBackKey = KeyCode.N;
     public float rotationSpeed = 5f;
+    public float lookBackFOV = 60f;
 
     private CinemachineOrbitalFollow orbitalFollow;
     private float originalRangeMin;
     private float originalRangeMax;
     private float lookBackTarget = 0f;
+    private bool isLookingBack = false;
 
     void Start()
     {
@@ -26,19 +28,20 @@ public class CameraZoom : MonoBehaviour
 
     void LateUpdate()
     {
-        // Speed-based FOV
-        float speed = playerRb.linearVelocity.magnitude;
-        vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, speed / speedForMax);
 
         // Look back control
         if (Input.GetKey(lookBackKey))
         {
+            isLookingBack = true;
             // Expand the range to allow 180 degree rotation
             orbitalFollow.HorizontalAxis.Range = new Vector2(-180f, 180f);
 
             // Target is 180 degrees (straight back)
             lookBackTarget = Mathf.MoveTowards(lookBackTarget, 180f, rotationSpeed * 100f * Time.deltaTime);
             orbitalFollow.HorizontalAxis.Value = lookBackTarget;
+
+            // Use fixed FOV when looking back
+            vcam.Lens.FieldOfView = lookBackFOV;
         }
         else
         {
@@ -49,11 +52,23 @@ public class CameraZoom : MonoBehaviour
             if (Mathf.Abs(lookBackTarget) > 0.1f)
             {
                 orbitalFollow.HorizontalAxis.Value = lookBackTarget;
+                // Keep fixed FOV while transitioning back
+                vcam.Lens.FieldOfView = lookBackFOV;
             }
             else
             {
+                isLookingBack = false;
                 // Restore original range when back to normal
                 orbitalFollow.HorizontalAxis.Range = new Vector2(originalRangeMin, originalRangeMax);
+            }
+
+            // Speed-based FOV
+            if (!isLookingBack)
+            { 
+                
+                float speed = playerRb.linearVelocity.magnitude;
+
+                vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, speed / speedForMax);
             }
         }
     }
