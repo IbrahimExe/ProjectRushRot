@@ -170,10 +170,10 @@ GameObject:
   - component: {fileID: 4359396939082866137}
   - component: {fileID: 4628339246893877171}
   - component: {fileID: 2749113131171415451}
-  - component: {fileID: 9169721878840331669}
+  - component: {fileID: 4254062239164044455}
   m_Layer: 0
   m_Name: Enemy2.0
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -301,7 +301,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &9169721878840331669
+--- !u!114 &4254062239164044455
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
