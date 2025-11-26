@@ -342,7 +342,7 @@ MonoBehaviour:
     Enabled: 1
     DistanceLimit: 0
     MinimumOcclusionTime: 0
-    CameraRadius: 0.66
+    CameraRadius: 0.49
     UseFollowTarget:
       Enabled: 0
       YOffset: 0
@@ -525,7 +525,7 @@ MonoBehaviour:
   vcam: {fileID: 2946657206990674743}
   playerRb: {fileID: 2854710723262664737}
   baseFOV: 60
-  maxFOV: 80
+  maxFOV: 110
   speedForMax: 20
   lookBackKey: 102
   rotationSpeed: 10
