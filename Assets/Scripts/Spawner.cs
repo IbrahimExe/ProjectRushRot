@@ -7,12 +7,14 @@ public class Spawner : MonoBehaviour
     public GameObject Character;
     public int maxSpawns = 10;
     public int currentSpawns = 0;
-    public float delay = 1f;    
+    public float delay = 1f;
+    private float delayPreUpdate;
     public Transform maxX;
     public Transform maxZ;
 
     private float randomX;
     private float randomZ;
+
 
     public Transform spawnPosition;
 
@@ -21,12 +23,14 @@ public class Spawner : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        delayPreUpdate = delay;
     }
 
     // Update is called once per frame
     void Update()
     {
+        float delayUpdate=delay;
+        
         if (currentSpawns <  maxSpawns)
         {
             if (delay > 0)
@@ -37,7 +41,7 @@ public class Spawner : MonoBehaviour
             {
                 currentSpawns = currentSpawns + 1;
                 Instantiate(Character, spawnPosition.position,Q);
-                delay = 2f;
+                delay = delayPreUpdate;
             }
         }
         
