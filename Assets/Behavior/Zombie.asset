@@ -119,7 +119,7 @@ MonoBehaviour:
   - rid: 3923751715010511254
   - rid: 3923751715010511255
   - rid: 3923751715010511256
-  m_VersionTimestamp: 638991107810866479
+  m_VersionTimestamp: 638999347250886546
   m_SerializedVersion: 1
   m_DebugInfo: {fileID: 903834189093138536}
   m_RuntimeGraph: {fileID: 2779055052390172599}
@@ -1471,15 +1471,7 @@ MonoBehaviour:
           m_Value1: 15238327712202716634
         Name: WallNormal
         m_Value: {x: 0, y: 0, z: 0}
-    - rid: 3923751715010511774
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 0
-          m_Value1: 0
-        Name: 
-        m_Value: {fileID: 4940313654620728586, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
-    - rid: 3923751715010511803
+    - rid: 3961690583273570368
       type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -1490,10 +1482,10 @@ MonoBehaviour:
         m_Parent:
           rid: -2
         m_Child:
-          rid: 3923751715010511804
+          rid: 3961690583273570369
         Repeat: 1
         AllowMultipleRepeatsPerTick: 0
-    - rid: 3923751715010511804
+    - rid: 3961690583273570369
       type: {class: MainLoopSequence, ns: , asm: Assembly-CSharp}
       data:
         ID:
@@ -1502,10 +1494,10 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511803
+          rid: 3961690583273570368
         m_Children:
-        - rid: 3923751715010511805
-    - rid: 3923751715010511805
+        - rid: 3961690583273570370
+    - rid: 3961690583273570370
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -1514,11 +1506,11 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511804
+          rid: 3961690583273570369
         m_Children:
-        - rid: 3923751715010511806
-        - rid: 3923751715010511807
-    - rid: 3923751715010511806
+        - rid: 3961690583273570371
+        - rid: 3961690583273570372
+    - rid: 3961690583273570371
       type: {class: UpdateTargetPosAction, ns: , asm: Assembly-CSharp}
       data:
         ID:
@@ -1527,14 +1519,14 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511805
+          rid: 3961690583273570370
         Self:
           rid: 3923751715010511608
         Player:
-          rid: 3923751715010511774
+          rid: 3961690583273570373
         TargetPos:
           rid: 3923751715010511613
-    - rid: 3923751715010511807
+    - rid: 3961690583273570372
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -1543,11 +1535,19 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511805
+          rid: 3961690583273570370
         m_Children:
-        - rid: 3923751715010511808
-        - rid: 3923751715010511809
-    - rid: 3923751715010511808
+        - rid: 3961690583273570374
+        - rid: 3961690583273570375
+    - rid: 3961690583273570373
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 4940313654620728586, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+    - rid: 3961690583273570374
       type: {class: CheckWallAheadAction, ns: , asm: Assembly-CSharp}
       data:
         ID:
@@ -1556,7 +1556,7 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511807
+          rid: 3961690583273570372
         ClimbDistance:
           rid: 3923751715010511612
         WallNormal:
@@ -1566,7 +1566,7 @@ MonoBehaviour:
         CanClimb:
           rid: 3923751715010511614
         TargetTransform: {fileID: 0}
-    - rid: 3923751715010511809
+    - rid: 3961690583273570375
       type: {class: BranchingConditionComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -1575,20 +1575,20 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511807
+          rid: 3961690583273570372
         m_Children:
-        - rid: 3923751715010511810
-        - rid: 3923751715010511811
+        - rid: 3961690583273570376
+        - rid: 3961690583273570377
         m_Conditions:
-        - rid: 3923751715010511812
+        - rid: 3961690583273570378
         m_RequiresAllConditions: 0
         True:
-          rid: 3923751715010511810
+          rid: 3961690583273570376
         False:
-          rid: 3923751715010511811
+          rid: 3961690583273570377
         m_CurrentChild:
           rid: -2
-    - rid: 3923751715010511810
+    - rid: 3961690583273570376
       type: {class: ClimbWallAction, ns: , asm: Assembly-CSharp}
       data:
         ID:
@@ -1597,14 +1597,14 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511809
+          rid: 3961690583273570375
         Self:
           rid: 3923751715010511608
         WallNormal:
           rid: 3923751715010511615
         ClimbSpeed:
           rid: 3923751715010511611
-    - rid: 3923751715010511811
+    - rid: 3961690583273570377
       type: {class: MoveTowardsTargetAction, ns: , asm: Assembly-CSharp}
       data:
         ID:
@@ -1613,7 +1613,7 @@ MonoBehaviour:
         Graph:
           rid: 7738815434493001971
         m_Parent:
-          rid: 3923751715010511809
+          rid: 3961690583273570375
         TargetPos:
           rid: 3923751715010511613
         Self:
@@ -1621,7 +1621,7 @@ MonoBehaviour:
         MoveSpeed:
           rid: 3923751715010511610
         ContextObject: {fileID: 0}
-    - rid: 3923751715010511812
+    - rid: 3961690583273570378
       type: {class: CanClimbIsTrueOrFalseCondition, ns: , asm: Assembly-CSharp}
       data:
         Graph:
@@ -1639,14 +1639,14 @@ MonoBehaviour:
           rid: 7738815434493001972
         BlackboardGroupReferences: []
         Root:
-          rid: 3923751715010511803
+          rid: 3961690583273570368
         m_ActiveNodes: []
         m_NodesToTick: []
         m_NodesToEnd:
           rid: 7738815434493001974
         m_EndedNodes:
           rid: 7738815434493001975
-        m_VersionTimestamp: 638991107810866479
+        m_VersionTimestamp: 638999347250886546
     - rid: 7738815434493001972
       type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
