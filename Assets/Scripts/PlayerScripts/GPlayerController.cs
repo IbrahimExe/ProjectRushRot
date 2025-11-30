@@ -6,13 +6,21 @@ using UnityEngine;
 public class GPlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float currentMoveSpeed = 1f;
-    public float startMoveSpeed = 5f;
-    public float maxMoveSpeed = 15f;
-    public float acceleration = 20f;
-    public float deceleration = 25f;
+    // Base stats
+    public float baseStartMoveSpeed = 5f;
+    public float baseMaxMoveSpeed = 15f;
+    public float baseAcceleration = 20f;
+    public float baseDeceleration = 25f;
+
+    // Runtime modified stats
+    public float currentMoveSpeed;
+    private float startMoveSpeed;
+    private float maxMoveSpeed;
+    private float acceleration;
+    private float deceleration;
 
     private float currentReverseSpeed = 0f;
+
     public float manualDeceleration = 30f;
     public float backwardMaxMoveSpeed = 10f;
     public float backwardAcceleration = 15f;
@@ -22,7 +30,9 @@ public class GPlayerController : MonoBehaviour
     public float linearDrag = 5f;
 
     [Header("Jump and Gravity Settings")]
-    public float jumpForce = 5f;
+    public float baseJumpForce = 5f;
+
+    private float jumpForce;
     public float fallMultiplier = 2f;
     public float lowJumpMultiplier = 1.5f;
     public float maxFallSpeed = -20f;
@@ -32,7 +42,6 @@ public class GPlayerController : MonoBehaviour
 
     [Header("Visual Tilt Settings")]
     public Transform cartModel;
-    //private Vector3 initialModelLocalPos;
     public Transform rayOrigin;
     public float rayLength = 1.5f;
     public float tiltForwardAmount = 10f;
@@ -52,8 +61,19 @@ public class GPlayerController : MonoBehaviour
         Cursor.visible = false; // Hides the cursor
         Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
         rb = GetComponent<Rigidbody>();
+
+        SetBaseStats();
     }
 
+    public void SetBaseStats()
+    {
+        startMoveSpeed = baseStartMoveSpeed;
+        maxMoveSpeed = baseMaxMoveSpeed;
+        acceleration = baseAcceleration;
+        deceleration = baseDeceleration;
+
+        jumpForce = baseJumpForce;
+    }
 
     void Update()
     {
@@ -267,56 +287,24 @@ public class GPlayerController : MonoBehaviour
     }
 
 
-    //private void AlignModelToGroundAndTilt()
-    //{
-    //    float h = Input.GetAxis("Horizontal");
-    //    float v = Input.GetAxis("Vertical");
-    //    bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+    #region Set Variables
 
-    //    // ----- 1. Detect Ground -----
-    //    Quaternion groundRotation;
+    public void addMaxSpeed(float amount)
+    {
+        maxMoveSpeed += amount;
+    }
 
-    //    if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
-    //    {
-    //        // We are grounded
-    //        lastGroundNormal = hit.normal;
+    public void addAcceleration(float amount)
+    {
+        acceleration += amount;
+    }
 
-    //        // Align model's UP with ground normal
-    //        groundRotation = Quaternion.FromToRotation(Vector3.up, lastGroundNormal)
-    //                        * Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
-    //    }
-    //    else
-    //    {
-    //        // Use upright rotation while airborne
-    //        groundRotation = Quaternion.Euler(0f, rb.rotation.eulerAngles.y, 0f);
-    //    }
+    public void addJumpForce(float amount)
+    {
+        jumpForce += amount;
+    }
 
-    //    // ----- 2. Calculate movement tilt (does NOT accumulate) -----
-    //    float forwardTilt = 0f;
-    //    float sideTilt = 0f;
+    #endregion
 
-    //    if (isMoving)
-    //    {
-    //        forwardTilt = -v * tiltForwardAmount;
-    //        sideTilt = -h * tiltSideAmount;
-    //    }
-    //    else if (!isGrounded)
-    //    {
-    //        // Air tilt for jumps
-    //        forwardTilt = -airTiltAmount;
-    //    }
-
-    //    Quaternion tiltRotation = Quaternion.Euler(forwardTilt, 0f, sideTilt);
-
-    //    // ----- 3. Combine cleanly (NO *=) -----
-    //    Quaternion targetRotation = groundRotation * tiltRotation;
-
-    //    // ----- 4. Smooth -----
-    //    cartModel.rotation = Quaternion.Slerp(
-    //        cartModel.rotation,
-    //        targetRotation,
-    //        Time.deltaTime * groundAlignSpeed
-    //    );
-    //}
 }
 
