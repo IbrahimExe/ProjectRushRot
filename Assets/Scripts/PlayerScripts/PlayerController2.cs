@@ -82,6 +82,13 @@ public class PlayerController2 : MonoBehaviour
     public float dashHopVerticalSpeed = 4f;
     public float dashInitialBurstMultiplier = 1.5f;
 
+    [Header("Dash Flip / Roll Settings")]
+    public float dashFlipAngle = 360f;      
+    public float dashFlipDuration = 0.2f;   // match dashDuration
+    private bool isDashFlipping = false;
+    private Vector3 dashFlipAxisLocal = Vector3.zero;
+    private float dashFlipAngleRemaining = 0f;
+
     public enum CharState { Grounded, Airborne, WallRunning }
     public CharState CurrentState => state;
     private CharState state = CharState.Grounded;
@@ -105,6 +112,8 @@ public class PlayerController2 : MonoBehaviour
     private float dashEndTime = 0f;
     private float dashBoostEndTime = 0f;
     private float nextDashAllowedTime = 0f;
+    private enum DashType { None, Forward, Backward, Left, Right }
+    private DashType currentDashType = DashType.None;
 
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
@@ -138,7 +147,6 @@ public class PlayerController2 : MonoBehaviour
 
         HandleWallRun();      // state machine: start/stop wall run
         HandleJump();         // uses state + jump buffer / coyote
-
         Move();               // momentum logic (+ wall-run branch)
         ApplyCustomGravity(); // gravity with special wall-run behaviour
         AlignModelToGroundAndTilt(); // ground OR wall alignment + tilt
@@ -170,8 +178,14 @@ public class PlayerController2 : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // steering axis
-        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
+
+        if (isDashing)
+        {
+            h = 0f;
+            v = 0f;   // prevents extra acceleration/deceleration
+        }
+            // steering axis
+            Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
 
         // rotate by input
         float yawDelta = h * rotationSpeed * Time.fixedDeltaTime;
@@ -285,13 +299,48 @@ public class PlayerController2 : MonoBehaviour
             return;
 
         // use WASD input to define dash direction in local space
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+        float h = Input.GetAxisRaw("Horizontal"); // A/D
+        float v = Input.GetAxisRaw("Vertical");   // W/S
 
         Vector3 inputDir = new Vector3(h, 0f, v);
         if (inputDir.sqrMagnitude < 0.01f)
             return; // no direction pressed -> no dash
 
+        // Decide dash *type* based on dominant axis
+        currentDashType = DashType.None;
+
+        currentDashType = DashType.None;
+
+        bool w = v > 0.1f;   // W
+        bool s = v < -0.1f;   // S
+        bool d = h > 0.1f;   // D
+        bool a = h < -0.1f;   // A
+
+        // FIRST PRIORITY : LEFT OR RIGHT
+        if (a)
+        {
+            currentDashType = DashType.Left;
+        }
+        else if (d)
+        {
+            currentDashType = DashType.Right;
+        }
+        // SECOND PRIORITY : BACKWARD (only if S is not mixed with W)
+        else if (s && !w)
+        {
+            currentDashType = DashType.Backward;
+        }
+        // LAST PRIORITY : FORWARD (only if no A/D/S)
+        else if (w)
+        {
+            currentDashType = DashType.Forward;
+        }
+
+        // If still none, ignore dash
+        if (currentDashType == DashType.None)
+            return;
+
+        //Use *full* inputDir for dash direction (keeps diagonals)
         Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
 
         // Convert local input (WASD) to world space, then project onto movement plane
@@ -301,11 +350,57 @@ public class PlayerController2 : MonoBehaviour
         if (dashDirection.sqrMagnitude < 0.01f)
             return;
 
+        // Start dash state
         isDashing = true;
         dashJustStarted = true;
         dashEndTime = Time.time + dashDuration;
         dashBoostEndTime = dashEndTime + dashBoostDuration;
         nextDashAllowedTime = Time.time + dashCooldown;
+
+        // Kick off flip/roll for this dash
+        StartDashFlipRoll(currentDashType);
+    }
+
+    private void StartDashFlipRoll(DashType dashType)
+    {
+        isDashFlipping = false;
+        dashFlipAxisLocal = Vector3.zero;
+        dashFlipAngleRemaining = 0f;
+
+        float sign = 1f;
+
+        switch (dashType)
+        {
+            case DashType.Forward:
+                // Front flip: rotate around local X (right axis), negative angle
+                dashFlipAxisLocal = Vector3.right;
+                sign = -1f;
+                break;
+
+            case DashType.Backward:
+                // Back flip: rotate around local X, positive angle
+                dashFlipAxisLocal = Vector3.right;
+                sign = 1f;
+                break;
+
+            case DashType.Right:
+                // Barrel roll right: rotate around local Z, negative angle
+                dashFlipAxisLocal = Vector3.forward;
+                sign = -1f;
+                break;
+
+            case DashType.Left:
+                // Barrel roll left: rotate around local Z, positive angle
+                dashFlipAxisLocal = Vector3.forward;
+                sign = 1f;
+                break;
+
+            default:
+                return;
+        }
+
+        dashFlipAngleRemaining = dashFlipAngle * sign;
+        isDashFlipping = true;
     }
 
     private void HandleDashMovement()
@@ -633,7 +728,39 @@ public class PlayerController2 : MonoBehaviour
             moveTilt,
             Time.deltaTime * tiltSpeed
         );
+        ApplyDashFlipRoll();
     }
+
+    private void ApplyDashFlipRoll()
+    {
+        if (!isDashFlipping || dashFlipAxisLocal == Vector3.zero)
+            return;
+
+        float dt = Time.deltaTime;
+
+        // Rotate full dashFlipAngle over dashFlipDuration
+        float totalAnglePerSecond = dashFlipAngle / Mathf.Max(0.01f, dashFlipDuration);
+
+        // Direction depends on sign encoded in dashFlipAngleRemaining
+        float angleStep = totalAnglePerSecond * dt * Mathf.Sign(dashFlipAngleRemaining);
+
+        // Clamp so we don't overshoot and spin forever
+        if (Mathf.Abs(angleStep) > Mathf.Abs(dashFlipAngleRemaining))
+            angleStep = dashFlipAngleRemaining;
+
+        dashFlipAngleRemaining -= angleStep;
+
+        // Rotate in local space so front/back/left/right are relative to the cart
+        cartModel.Rotate(dashFlipAxisLocal, angleStep, Space.Self);
+
+        if (Mathf.Abs(dashFlipAngleRemaining) <= 0.01f)
+        {
+            isDashFlipping = false;
+            dashFlipAngleRemaining = 0f;
+        }
+    }
+
+
 
     // -------------- Orientation update (for wall run lean) --------------
     private void UpdateOrientation()
