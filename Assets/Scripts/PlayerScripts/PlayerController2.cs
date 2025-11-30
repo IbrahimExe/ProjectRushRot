@@ -360,7 +360,16 @@ public class PlayerController2 : MonoBehaviour
         // Kick off flip/roll for this dash
         StartDashFlipRoll(currentDashType);
     }
-
+    private void OnTriggerEnter(Collider other)
+    {
+        if (isDashing)
+        {
+            if (other.CompareTag("Enemy"))
+            {
+                Destroy(other.gameObject);
+            }
+        }
+    }
     private void StartDashFlipRoll(DashType dashType)
     {
         isDashFlipping = false;
@@ -402,6 +411,8 @@ public class PlayerController2 : MonoBehaviour
         dashFlipAngleRemaining = dashFlipAngle * sign;
         isDashFlipping = true;
     }
+
+    
 
     private void HandleDashMovement()
     {

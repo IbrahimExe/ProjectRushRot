@@ -171,6 +171,7 @@ GameObject:
   - component: {fileID: 4628339246893877171}
   - component: {fileID: 2749113131171415451}
   - component: {fileID: 4254062239164044455}
+  - component: {fileID: 2941133427409292709}
   m_Layer: 0
   m_Name: Enemy2.0
   m_TagString: Enemy
@@ -266,14 +267,14 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
+  m_Radius: 0.5435577
   m_Height: 2
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: -0.008796127, y: 0, z: 0.0011587816}
 --- !u!54 &2749113131171415451
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -319,3 +320,26 @@ MonoBehaviour:
   ClimbCheckDistance: 1
   StoppingDistance: 8
   FaceMovementDirection: 1
+--- !u!136 &2941133427409292709
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4457046443041150148}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}

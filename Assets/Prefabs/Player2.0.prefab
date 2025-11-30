@@ -397,8 +397,10 @@ GameObject:
   - component: {fileID: 7401148801439138598}
   - component: {fileID: 1119539824516189455}
   - component: {fileID: 2854710723262664737}
+  - component: {fileID: 5694495406336896746}
   - component: {fileID: 6980665277055680435}
   - component: {fileID: 6457804267282043099}
+  - component: {fileID: 6775136799352631955}
   m_Layer: 0
   m_Name: Player2.0
   m_TagString: Player
@@ -473,7 +475,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &6980665277055680435
+--- !u!114 &5694495406336896746
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -481,6 +483,74 @@ MonoBehaviour:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4940313654620728586}
   m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8627598378077364ba5d6ae96d172ad2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
+  currentMoveSpeed: 1
+  startMoveSpeed: 5
+  maxMoveSpeed: 60
+  acceleration: 10
+  deceleration: 15
+  manualDeceleration: 30
+  backwardMaxMoveSpeed: 10
+  backwardAcceleration: 15
+  backwardDeceleration: 20
+  rotationSpeed: 100
+  linearDrag: 5
+  jumpForce: 125
+  fallMultiplier: 1
+  lowJumpMultiplier: 1
+  maxFallSpeed: -15
+  feetTransform: {fileID: 3971334911968303865}
+  cartModel: {fileID: 1590221126607413222}
+  rayOrigin: {fileID: 3971334911968303865}
+  rayLength: 1.5
+  tiltForwardAmount: 10
+  tiltSideAmount: 10
+  tiltSpeed: 5
+  airTiltAmount: 5
+  groundAlignSpeed: 8
+  maxVisualRoll: 25
+  wallLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  wallCheckRadius: 1
+  wallCheckDistance: 2
+  wallJumpUpImpulse: 25
+  wallJumpAwayImpulse: 100
+  wallStickMaxSpeed: 3.5
+  wallJumpCooldown: 0.15
+  wallRunEnabled: 1
+  wallRunSpeed: 75
+  wallRunDuration: 4
+  wallRunGravityScale: 0.2
+  wallRunMinHeight: 1.1
+  wallRunMinForwardDot: 0.2
+  wallRunCooldown: 1
+  wallRunStick: 0.5
+  wallRunFaceTurnLerp: 12
+  wallRunLeanDegrees: 15
+  coyoteTime: 0.12
+  jumpBuffer: 0.12
+  dashKey: 304
+  dashSpeed: 20
+  dashDuration: 0.2
+  dashCooldown: 1
+  dashSpeedBoostMultiplier: 1.4
+  dashBoostDuration: 1
+  dashHopVerticalSpeed: 15
+  dashInitialBurstMultiplier: 1.5
+  dashFlipAngle: 360
+  dashFlipDuration: 0.2
+--- !u!114 &6980665277055680435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a5c957f8cc3045c4c9ac2d9b3ed28635, type: 3}
   m_Name: 
@@ -530,6 +600,27 @@ MonoBehaviour:
   lookBackKey: 102
   rotationSpeed: 10
   lookBackFOV: 60
+--- !u!65 &6775136799352631955
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.3002598, y: 0.7526464, z: 1.96049}
+  m_Center: {x: -0.01611033, y: 0.123676814, z: -0.17913376}
 --- !u!1 &5568493955418402148
 GameObject:
   m_ObjectHideFlags: 0
