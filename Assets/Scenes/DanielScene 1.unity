@@ -2380,6 +2380,11 @@ MonoBehaviour:
   dashBoostDuration: 1
   dashHopVerticalSpeed: 15
   dashInitialBurstMultiplier: 1.5
+  sideDashDistance: 15
+  sideDashUpOffset: 0.3
+  sideDashDuration: 0.4
+  dashFlipAngle: 360
+  dashFlipDuration: 0.2
 --- !u!1 &222198244
 GameObject:
   m_ObjectHideFlags: 0
@@ -3978,7 +3983,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
