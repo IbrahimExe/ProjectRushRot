@@ -488,8 +488,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
   baseStartMoveSpeed: 5
-  baseMaxMoveSpeed: 15
-  baseAcceleration: 20
+  baseMaxMoveSpeed: 50
+  baseAcceleration: 5
   baseDeceleration: 25
   currentMoveSpeed: 1
   manualDeceleration: 30
@@ -498,8 +498,8 @@ MonoBehaviour:
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 5
-  baseJumpForce: 150
-  fallMultiplier: 1
+  baseJumpForce: 100
+  fallMultiplier: 3
   lowJumpMultiplier: 1
   maxFallSpeed: -200
   feetTransform: {fileID: 3971334911968303865}
@@ -535,19 +535,16 @@ MonoBehaviour:
   jumpBuffer: 0.12
   dashKey: 304
   dashSpeed: 30
-  dashDuration: 0.2
   dashCooldown: 1
   dashSpeedBoostMultiplier: 1.4
   dashBoostDuration: 1.5
-  dashHopVerticalSpeed: 20
   dashInitialBurstMultiplier: 1.5
-  dashPushForce: 6
-  dashPushUpFactor: 5
-  sideDashDistance: 3
-  sideDashUpOffset: 0.3
-  sideDashDuration: 0.15
+  sideDashDistance: 20
+  sideDashDuration: 0.5
+  sideDashUpOffset: 6
   dashFlipAngle: 360
   dashFlipDuration: 0.4
+  dashHopHeight: 6
 --- !u!114 &6980665277055680435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601,7 +598,7 @@ MonoBehaviour:
   playerRb: {fileID: 2854710723262664737}
   baseFOV: 60
   maxFOV: 110
-  speedForMax: 20
+  speedForMax: 1000
   lookBackKey: 102
   rotationSpeed: 10
   lookBackFOV: 60
