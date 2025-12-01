@@ -3,10 +3,6 @@ using UnityEngine;
 public class UpgradeStats : MonoBehaviour
 {
     public GPlayerController player;
-    
-    public float maxSpeedPercentage = 0.15f;
-    public float accelerationPercentage = 0.20f;
-    public float jumpForcePercentage = 0.15f;
 
     private void Awake()
     {
@@ -16,24 +12,21 @@ public class UpgradeStats : MonoBehaviour
         }
     }
 
-    // Increase max speed
-    public void UpgradeMaxSpeed()
+    public void UpgradeMaxSpeedPercent(float percent)
     {
-        float amount = player.baseMaxMoveSpeed * maxSpeedPercentage;
+        float amount = player.baseMaxMoveSpeed * percent;
         player.addMaxSpeed(amount);
     }
 
-    // Increase acceleration
-    public void UpgradeAcceleration()
+    public void UpgradeAccelerationPercent(float percent)
     {
-        float amount = player.baseAcceleration * accelerationPercentage;
+        float amount = player.baseAcceleration * percent;
         player.addAcceleration(amount);
     }
 
-    // Increase jump force
-    public void UpgradeJumpForce()
+    public void UpgradeJumpForcePercent(float percent)
     {
-        float amount = player.baseJumpForce * jumpForcePercentage;
+        float amount = player.baseJumpForce * percent;
         player.addJumpForce(amount);
     }
 }
