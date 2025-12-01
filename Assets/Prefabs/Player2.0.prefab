@@ -487,18 +487,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8627598378077364ba5d6ae96d172ad2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
+  baseStartMoveSpeed: 5
+  baseMaxMoveSpeed: 15
+  baseAcceleration: 20
+  baseDeceleration: 25
   currentMoveSpeed: 1
-  startMoveSpeed: 5
-  maxMoveSpeed: 60
-  acceleration: 10
-  deceleration: 15
   manualDeceleration: 30
   backwardMaxMoveSpeed: 10
   backwardAcceleration: 15
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 5
-  jumpForce: 125
+  baseJumpForce: 5
   fallMultiplier: 1
   lowJumpMultiplier: 1
   maxFallSpeed: -15
@@ -534,15 +534,20 @@ MonoBehaviour:
   coyoteTime: 0.12
   jumpBuffer: 0.12
   dashKey: 304
-  dashSpeed: 20
+  dashSpeed: 30
   dashDuration: 0.2
   dashCooldown: 1
   dashSpeedBoostMultiplier: 1.4
-  dashBoostDuration: 1
-  dashHopVerticalSpeed: 15
+  dashBoostDuration: 1.5
+  dashHopVerticalSpeed: 20
   dashInitialBurstMultiplier: 1.5
+  dashPushForce: 6
+  dashPushUpFactor: 0.3
+  sideDashDistance: 3
+  sideDashUpOffset: 0.3
+  sideDashDuration: 0.15
   dashFlipAngle: 360
-  dashFlipDuration: 0.2
+  dashFlipDuration: 0.4
 --- !u!114 &6980665277055680435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -555,18 +560,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5c957f8cc3045c4c9ac2d9b3ed28635, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GPlayerController
+  baseStartMoveSpeed: 5
+  baseMaxMoveSpeed: 15
+  baseAcceleration: 20
+  baseDeceleration: 25
   currentMoveSpeed: 25
-  startMoveSpeed: 5
-  maxMoveSpeed: 80
-  acceleration: 5
-  deceleration: 15
   manualDeceleration: 30
   backwardMaxMoveSpeed: 50
   backwardAcceleration: 15
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 0.1
-  jumpForce: 250
+  baseJumpForce: 5
   fallMultiplier: 7
   lowJumpMultiplier: 2
   maxFallSpeed: -50

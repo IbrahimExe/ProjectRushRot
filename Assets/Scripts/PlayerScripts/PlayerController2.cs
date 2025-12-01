@@ -1,17 +1,25 @@
 using UnityEngine;
 
-// Rigidbody-based cart controller + wall run / wall jump state machine
+// Physics-based player controller with wall run + dash + XP/upgrade integration
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController2 : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float currentMoveSpeed = 1f;
-    public float startMoveSpeed = 5f;
-    public float maxMoveSpeed = 15f;
-    public float acceleration = 20f;
-    public float deceleration = 25f;
+    // Base stats (used by upgrades)
+    public float baseStartMoveSpeed = 5f;
+    public float baseMaxMoveSpeed = 15f;
+    public float baseAcceleration = 20f;
+    public float baseDeceleration = 25f;
+
+    // Runtime modified stats (these are what actually drive movement)
+    public float currentMoveSpeed;
+    private float startMoveSpeed;
+    private float maxMoveSpeed;
+    private float acceleration;
+    private float deceleration;
 
     private float currentReverseSpeed = 0f;
+
     public float manualDeceleration = 30f;
     public float backwardMaxMoveSpeed = 10f;
     public float backwardAcceleration = 15f;
@@ -19,9 +27,11 @@ public class PlayerController2 : MonoBehaviour
 
     public float rotationSpeed = 100f;
     public float linearDrag = 5f;
-    public float jumpForce = 5f;
 
-    [Header("Custom Gravity Settings")]
+    [Header("Jump and Gravity Settings")]
+    public float baseJumpForce = 5f;
+    private float jumpForce;
+
     public float fallMultiplier = 2f;
     public float lowJumpMultiplier = 1.5f;
     public float maxFallSpeed = -20f;
@@ -78,8 +88,11 @@ public class PlayerController2 : MonoBehaviour
     public float dashCooldown = 1.0f;
     public float dashSpeedBoostMultiplier = 1.4f;
     public float dashBoostDuration = 1.0f;
-    public float dashHopVerticalSpeed = 4f;
+    public float dashHopVerticalSpeed = 20f;
     public float dashInitialBurstMultiplier = 1.5f;
+    public float dashPushForce = 6f;
+    public float dashPushUpFactor = 0.3f;
+
 
     [Header("Side Dash Settings")]
     [Tooltip("How far the cart moves sideways when side-dashing (in meters).")]
@@ -134,42 +147,65 @@ public class PlayerController2 : MonoBehaviour
 
     void Start()
     {
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false; // Hides the cursor
+        Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
         rb = GetComponent<Rigidbody>();
+
+        SetBaseStats();
+    }
+
+    public void SetBaseStats()
+    {
+        startMoveSpeed = baseStartMoveSpeed;
+        maxMoveSpeed = baseMaxMoveSpeed;
+        acceleration = baseAcceleration;
+        deceleration = baseDeceleration;
+
+        jumpForce = baseJumpForce;
     }
 
     void Update()
     {
-        // ground check each frame, track time
+        // Ground check each frame
         isGrounded = CheckGrounded();
         if (isGrounded)
             lastGroundedTime = Time.time;
 
-        // buffer jump press for FixedUpdate
-        if (Input.GetButtonDown("Jump"))
-            lastJumpPressedTime = Time.time;
+        // Buffer jump press for FixedUpdate (coyote time + jump buffer),
+        // NOT while dashing / side dashing / dash flip.
+        if (!isDashing && !isSideDashing && !isDashFlipping)
+        {
+            if (Input.GetButtonDown("Jump"))
+                lastJumpPressedTime = Time.time;
+        }
 
-        // handle dash input (direction and key)
+        // Dash input (direction and key)
         HandleDashInput();
+
+        // UI speed update for XP system & Bar (uses currentMoveSpeed / maxMoveSpeed)
+        float normalized = maxMoveSpeed > 0f ? currentMoveSpeed / maxMoveSpeed : 0f;
+        if (ExperienceManager.Instance != null)
+            ExperienceManager.Instance.SetSpeedMultiplier(1f + normalized * 0.20f); // +20% XP gain
     }
+
 
     private void FixedUpdate()
     {
-        // dash physics first (can modify velocity used by other systems)
+        // Dash physics first (can modify velocity used by other systems)
         HandleDashMovement();      // forward/back dashes
         HandleSideDashMovement();  // smooth side hops
 
-        HandleWallRun();      // state machine: start/stop wall run
-        HandleJump();         // uses state + jump buffer / coyote
-        Move();               // momentum logic (+ wall-run branch)
-        ApplyCustomGravity(); // gravity with special wall-run behaviour
+        HandleWallRun();           // state machine: start/stop wall run
+        HandleJump();              // uses state + jump buffer / coyote
+        Move();                    // momentum logic (+ wall-run branch)
+        ApplyCustomGravity();      // gravity with special wall-run behaviour
         AlignModelToGroundAndTilt(); // ground OR wall alignment + tilt
-        UpdateOrientation();  // character rotation during wall-run
+        UpdateOrientation();       // character rotation during wall-run
 
         // keep rigidbody upright (no tipping) when airborne
         if (!isGrounded)
         {
+           
             Quaternion rot = rb.rotation;
             rot.eulerAngles = new Vector3(0f, rot.eulerAngles.y, 0f);
             rb.MoveRotation(rot);
@@ -195,7 +231,7 @@ public class PlayerController2 : MonoBehaviour
 
         if (isDashing)
         {
-            // during forward/back dash, freeze direct input acceleration
+            // during dash, no extra accel/decel from input
             h = 0f;
             v = 0f;
         }
@@ -302,10 +338,11 @@ public class PlayerController2 : MonoBehaviour
 
     private void HandleDashInput()
     {
-        // do not start a dash while wall-running or on cooldown
+        // do not start a dash while wall-running
         if (isWallRunning)
             return;
 
+        // cooldown
         if (Time.time < nextDashAllowedTime)
             return;
 
@@ -322,8 +359,9 @@ public class PlayerController2 : MonoBehaviour
 
         Vector3 inputDir = new Vector3(h, 0f, v);
         if (inputDir.sqrMagnitude < 0.01f)
-            return; // no direction pressed
+            return; // no direction pressed -> no dash
 
+        // Decide dash *type* based on dominant axis
         currentDashType = DashType.None;
 
         bool w = v > 0.1f;   // W
@@ -331,7 +369,7 @@ public class PlayerController2 : MonoBehaviour
         bool d = h > 0.1f;   // D
         bool a = h < -0.1f;  // A
 
-        // A/D PRIORITY over W/S
+        // FIRST PRIORITY : LEFT OR RIGHT
         if (a)
         {
             currentDashType = DashType.Left;
@@ -340,54 +378,39 @@ public class PlayerController2 : MonoBehaviour
         {
             currentDashType = DashType.Right;
         }
+        // SECOND PRIORITY : BACKWARD (only if S is not mixed with W)
         else if (s && !w)
         {
             currentDashType = DashType.Backward;
         }
+        // LAST PRIORITY : FORWARD (only if no A/D/S)
         else if (w)
         {
             currentDashType = DashType.Forward;
         }
 
+        // If still none, ignore dash
         if (currentDashType == DashType.None)
             return;
 
-        // SIDE DASH: start smooth side hop, do not touch velocity
-        if (currentDashType == DashType.Left || currentDashType == DashType.Right)
-        {
-            Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
-            Vector3 rightFlat = Vector3.ProjectOnPlane(transform.right, up).normalized;
-            float sideSign = currentDashType == DashType.Right ? 1f : -1f;
+        // Use inputDir for dash direction
+        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
 
-            sideDashDirectionWorld = rightFlat * sideSign;
-            isSideDashing = true;
-            sideDashElapsed = 0f;
-            sideDashLastNorm = 0f;
-            sideDashLastHeight = 0f;
-
-            nextDashAllowedTime = Time.time + dashCooldown;
-            dashBoostEndTime = Time.time; // no boost window for side hop
-
-            StartDashFlipRoll(currentDashType);
-            return;
-        }
-
-        // FORWARD / BACKWARD DASH: normal dash state
-        Vector3 upDash = isGrounded ? lastGroundNormal : Vector3.up;
-
-        // Convert full inputDir to world, so diagonals still feel natural
+        // Convert local input (WASD) to world space, then project onto movement plane
         Vector3 worldDir = transform.TransformDirection(inputDir.normalized);
-        dashDirection = Vector3.ProjectOnPlane(worldDir, upDash).normalized;
+        dashDirection = Vector3.ProjectOnPlane(worldDir, up).normalized;
 
         if (dashDirection.sqrMagnitude < 0.01f)
             return;
 
+        // Start dash state
         isDashing = true;
         dashJustStarted = true;
         dashEndTime = Time.time + dashDuration;
         dashBoostEndTime = dashEndTime + dashBoostDuration;
         nextDashAllowedTime = Time.time + dashCooldown;
 
+        // Kick off flip/roll for this dash
         StartDashFlipRoll(currentDashType);
     }
 
@@ -409,14 +432,31 @@ public class PlayerController2 : MonoBehaviour
         if (!isDashing)
             return;
 
-        // FIRST PHYSICS FRAME OF DASH: strong burst + small hop
+        // FIRST PHYSICS FRAME OF DASH: strong burst + shove + hop
         if (dashJustStarted)
         {
             dashJustStarted = false;
 
             float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
 
+            // Base dash velocity along the chosen dashDirection
             Vector3 newVel = dashDirection * burstSpeed;
+
+            // Use dashDirection as the main push direction (world space)
+            Vector3 pushDir = dashDirection;
+            if (pushDir.sqrMagnitude > 0.0001f)
+                pushDir.Normalize();
+
+            // Global push force along dashDirection
+            Vector3 pushForce = pushDir * dashPushForce;
+
+            // Optional vertical modifier (same for all dash types)
+            pushForce += Vector3.up * (dashPushForce * dashPushUpFactor);
+
+            // Combine dash burst + push
+            newVel += pushForce;
+
+            // Ensure minimum hop height
             newVel.y = Mathf.Max(newVel.y, dashHopVerticalSpeed);
 
             rb.linearVelocity = newVel;
@@ -488,13 +528,13 @@ public class PlayerController2 : MonoBehaviour
 
         switch (dashType)
         {
-            case DashType.Forward:
+            case DashType.Backward:
                 // Front flip: rotate around local X, negative angle
                 dashFlipAxisLocal = Vector3.right;
                 sign = -1f;
                 break;
 
-            case DashType.Backward:
+            case DashType.Forward:
                 // Back flip: rotate around local X, positive angle
                 dashFlipAxisLocal = Vector3.right;
                 sign = 1f;
@@ -757,8 +797,18 @@ public class PlayerController2 : MonoBehaviour
 
     private void AlignModelToGroundAndTilt()
     {
+        // Get movement input for tilt
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
+
+        // While dashing / side dashing, don't add extra tilt from input
+        // so the dash flip/roll is clean.
+        if (isDashing || isSideDashing)
+        {
+            h = 0f;
+            v = 0f;
+        }
+
         bool isMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
 
         float targetForwardTilt = isMoving ? -v * tiltForwardAmount : 0f;
@@ -813,15 +863,19 @@ public class PlayerController2 : MonoBehaviour
             }
         }
 
-        // apply visual tilt
+        // Apply visual tilt relative to ground alignment
         cartModel.localRotation *= Quaternion.Lerp(
             Quaternion.identity,
             moveTilt,
             Time.deltaTime * tiltSpeed
         );
 
+        // Dash flip/roll is applied *after* any ground align + tilt,
+        // exactly like in your original PlayerController2.
         ApplyDashFlipRoll();
     }
+
+
 
     // -------------- Orientation update (for wall run lean) --------------
     private void UpdateOrientation()
@@ -908,4 +962,23 @@ public class PlayerController2 : MonoBehaviour
 
         return false;
     }
+
+    #region Set Variables (Upgrades)
+
+    public void addMaxSpeed(float amount)
+    {
+        maxMoveSpeed += amount;
+    }
+
+    public void addAcceleration(float amount)
+    {
+        acceleration += amount;
+    }
+
+    public void addJumpForce(float amount)
+    {
+        jumpForce += amount;
+    }
+
+    #endregion
 }
