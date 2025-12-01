@@ -84,30 +84,29 @@ public class PlayerController2 : MonoBehaviour
     [Header("Dash Settings")]
     public KeyCode dashKey = KeyCode.LeftShift;
     public float dashSpeed = 20f;
-    public float dashDuration = 0.2f;
     public float dashCooldown = 1.0f;
     public float dashSpeedBoostMultiplier = 1.4f;
     public float dashBoostDuration = 1.0f;
-    public float dashHopVerticalSpeed = 20f;
+    // How strong the first frame burst is
     public float dashInitialBurstMultiplier = 1.5f;
-    public float dashPushForce = 6f;
-    public float dashPushUpFactor = 0.3f;
 
 
     [Header("Side Dash Settings")]
     [Tooltip("How far the cart moves sideways when side-dashing (in meters).")]
     public float sideDashDistance = 3f;
+    [Tooltip("How long the side hop lasts (seconds).")]
+    public float sideDashDuration = 0.5f;
     [Tooltip("Max height of the side hop arc (in meters).")]
     public float sideDashUpOffset = 0.3f;
-    [Tooltip("How long the side hop lasts (seconds).")]
-    public float sideDashDuration = 0.15f;
 
     [Header("Dash Flip / Roll Settings")]
     public float dashFlipAngle = 360f;
-    public float dashFlipDuration = 0.2f;   // match dashDuration
-    private bool isDashFlipping = false;
-    private Vector3 dashFlipAxisLocal = Vector3.zero;
-    private float dashFlipAngleRemaining = 0f;
+    // Also used as the forward/back dash duration
+    public float dashFlipDuration = 0.5f;
+    [Tooltip("Max height of the forward/back dash hop (in meters).")]
+    public float dashHopHeight = 0.6f;
+
+    // Core state
 
     public enum CharState { Grounded, Airborne, WallRunning }
     public CharState CurrentState => state;
@@ -117,13 +116,11 @@ public class PlayerController2 : MonoBehaviour
     private bool isGrounded;
     private Vector3 lastGroundNormal = Vector3.up;
 
-    // wall run state
-    private bool isWallRunning = false;
-    private Vector3 wallRunNormal = Vector3.zero;
-    private Vector3 wallRunTangent = Vector3.zero;
-    private float wallRunEndTime;
-    private float nextWallRunReadyTime;
-    private float wallJumpLockUntil;
+    // Dash flip / roll state
+
+    private bool isDashFlipping = false;
+    private Vector3 dashFlipAxisLocal = Vector3.zero;
+    private float dashFlipAngleRemaining = 0f;
 
     // forward/back dash state
     private bool isDashing = false;
@@ -135,10 +132,25 @@ public class PlayerController2 : MonoBehaviour
     private enum DashType { None, Forward, Backward, Left, Right }
     private DashType currentDashType = DashType.None;
 
+    // wall run state
+    private bool isWallRunning = false;
+    private Vector3 wallRunNormal = Vector3.zero;
+    private Vector3 wallRunTangent = Vector3.zero;
+    private float wallRunEndTime;
+    private float nextWallRunReadyTime;
+    private float wallJumpLockUntil;
+
+    // forward/back dash hop state
+    private float dashElapsed = 0f;
+    private float dashLastHeight = 0f;
+    private Vector3 dashUp = Vector3.up;
+
     // smooth side dash state
     private bool isSideDashing = false;
     private Vector3 sideDashDirectionWorld = Vector3.zero;
     private float sideDashElapsed = 0f;
+    private Vector3 sideDashStartPosition;
+
     private float sideDashLastNorm = 0f;
     private float sideDashLastHeight = 0f;
 
@@ -361,7 +373,7 @@ public class PlayerController2 : MonoBehaviour
         if (inputDir.sqrMagnitude < 0.01f)
             return; // no direction pressed -> no dash
 
-        // Decide dash *type* based on dominant axis
+        // Decide dash *type* based on axes
         currentDashType = DashType.None;
 
         bool w = v > 0.1f;   // W
@@ -371,34 +383,70 @@ public class PlayerController2 : MonoBehaviour
 
         // FIRST PRIORITY : LEFT OR RIGHT
         if (a)
-        {
             currentDashType = DashType.Left;
-        }
         else if (d)
-        {
             currentDashType = DashType.Right;
-        }
         // SECOND PRIORITY : BACKWARD (only if S is not mixed with W)
         else if (s && !w)
-        {
             currentDashType = DashType.Backward;
-        }
         // LAST PRIORITY : FORWARD (only if no A/D/S)
         else if (w)
-        {
             currentDashType = DashType.Forward;
-        }
 
-        // If still none, ignore dash
         if (currentDashType == DashType.None)
             return;
 
-        // Use inputDir for dash direction
-        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
+        // === SIDE DASH CASE (physics-based side hop) ===
+        if (currentDashType == DashType.Left || currentDashType == DashType.Right)
+        {
+            Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
+            Vector3 rightFlat = Vector3.ProjectOnPlane(transform.right, up).normalized;
+            float sideSign = currentDashType == DashType.Right ? 1f : -1f;
 
-        // Convert local input (WASD) to world space, then project onto movement plane
+            sideDashDirectionWorld = rightFlat * sideSign;
+
+            // how fast we need to move sideways to roughly cover sideDashDistance in sideDashDuration
+            float lateralSpeed = (sideDashDuration > 0f)
+                ? sideDashDistance / sideDashDuration
+                : 0f;
+
+            // vertical speed from desired side hop height
+            float upSpeed = GetJumpSpeedForHeight(sideDashUpOffset);
+
+            // start from current velocity, but replace sideways + vertical components
+            Vector3 vel = rb.linearVelocity;
+
+            // remove existing component along sideDashDirectionWorld so dash feels sharp
+            Vector3 lateralCurrent = Vector3.Project(vel, sideDashDirectionWorld);
+            vel -= lateralCurrent;
+
+            // set new lateral + vertical components
+            vel += sideDashDirectionWorld * lateralSpeed;
+            vel += up * upSpeed;
+
+            rb.linearVelocity = vel;
+
+            isSideDashing = true;
+            sideDashElapsed = 0f;
+
+            nextDashAllowedTime = Time.time + dashCooldown;
+
+            // flip/roll for side dash
+            StartDashFlipRoll(currentDashType);
+
+            // Do NOT start the normal forward/back dash here
+            isDashing = false;
+            dashJustStarted = false;
+            return;
+        }
+
+
+
+        Vector3 upDash = isGrounded ? lastGroundNormal : Vector3.up;
+
+        // Convert local input (W/S) to world space, then project onto movement plane
         Vector3 worldDir = transform.TransformDirection(inputDir.normalized);
-        dashDirection = Vector3.ProjectOnPlane(worldDir, up).normalized;
+        dashDirection = Vector3.ProjectOnPlane(worldDir, upDash).normalized;
 
         if (dashDirection.sqrMagnitude < 0.01f)
             return;
@@ -406,9 +454,16 @@ public class PlayerController2 : MonoBehaviour
         // Start dash state
         isDashing = true;
         dashJustStarted = true;
-        dashEndTime = Time.time + dashDuration;
+
+        // forward/back dash uses dashFlipDuration as its length
+        dashEndTime = Time.time + dashFlipDuration;
         dashBoostEndTime = dashEndTime + dashBoostDuration;
         nextDashAllowedTime = Time.time + dashCooldown;
+
+        // init vertical hop arc
+        dashElapsed = 0f;
+        dashLastHeight = 0f;
+        dashUp = isGrounded ? lastGroundNormal : Vector3.up;
 
         // Kick off flip/roll for this dash
         StartDashFlipRoll(currentDashType);
@@ -427,47 +482,47 @@ public class PlayerController2 : MonoBehaviour
 
     // ---------------- Forward/Back Dash Movement ----------------
 
+    private float GetJumpSpeedForHeight(float height)
+    {
+        if (height <= 0f)
+            return 0f;
+
+        float g = Physics.gravity.magnitude;
+        return Mathf.Sqrt(2f * g * height);
+    }
+
     private void HandleDashMovement()
     {
         if (!isDashing)
             return;
 
-        // FIRST PHYSICS FRAME OF DASH: strong burst + shove + hop
+        // choose up axis for this frame (slope-aware)
+        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
+
+        // --- Horizontal dash behaviour ---
         if (dashJustStarted)
         {
             dashJustStarted = false;
 
             float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
 
-            // Base dash velocity along the chosen dashDirection
-            Vector3 newVel = dashDirection * burstSpeed;
+            // horizontal dash direction (planar only)
+            Vector3 planarDashDir = Vector3.ProjectOnPlane(dashDirection, up).normalized;
 
-            // Use dashDirection as the main push direction (world space)
-            Vector3 pushDir = dashDirection;
-            if (pushDir.sqrMagnitude > 0.0001f)
-                pushDir.Normalize();
+            // base dash velocity
+            Vector3 newVel = planarDashDir * burstSpeed;
 
-            // Global push force along dashDirection
-            Vector3 pushForce = pushDir * dashPushForce;
-
-            // Optional vertical modifier (same for all dash types)
-            pushForce += Vector3.up * (dashPushForce * dashPushUpFactor);
-
-            // Combine dash burst + push
-            newVel += pushForce;
-
-            // Ensure minimum hop height
-            newVel.y = Mathf.Max(newVel.y, dashHopVerticalSpeed);
+            // vertical component from desired hop height (physics-based)
+            float upSpeed = GetJumpSpeedForHeight(dashHopHeight);
+            newVel += up * upSpeed;
 
             rb.linearVelocity = newVel;
         }
         else
         {
             // DURING DASH WINDOW: keep planar speed close to dashSpeed
-            Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
-
             Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
-            Vector3 desiredVel = dashDirection * dashSpeed;
+            Vector3 desiredVel = Vector3.ProjectOnPlane(dashDirection, up).normalized * dashSpeed;
 
             Vector3 velDiff = desiredVel - planarVel;
             rb.AddForce(velDiff, ForceMode.Acceleration);
@@ -480,6 +535,9 @@ public class PlayerController2 : MonoBehaviour
         }
     }
 
+
+
+
     // ---------------- Smooth Side Dash Movement ----------------
 
     private void HandleSideDashMovement()
@@ -488,33 +546,12 @@ public class PlayerController2 : MonoBehaviour
             return;
 
         sideDashElapsed += Time.fixedDeltaTime;
-        float t = Mathf.Clamp01(sideDashElapsed / sideDashDuration);
-
-        // ease-out for lateral: starts fast, ends smooth
-        float norm = Mathf.Sin(t * Mathf.PI * 0.5f); // 0 to 1
-
-        // hop arc: 0 -> peak -> 0
-        float height = Mathf.Sin(t * Mathf.PI) * sideDashUpOffset;
-
-        float deltaNorm = norm - sideDashLastNorm;
-        float deltaHeight = height - sideDashLastHeight;
-
-        sideDashLastNorm = norm;
-        sideDashLastHeight = height;
-
-        Vector3 up = isGrounded ? lastGroundNormal : Vector3.up;
-
-        Vector3 lateralMove = sideDashDirectionWorld * (sideDashDistance * deltaNorm);
-        Vector3 verticalMove = up * deltaHeight;
-
-        // adjust position directly; forward motion from rb velocity is preserved
-        rb.position = rb.position + lateralMove + verticalMove;
-
-        if (t >= 1f)
+        if (sideDashElapsed >= sideDashDuration)
         {
             isSideDashing = false;
         }
     }
+
 
     // ---------------- Dash Flip / Roll ----------------
 
@@ -792,6 +829,7 @@ public class PlayerController2 : MonoBehaviour
             );
         }
     }
+
 
     // ---------------- Visual alignment (ground + wall) ----------------
 
