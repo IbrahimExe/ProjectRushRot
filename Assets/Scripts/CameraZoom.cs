@@ -64,9 +64,13 @@ public class CameraZoom : MonoBehaviour
 
             // Speed-based FOV
             if (!isLookingBack)
-            { 
-                
-                float speed = playerRb.linearVelocity.magnitude;
+            {
+
+                //float speed = playerRb.linearVelocity.magnitude;
+
+                //horizontal only speed
+                float speed = new Vector3(playerRb.linearVelocity.x, 0f, playerRb.linearVelocity.z).magnitude;
+
 
                 vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, speed / speedForMax);
             }
