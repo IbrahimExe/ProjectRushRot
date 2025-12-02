@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: JumpHeightIncrease
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: b3bcd87486e5f2248b3133fd81de36bb, type: 3}
-  cardText: 
+  cardText: Increase jump height
   cardEffect: 2
   effectValue: 0.15
   isUnique: 0

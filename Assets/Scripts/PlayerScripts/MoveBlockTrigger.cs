@@ -5,12 +5,12 @@ public class MoveBlockTrigger : MonoBehaviour
     public enum BlockType { Forward, Backward }
     public BlockType blockType;
 
-    private GPlayerController movement;
+    private PlayerController2 movement;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        movement = GetComponentInParent<GPlayerController>();
+        movement = GetComponentInParent<PlayerController2>();
     }
 
     // Update is called once per frame
