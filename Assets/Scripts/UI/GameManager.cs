@@ -83,7 +83,7 @@ public class GameManager : MonoBehaviour
 
         // Flash "GO!"
         if (countdownText != null)
-            countdownText.text = "GO!";
+            countdownText.text = "RUSH!";
         yield return new WaitForSecondsRealtime(0.35f);
 
         if (countdownUI) countdownUI.SetActive(false);
