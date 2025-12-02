@@ -314,7 +314,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c68f868552858947905ca3833ab7b82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyChase
-  Player: {fileID: 0}
+  Player: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
   MoveSpeed: 17
   ClimbSpeed: 10
   ClimbCheckDistance: 1
