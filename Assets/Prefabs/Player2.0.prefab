@@ -498,10 +498,10 @@ MonoBehaviour:
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 5
-  baseJumpForce: 100
+  baseJumpForce: 125
   fallMultiplier: 3
   lowJumpMultiplier: 1
-  maxFallSpeed: -200
+  maxFallSpeed: -150
   feetTransform: {fileID: 3971334911968303865}
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}
@@ -541,10 +541,10 @@ MonoBehaviour:
   dashInitialBurstMultiplier: 1.5
   sideDashDistance: 20
   sideDashDuration: 0.5
-  sideDashUpOffset: 6
+  sideDashUpOffset: 28
   dashFlipAngle: 360
   dashFlipDuration: 0.4
-  dashHopHeight: 6
+  dashHopHeight: 28
 --- !u!114 &6980665277055680435
 MonoBehaviour:
   m_ObjectHideFlags: 0
