@@ -119,8 +119,8 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         if (pauseAudio) AudioListener.pause = false;
 
-        if (!string.IsNullOrEmpty(mainMenuSceneName))
-            SceneManager.LoadScene(mainMenuSceneName);
+        if (!string.IsNullOrEmpty("MainMenu"))
+            SceneManager.LoadScene(0);
         else
             Application.Quit();
     }
