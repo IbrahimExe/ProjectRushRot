@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AccelerationIncrease
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: c0210998fa6ab734794b087b9405ce16, type: 3}
-  cardText: Increase the acceleration
+  cardText: Increase acceleration
   cardEffect: 1
   effectValue: 0.2
   isUnique: 0

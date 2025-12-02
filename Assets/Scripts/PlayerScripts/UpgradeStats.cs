@@ -2,13 +2,13 @@ using UnityEngine;
 
 public class UpgradeStats : MonoBehaviour
 {
-    public GPlayerController player;
+    public PlayerController2 player;
 
     private void Awake()
     {
         if (player == null)
         {
-            player = GetComponent<GPlayerController>();
+            player = GetComponent<PlayerController2>();
         }
     }
 
