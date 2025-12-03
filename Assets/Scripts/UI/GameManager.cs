@@ -11,6 +11,10 @@ public class GameManager : MonoBehaviour
     public GameObject countdownUI;      // Panel for countdown
     public TMP_Text countdownText;      // TextMeshPro countdown display
 
+    [Header("Win / Lose screens (assign so pause is disabled while they are active)")]
+    public GameObject winScreen;
+    public GameObject loseScreen;
+
     [Header("Countdown settings")]
     public int resumeCountdownSeconds = 3;
 
@@ -19,7 +23,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Options")]
     public bool pauseAudio = true;
-    public string mainMenuSceneName = "MainMenu";
+    public string mainMenuSceneName = "00_MainMenu";
 
     private bool isPaused = false;
     private bool isCountingDown = false;
@@ -32,6 +36,9 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        // If Win or Lose screen is active, ignore pause input entirely
+        if (IsWinOrLoseActive()) return;
+
         // Toggle pause with ESC (as long as we're not in the countdown)
         if (Input.GetKeyDown(KeyCode.Escape) && !isCountingDown)
         {
@@ -44,6 +51,9 @@ public class GameManager : MonoBehaviour
 
     public void PauseGame()
     {
+        // Defensively don't pause if a win/lose screen is showing
+        if (IsWinOrLoseActive()) return;
+
         if (pauseMenuUI) pauseMenuUI.SetActive(true);
 
         // Disable gameplay scripts
@@ -63,8 +73,11 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator ResumeWithCountdown()
     {
-        if (!isPaused || isCountingDown)
-            yield break;
+        // If not paused or already counting down, do nothing
+        if (!isPaused || isCountingDown) yield break;
+
+        // If a win/lose screen became active while we waited, abort
+        if (IsWinOrLoseActive()) yield break;
 
         isCountingDown = true;
 
@@ -76,6 +89,14 @@ public class GameManager : MonoBehaviour
         // Countdown while game is paused (use realtime)
         for (int s = seconds; s > 0; s--)
         {
+            // If a win/lose screen becomes active mid-countdown, abort the countdown and keep game paused
+            if (IsWinOrLoseActive())
+            {
+                if (countdownUI) countdownUI.SetActive(false);
+                isCountingDown = false;
+                yield break;
+            }
+
             if (countdownText != null)
                 countdownText.text = s.ToString();
             yield return new WaitForSecondsRealtime(1f);
@@ -97,8 +118,12 @@ public class GameManager : MonoBehaviour
         foreach (var comp in disableOnPause)
             if (comp != null) comp.enabled = true;
 
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        // Only hide and lock the cursor if neither Win nor Lose screens are active
+        if (!IsWinOrLoseActive())
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
 
         isPaused = false;
         isCountingDown = false;
@@ -119,9 +144,17 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         if (pauseAudio) AudioListener.pause = false;
 
-        if (!string.IsNullOrEmpty("MainMenu"))
-            SceneManager.LoadScene(0);
+        if (!string.IsNullOrEmpty(mainMenuSceneName))
+            SceneManager.LoadScene(mainMenuSceneName);
         else
             Application.Quit();
+    }
+
+    // Utility: returns true if either winScreen or loseScreen is present and active in hierarchy
+    private bool IsWinOrLoseActive()
+    {
+        if (winScreen != null && winScreen.activeInHierarchy) return true;
+        if (loseScreen != null && loseScreen.activeInHierarchy) return true;
+        return false;
     }
 }
