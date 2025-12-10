@@ -163,7 +163,7 @@ public class LevelUpCardSelector : MonoBehaviour
             CardUI ui = go.GetComponent<CardUI>() ?? go.GetComponentInChildren<CardUI>();
             if (ui != null)
             {
-                var stats = FindObjectOfType<UpgradeStats>();
+                var stats = FindFirstObjectByType<UpgradeStats>();
                 ui.Initialize(picks[i], stats);
             }
             else
@@ -233,7 +233,10 @@ public class LevelUpCardSelector : MonoBehaviour
                 UpdateHighlightImmediate();
             }
 
-            if (Input.GetMouseButtonDown(2) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (Input.GetMouseButtonDown(2) // Middle Mouse Scroll Wheel Click
+                || Input.GetMouseButtonDown(0) // Left Click
+                || Input.GetKeyDown(KeyCode.Return) 
+                || Input.GetKeyDown(KeyCode.KeypadEnter))
             {
                 StartCoroutine(HandleSelection(selectedIndex));
                 yield break;
