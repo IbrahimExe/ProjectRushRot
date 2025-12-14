@@ -58,15 +58,22 @@ public class PlayerController2 : MonoBehaviour
     public float wallCheckDistance = 0.6f;
 
     [Header("Wall Jump")]
-    public float wallJumpUpImpulse = 6.5f;
-    public float wallJumpAwayImpulse = 7.5f;
+    public float baseJumpUpImpulse = 7.5f;
+    public float baseJumpAwayImpulse = 8.5f;
+
+    private float wallJumpUpImpulse = 6.5f;
+    private float wallJumpAwayImpulse = 7.5f;
     public float wallStickMaxSpeed = 3.5f;
     public float wallJumpCooldown = 0.15f;
 
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
-    public float wallRunSpeed = 10f;
-    public float wallRunDuration = 1.4f;
+
+    public float baseWallRunSpeed = 10f;
+    public float baseWallRunDuration = 1.4f;
+
+    private float wallRunSpeed;
+    private float wallRunDuration;
     public float wallRunGravityScale = 0.2f;
     public float wallRunMinHeight = 1.1f;
     public float wallRunMinForwardDot = 0.2f;
@@ -174,6 +181,11 @@ public class PlayerController2 : MonoBehaviour
         deceleration = baseDeceleration;
 
         jumpForce = baseJumpForce;
+
+        wallJumpUpImpulse = baseJumpUpImpulse;
+        wallJumpAwayImpulse = baseJumpAwayImpulse;
+        wallRunSpeed = baseWallRunSpeed;
+        wallRunDuration = baseWallRunDuration;
     }
 
     void Update()
@@ -1016,6 +1028,24 @@ public class PlayerController2 : MonoBehaviour
     public void addJumpForce(float amount)
     {
         jumpForce += amount;
+    }
+
+    public void addWallJumpAwayImpulse(float awayAmount)
+    {
+        wallJumpAwayImpulse += awayAmount;
+    }
+    public void addWallJumpUpImpulse(float upAmount)
+    {
+        wallJumpUpImpulse += upAmount;
+    }
+
+    public void addWallRunDuration(float amount)
+    {
+        wallRunDuration += amount;
+    }
+    public void addWallRunSpeed(float amount)
+    {
+        wallRunSpeed += amount;
     }
 
     #endregion

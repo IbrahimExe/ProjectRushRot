@@ -7,6 +7,11 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class LevelUpCardSelector : MonoBehaviour
 {
+    [Header("Rarity weights")]
+    public float commonWeight = 70f;
+    public float rareWeight = 25f;
+    public float legendaryWeight = 5f;
+
     [Header("Source deck (ScriptableObjects)")]
     [Tooltip("Drag your CardSO ScriptableObjects here.")]
     public List<CardSO> deck = new List<CardSO>();
@@ -92,6 +97,56 @@ public class LevelUpCardSelector : MonoBehaviour
         showRoutine = StartCoroutine(ShowRandomCardSet());
     }
 
+    // Chooses a rarity based on weights
+    private CardRarity RollRarity()
+    {
+        float total = commonWeight + rareWeight + legendaryWeight;
+        float roll = Random.value * total;
+
+        if (roll < commonWeight)
+            return CardRarity.Common;
+        if (roll < commonWeight + rareWeight)
+            return CardRarity.Rare;
+
+        return CardRarity.Legendary;
+    }
+
+    // Picks a set of cards based on rarity rolls
+    private List<CardSO> PickCards(int count)
+    {
+        List<CardSO> result = new();
+        HashSet<CardSO> used = new();
+
+        int safety = 0;
+
+        while (result.Count < count && safety < 100)
+        {
+            safety++;
+
+            CardRarity rarity = RollRarity();
+
+            var pool = deck
+                .Where(c =>
+                    c.rarity == rarity &&
+                    !used.Contains(c))
+                .ToList();
+
+            if (pool.Count == 0)
+                continue;
+
+            CardSO chosen = pool[Random.Range(0, pool.Count)];
+
+            // Unique cards can only appear once per run
+            if (chosen.isUnique && used.Contains(chosen))
+                continue;
+
+            result.Add(chosen);
+            used.Add(chosen);
+        }
+
+        return result;
+    }
+
     private IEnumerator ShowRandomCardSet()
     {
         isOpen = true;
@@ -116,7 +171,7 @@ public class LevelUpCardSelector : MonoBehaviour
         }
 
         // pick up to 3 unique cards
-        var picks = deck.OrderBy(x => Random.value).Take(Mathf.Min(3, deck.Count)).ToList();
+        var picks = PickCards(Mathf.Min(3, deck.Count));
         int count = picks.Count;
 
         // determine whether specific card positions were provided

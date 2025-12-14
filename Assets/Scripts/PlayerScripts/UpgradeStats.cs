@@ -29,4 +29,27 @@ public class UpgradeStats : MonoBehaviour
         float amount = player.baseJumpForce * percent;
         player.addJumpForce(amount);
     }
+
+    public void UpgradeWallJumpAwayImpulse(float percent)
+    {
+        float amount = player.baseJumpAwayImpulse * percent;
+        player.addWallJumpAwayImpulse(amount);
+    }
+
+    public void UpgradeWallJumpUpwardImpulse(float percent)
+    {
+        float amount = player.baseJumpUpImpulse * percent;
+        player.addWallJumpUpImpulse(amount);
+    }
+
+    public void UpgradeWallRunDuration(float percent)
+    {
+        float amount = player.baseWallRunDuration * percent;
+        player.addWallRunDuration(amount);
+    }
+    public void UpgradeWallRunSpeed(float percent)
+    {
+        float amount = player.baseWallRunSpeed * percent;
+        player.addWallRunSpeed(amount);
+    }
 }

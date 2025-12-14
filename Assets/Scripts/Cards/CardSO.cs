@@ -9,13 +9,34 @@ public class CardSO : ScriptableObject
     public CardEffect cardEffect;
     public float effectValue;
 
+    public CardRarity rarity;
+
     public bool isUnique;
     public int unlockLevel;
+}
+public enum CardRarity
+{
+    Common,
+    Rare,
+    Legendary
 }
 
 public enum CardEffect
 {
-    MaxSpeedIncrease,
-    AccelerationIncrease,
-    JumpHeightIncrease,
+    CommonMaxSpeedUpgrade,
+    RareMaxSpeedUpgrade,
+    LegendaryMaxSpeedUpgrade,
+    CommonAccelerationUpgrade,
+    RareAccelerationUpgrade,
+    LegendaryAccelerationUpgrade,
+    CommonJumpHeightUpgrade,
+    RareJumpHeightUpgrade,
+    LegendaryJumpHeightUpgrade,
+    CommonWallRun,
+    RareWallRun,
+    LegendaryWallRun,
+    CommonDash,
+    RareDash,
+    LegendaryDash
+
 }
