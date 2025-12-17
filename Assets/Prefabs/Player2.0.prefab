@@ -161,7 +161,7 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 60.000004
+    FieldOfView: 60.01458
     OrthographicSize: 5
     NearClipPlane: 0.3
     FarClipPlane: 1000
@@ -220,7 +220,7 @@ MonoBehaviour:
     Wrap: 0
     Recentering:
       Enabled: 1
-      Wait: 1
+      Wait: 0.2
       Time: 2
     Restrictions: 0
   VerticalAxis:
@@ -230,7 +230,7 @@ MonoBehaviour:
     Wrap: 0
     Recentering:
       Enabled: 1
-      Wait: 1
+      Wait: 0.2
       Time: 2
     Restrictions: 0
   RadialAxis:
@@ -337,26 +337,26 @@ MonoBehaviour:
   TransparentLayers:
     serializedVersion: 2
     m_Bits: 0
-  MinimumDistanceFromTarget: 10
+  MinimumDistanceFromTarget: 1
   AvoidObstacles:
     Enabled: 1
     DistanceLimit: 0
     MinimumOcclusionTime: 0
-    CameraRadius: 0.49
+    CameraRadius: 1
     UseFollowTarget:
-      Enabled: 0
+      Enabled: 1
       YOffset: 0
     Strategy: 0
     MaximumEffort: 4
-    SmoothingTime: 0
-    Damping: 0.4
-    DampingWhenOccluded: 0.2
+    SmoothingTime: 0.2
+    Damping: 0
+    DampingWhenOccluded: 0
   ShotQualityEvaluation:
-    Enabled: 0
-    OptimalDistance: 10
+    Enabled: 1
+    OptimalDistance: 20
     NearLimit: 5
-    FarLimit: 30
-    MaxQualityBoost: 0.2
+    FarLimit: 22
+    MaxQualityBoost: 2
 --- !u!114 &4911145815367671913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -517,13 +517,13 @@ MonoBehaviour:
     m_Bits: 64
   wallCheckRadius: 1
   wallCheckDistance: 2
-  wallJumpUpImpulse: 25
-  wallJumpAwayImpulse: 100
+  baseJumpUpImpulse: 7.5
+  baseJumpAwayImpulse: 8.5
   wallStickMaxSpeed: 3.5
   wallJumpCooldown: 0.15
   wallRunEnabled: 1
-  wallRunSpeed: 75
-  wallRunDuration: 4
+  baseWallRunSpeed: 75
+  baseWallRunDuration: 4
   wallRunGravityScale: 0.2
   wallRunMinHeight: 1.1
   wallRunMinForwardDot: 0.2
