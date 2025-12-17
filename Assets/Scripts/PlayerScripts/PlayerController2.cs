@@ -7,8 +7,8 @@ public class PlayerController2 : MonoBehaviour
     [Header("Movement Settings")]
     // Base stats (used by upgrades)
     public float baseStartMoveSpeed = 5f;
-    public float baseMaxMoveSpeed = 15f;
-    public float baseAcceleration = 20f;
+    public float baseMaxMoveSpeed = 50f;
+    public float baseAcceleration = 25f;
     public float baseDeceleration = 25f;
 
     // Runtime modified stats (these are what actually drive movement)
@@ -25,16 +25,16 @@ public class PlayerController2 : MonoBehaviour
     public float backwardAcceleration = 15f;
     public float backwardDeceleration = 20f;
 
-    public float rotationSpeed = 100f;
+    public float rotationSpeed = 75f;
     public float linearDrag = 5f;
 
     [Header("Jump and Gravity Settings")]
-    public float baseJumpForce = 5f;
+    public float baseJumpForce = 125f;
     private float jumpForce;
 
-    public float fallMultiplier = 2f;
-    public float lowJumpMultiplier = 1.5f;
-    public float maxFallSpeed = -20f;
+    public float fallMultiplier = 3f;
+    public float lowJumpMultiplier = 1f;
+    public float maxFallSpeed = -150f;
 
     [Header("Ground Check Settings")]
     public Transform feetTransform;
@@ -54,15 +54,15 @@ public class PlayerController2 : MonoBehaviour
 
     [Header("Wall Surface")]
     public LayerMask wallLayers = ~0;
-    public float wallCheckRadius = 0.45f;
-    public float wallCheckDistance = 0.6f;
+    public float wallCheckRadius = 1f;
+    public float wallCheckDistance = 2f;
 
     [Header("Wall Jump")]
     public float baseJumpUpImpulse = 7.5f;
     public float baseJumpAwayImpulse = 8.5f;
 
-    private float wallJumpUpImpulse = 6.5f;
-    private float wallJumpAwayImpulse = 7.5f;
+    private float wallJumpUpImpulse;
+    private float wallJumpAwayImpulse;
     public float wallStickMaxSpeed = 3.5f;
     public float wallJumpCooldown = 0.15f;
 
@@ -77,8 +77,8 @@ public class PlayerController2 : MonoBehaviour
     public float wallRunGravityScale = 0.2f;
     public float wallRunMinHeight = 1.1f;
     public float wallRunMinForwardDot = 0.2f;
-    public float wallRunCooldown = 0.35f;
-    public float wallRunStick = 2.0f;
+    public float wallRunCooldown = 1f;
+    public float wallRunStick = 0.5f;
 
     [Header("Wall Run Facing / Lean")]
     public float wallRunFaceTurnLerp = 12f;
@@ -90,28 +90,28 @@ public class PlayerController2 : MonoBehaviour
 
     [Header("Dash Settings")]
     public KeyCode dashKey = KeyCode.LeftShift;
-    public float dashSpeed = 20f;
+    public float dashSpeed = 30f;
     public float dashCooldown = 1.0f;
     public float dashSpeedBoostMultiplier = 1.4f;
-    public float dashBoostDuration = 1.0f;
+    public float dashBoostDuration = 1.5f;
     // How strong the first frame burst is
     public float dashInitialBurstMultiplier = 1.5f;
 
 
     [Header("Side Dash Settings")]
     [Tooltip("How far the cart moves sideways when side-dashing (in meters).")]
-    public float sideDashDistance = 3f;
+    public float sideDashDistance = 20f;
     [Tooltip("How long the side hop lasts (seconds).")]
     public float sideDashDuration = 0.5f;
     [Tooltip("Max height of the side hop arc (in meters).")]
-    public float sideDashUpOffset = 0.3f;
+    public float sideDashUpOffset = 28f;
 
     [Header("Dash Flip / Roll Settings")]
     public float dashFlipAngle = 360f;
     // Also used as the forward/back dash duration
-    public float dashFlipDuration = 0.5f;
+    public float dashFlipDuration = 0.4f;
     [Tooltip("Max height of the forward/back dash hop (in meters).")]
-    public float dashHopHeight = 0.6f;
+    public float dashHopHeight = 28f;
 
     // Core state
 
