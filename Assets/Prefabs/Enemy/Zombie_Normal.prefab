@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3580904104346225635}
   - component: {fileID: 8516723685662706960}
   - component: {fileID: 3490731749619733366}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Left_Eye
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -122,7 +122,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4606932842664008373}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: EyePoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -160,7 +160,7 @@ GameObject:
   - component: {fileID: 3900978313941998821}
   - component: {fileID: 7777702463314503566}
   - component: {fileID: 71844920841879197}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Zombie_Normal
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -328,7 +328,7 @@ GameObject:
   - component: {fileID: 2474183090461000631}
   - component: {fileID: 8611991777819107707}
   - component: {fileID: 6285253652924787918}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Right_Eye
   m_TagString: Untagged
   m_Icon: {fileID: 0}

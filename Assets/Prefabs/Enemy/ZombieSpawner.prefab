@@ -195,7 +195,7 @@ MonoBehaviour:
   - {fileID: 3201753095187803992}
   - {fileID: 7028252337245190853}
   - {fileID: 6156773637403644345}
-  SpawnInterval: 1
+  SpawnInterval: 2
   MaxAliveZombies: 24
   SpawnRadius: 2
   GroundSnapHeight: 2
