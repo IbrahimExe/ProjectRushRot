@@ -69,8 +69,8 @@ public class PlayerController2 : MonoBehaviour
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
 
-    public float baseWallRunSpeed = 10f;
-    public float baseWallRunDuration = 1.4f;
+    public float baseWallRunSpeed = 75f;
+    public float baseWallRunDuration = 4f;
 
     private float wallRunSpeed;
     private float wallRunDuration;
