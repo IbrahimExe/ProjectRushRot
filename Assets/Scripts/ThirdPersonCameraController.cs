@@ -10,6 +10,7 @@ public class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private float minDistance = 3f;
     [SerializeField] private float maxDistance = 15f;
 
+
     //private PlayerControls controls;
 
     private CinemachineCamera cam;

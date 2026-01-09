@@ -28,6 +28,9 @@ public class GameManager : MonoBehaviour
     private bool isPaused = false;
     private bool isCountingDown = false;
 
+    //health
+    [SerializeField] private float hp = 3f;
+
     void Start()
     {
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
