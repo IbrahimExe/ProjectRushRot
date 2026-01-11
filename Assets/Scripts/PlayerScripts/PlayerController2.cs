@@ -4,6 +4,11 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController2 : MonoBehaviour
 {
+    [Header("Character")]
+    public PlayerCharacterData characterData;
+    private GameObject currentModel;
+
+
     [Header("Movement Settings")]
     // Base stats (used by upgrades)
     public float baseStartMoveSpeed = 5f;
@@ -97,7 +102,6 @@ public class PlayerController2 : MonoBehaviour
     // How strong the first frame burst is
     public float dashInitialBurstMultiplier = 1.5f;
 
-
     [Header("Side Dash Settings")]
     [Tooltip("How far the cart moves sideways when side-dashing (in meters).")]
     public float sideDashDistance = 20f;
@@ -164,13 +168,53 @@ public class PlayerController2 : MonoBehaviour
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
 
+    public void ApplyCharacter(PlayerCharacterData data)
+    {
+        characterData = data;
+
+        // ---- STATS ----
+        baseStartMoveSpeed = data.startMoveSpeed;
+        baseMaxMoveSpeed = data.maxMoveSpeed;
+        baseAcceleration = data.acceleration;
+        baseDeceleration = data.deceleration;
+
+        baseJumpForce = data.jumpForce;
+
+        baseJumpUpImpulse = data.wallJumpUpImpulse;
+        baseJumpAwayImpulse = data.wallJumpAwayImpulse;
+
+        baseWallRunSpeed = data.wallRunSpeed;
+        baseWallRunDuration = data.wallRunDuration;
+
+        // Re-apply to runtime values
+        SetBaseStats();
+
+        // ---- MODEL ----
+        if (currentModel != null)
+            Destroy(currentModel);
+
+        currentModel = Instantiate(
+            data.modelPrefab,
+            cartModel.parent
+        );
+
+        cartModel = currentModel.transform;
+    }
+
     void Start()
     {
         Cursor.visible = false; // Hides the cursor
         Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
         rb = GetComponent<Rigidbody>();
 
-        SetBaseStats();
+        if (characterData != null)
+        {
+            ApplyCharacter(characterData);
+        }
+        else
+        {
+            SetBaseStats();
+        }
     }
 
     public void SetBaseStats()
@@ -546,8 +590,6 @@ public class PlayerController2 : MonoBehaviour
             isDashing = false;
         }
     }
-
-
 
 
     // ---------------- Smooth Side Dash Movement ----------------
