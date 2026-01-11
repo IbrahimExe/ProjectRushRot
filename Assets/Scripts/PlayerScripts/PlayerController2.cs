@@ -168,6 +168,23 @@ public class PlayerController2 : MonoBehaviour
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
 
+
+    void Start()
+    {
+        Cursor.visible = false; // Hides the cursor
+        Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
+        rb = GetComponent<Rigidbody>();
+
+        if (characterData != null)
+        {
+            ApplyCharacter(characterData);
+        }
+        else
+        {
+            SetBaseStats();
+        }
+    }
+
     public void ApplyCharacter(PlayerCharacterData data)
     {
         characterData = data;
@@ -200,23 +217,6 @@ public class PlayerController2 : MonoBehaviour
 
         cartModel = currentModel.transform;
     }
-
-    void Start()
-    {
-        Cursor.visible = false; // Hides the cursor
-        Cursor.lockState = CursorLockMode.Locked; // Locks it to the center
-        rb = GetComponent<Rigidbody>();
-
-        if (characterData != null)
-        {
-            ApplyCharacter(characterData);
-        }
-        else
-        {
-            SetBaseStats();
-        }
-    }
-
     public void SetBaseStats()
     {
         startMoveSpeed = baseStartMoveSpeed;
