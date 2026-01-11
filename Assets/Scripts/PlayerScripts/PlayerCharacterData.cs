@@ -20,6 +20,6 @@ public class PlayerCharacterData : ScriptableObject
     public float wallRunSpeed = 75f;
     public float wallRunDuration = 4f;
 
-    [Header("Size and Hitbox")]
+    //[Header("Size and Hitbox")] for bypassing the error for testing
 
 }
