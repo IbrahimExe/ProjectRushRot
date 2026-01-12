@@ -7,7 +7,6 @@
 // ------------------------------------------------------------
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
 
 public enum Surface
 {
@@ -39,24 +38,28 @@ public struct CellState{
 public sealed class RunnerGenConfig : ScriptableObject 
 {
     [Header("Lane Setup")]
-    public int laneCount;
-   public float laneWidth;
-   public float cellLength;
+    public int laneCount = 3;
+    public float laneWidth = 2f;
+    public float cellLength = 10f; // square cell size
+
     [Header("Generation Settings")]
-    public int bufferRows; // extra rows to keep loaded beyond player view
-   public int keepRowsBehind; // rows behind player to keep loaded
-   public int neigbhorhoodZ; 
-   public int neighborhoodX;
-   public float obstacleChanceCenter; //Base chance of obstacle in center lane
+    public int bufferRows = 20; // extra rows to keep loaded beyond player view
+    public int keepRowsBehind = 5; // rows behind player to keep loaded
+    public int neigbhorhoodZ = 4;
+    public int neighborhoodX = 1;
+
     [Header("Spawn Chances")]
-    public float wallChanceEdge; // Base chance of wall in edge lanes
-    public float wallCanceFalloff; // Reduces wall chance further from edge
-    public float holeChance; // Base chance of hole in any lane
-   public float dentisyPenalty; // Reduces spawn if area is dense
+    [Range(0f, 1f)] public float wallChanceEdge = 0.7f; // Base chance of wall in edge lanes
+    [Range(0f, 1f)] public float wallCanceFalloff = 0.15f; // Reduces wall chance further from edge
+    [Range(0f, 1f)] public float holeChance = 0.2f; // Base chance of hole in any lane
+    [Range(0f, 1f)] public float obstacleChanceCenter = 0.3f; // Base chance of obstacle in center lane
+    [Range(0f, 1f)] public float dentisyPenalty = 0.1f; // Reduces spawn if area is dense
+
     [Header("Options")]
-    public bool allowHoles; 
-   public bool allowBridges;
+    public bool allowHoles = true;
+    public bool allowBridges = true;
 }
+
 
 //main class
 public class LevelGenerator : MonoBehaviour
@@ -69,6 +72,7 @@ public class LevelGenerator : MonoBehaviour
 
     //prefab references
     [Header("Prefabs")]
+    [SerializeField] private GameObject floorPrefab;
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject obstaclePrefab;
     [SerializeField] private GameObject holePrefab;
@@ -80,12 +84,14 @@ public class LevelGenerator : MonoBehaviour
     // OPTIMIZATION: Track spawned objects for cleanup
     // Currently missing - need this to pool/destroy spawned objects
     private Dictionary<(int z, int lane), GameObject> spawnedObjects = new Dictionary<(int, int), GameObject>();
+    private Dictionary<(int z, int lane), GameObject> spawnedOccupant = new();
 
     void Start()
     {
         grid = new Dictionary<(int, int), CellState>();
         rng = new System.Random();
         spawnedObjects = new Dictionary<(int, int), GameObject>();
+        spawnedOccupant = new Dictionary<(int, int), GameObject>();
         //Initialize object pools here
 
         // Generate initial buffer
@@ -280,7 +286,21 @@ public class LevelGenerator : MonoBehaviour
         //OPTIMIZATION: Consider caching results if checking same cell multiple times, also consider if this is called too often
     }
 
-    private void ComitAndSpawn(int z, int lane, CellState newState)
+    private void SpawnFloorBelow(int z, int lane)
+    {
+        Vector3 position = new Vector3(
+            (lane * config.laneWidth),
+            0f,
+            z * config.cellLength
+        );
+        if (floorPrefab != null)
+        {
+            GameObject floor = Instantiate(floorPrefab, position, Quaternion.identity);
+            spawnedObjects[(z, lane)] = floor;
+        }
+    }
+
+    private void ComitAndSpawn(int z, int lane, CellState newState) //Not Used but can be useful for future memmory management
     {
         SetCell(z, lane, newState);
 
@@ -291,23 +311,42 @@ public class LevelGenerator : MonoBehaviour
             z * config.cellLength
         );
 
-        //spawn prefabs MEMMORY MANAGEMENT NEEDED
 
+        //spawn prefabs MEMMORY MANAGEMENT NEEDED
+        //this needs to go, as is the floor spawns and then the wall/obstacle spawns on top of it. But holes need to remove the floor
+
+        GameObject spawned = null;
+
+        // Spawn occupants on top
+        // Room for implementing anchors and seed to move objects inside the cell
         if (newState.surface == Surface.Hole && holePrefab != null)
         {
-            Instantiate(holePrefab, position, Quaternion.identity);
+            Vector3 wallPos = position + Vector3.up * 0.5f;
+            spawned = Instantiate(holePrefab, position, Quaternion.identity);
         }
         else if (newState.surface == Surface.Bridge && bridgePrefab != null)
         {
-            Instantiate(bridgePrefab, position, Quaternion.identity);
+            Vector3 obsPos = position + Vector3.up * 0.5f;
+            spawned = Instantiate(bridgePrefab, position, Quaternion.identity);
+            
         }
+
         if (newState.occupant == Occupant.Wall && wallPrefab != null)
         {
-            Instantiate(wallPrefab, position, Quaternion.identity);
+            spawned = Instantiate(wallPrefab, position, Quaternion.identity);
+            
         }
         else if (newState.occupant == Occupant.Obstacle && obstaclePrefab != null)
         {
-            Instantiate(obstaclePrefab, position, Quaternion.identity);
+            spawned = Instantiate(obstaclePrefab, position, Quaternion.identity);
+           
+        }
+
+
+        if (spawned != null)
+        {
+            spawnedObjects[(z, lane)] = spawned;
+            SpawnFloorBelow(z, lane);
         }
 
     }
@@ -316,26 +355,33 @@ public class LevelGenerator : MonoBehaviour
 
     private void GenerateRow(int z)
     {
+      
+
+        for (int lane = 0; lane < config.laneCount; lane++)
+        {
+            SetCell(z, lane, new CellState(Surface.Solid, Occupant.None));
+            
+        }
+
+
         //border walls first
         for (int lane = 0; lane < config.laneCount; lane++)
         {
-            if (LaneIsBorder(lane))
-            {
-                float wallScore = ScoreWall(z, lane);
-                if (Rand() < wallScore)
-                {
-                    CellState candidate = getCell(z, lane);
-                    candidate.occupant = Occupant.Wall;
+            if (!LaneIsBorder(lane)) continue;
 
-                    if (!WouldBreakRowIfPlaced(z, lane, candidate)) 
-                    {
-                        ComitAndSpawn(z, lane, candidate);
-                    }
+            float wallScore = ScoreWall(z, lane);
+            if (Rand() < wallScore)
+            {
+                CellState candidate = getCell(z, lane);
+                candidate.occupant = Occupant.Wall;
+
+                if (!WouldBreakRowIfPlaced(z, lane, candidate))
+                {
+                    SetCell(z, lane, candidate);
                 }
             }
         }
 
-        //place holes
         if (config.allowHoles)
         {
             for (int lane = 0; lane < config.laneCount; lane++)
@@ -344,36 +390,36 @@ public class LevelGenerator : MonoBehaviour
                 if (Rand() < holeScore)
                 {
                     CellState candidate = getCell(z, lane);
-                    if (candidate.surface == Surface.Solid) //only place hole on solid
+
+                    // Only carve holes from solid ground
+                    if (candidate.surface != Surface.Solid) continue;
+
+                    candidate.surface = Surface.Hole;
+                    candidate.occupant = Occupant.None;
+
+                    if (WouldBreakRowIfPlaced(z, lane, candidate))
                     {
-                        candidate.surface = Surface.Hole;
-                        candidate.occupant = Occupant.None;
-
-                        if (WouldBreakRowIfPlaced(z, lane, candidate))
+                        if (config.allowBridges)
                         {
-                            if (config.allowBridges)
-                            {
-                                candidate.surface = Surface.Bridge;
-                                ComitAndSpawn(z, lane, candidate);
-                            }
-
+                            candidate.surface = Surface.Bridge;
+                            SetCell(z, lane, candidate);
                         }
-                        else
-                        {
-                            ComitAndSpawn(z, lane, candidate);
-                        }
-
+                        // else: do nothing, keep solid
+                    }
+                    else
+                    {
+                        SetCell(z, lane, candidate); // commit Hole
                     }
                 }
             }
         }
+
         //place obstacles
         for (int lane = 0; lane < config.laneCount; lane++)
         {
             CellState c = getCell(z, lane);
-            if (c.surface == Surface.Hole) continue; //skip holes
-            if (c.occupant != Occupant.None) continue; //skip walls
-            //as the checks get longer maybe refactor to own function
+            if (c.surface == Surface.Hole) continue;
+            if (c.occupant != Occupant.None) continue;
 
             float obsScore = ScoreObstacle(z, lane);
             if (Rand() < obsScore)
@@ -383,10 +429,11 @@ public class LevelGenerator : MonoBehaviour
 
                 if (!WouldBreakRowIfPlaced(z, lane, obstacleCandidate))
                 {
-                    ComitAndSpawn(z, lane, obstacleCandidate);
+                    SetCell(z, lane, obstacleCandidate);
                 }
             }
         }
+
 
         //check it works
 
@@ -398,10 +445,52 @@ public class LevelGenerator : MonoBehaviour
             foreach (int lane in tryLanes)
             {
                 CellState cc = new CellState(Surface.Solid, Occupant.None);
-                ComitAndSpawn(z, lane, cc);
+                SetCell(z, lane, cc);
                 if (RowHasAnyWalkable(z))
                     break;
             }
+        }
+
+        for (int lane = 0; lane < config.laneCount; lane++)
+        {
+            CellState s = getCell(z, lane);
+
+            Vector3 basePos = new Vector3(lane * config.laneWidth, 0f, z * config.cellLength);
+            Vector3 occPos = basePos + Vector3.up * 0.5f;
+
+            // ----- Surface -----
+            GameObject surfaceObj = null;
+
+            if (s.surface == Surface.Hole)
+            {
+                if (holePrefab != null) surfaceObj = Instantiate(holePrefab, basePos, Quaternion.identity);
+            }
+            else if (s.surface == Surface.Bridge)
+            {
+                if (bridgePrefab != null) surfaceObj = Instantiate(bridgePrefab, basePos, Quaternion.identity);
+            }
+            else
+            {
+                if (floorPrefab != null) surfaceObj = Instantiate(floorPrefab, basePos, Quaternion.identity);
+            }
+
+            if (surfaceObj != null)
+                spawnedObjects[(z, lane)] = surfaceObj;
+
+            // ----- Occupant -----
+            GameObject occObj = null;
+
+            if (s.occupant == Occupant.Wall)
+            {
+                if (wallPrefab != null) occObj = Instantiate(wallPrefab, occPos, Quaternion.identity);
+            }
+            else if (s.occupant == Occupant.Obstacle)
+            {
+                if (obstaclePrefab != null) occObj = Instantiate(obstaclePrefab, occPos, Quaternion.identity);
+            }
+
+            if (occObj != null)
+                spawnedOccupant[(z, lane)] = occObj;
         }
     }
 
@@ -441,29 +530,29 @@ public class LevelGenerator : MonoBehaviour
 
             grid.Remove(key);
         }
+        foreach (var key in toRemove)
+        {
+            if (spawnedObjects.TryGetValue(key, out GameObject surf) && surf != null)
+            {
+                Destroy(surf);
+                spawnedObjects.Remove(key);
+            }
+
+            if (spawnedOccupant.TryGetValue(key, out GameObject occ) && occ != null)
+            {
+                Destroy(occ);
+                spawnedOccupant.Remove(key);
+            }
+
+            grid.Remove(key);
+        }
+
     }
 
     // MISSING FEATURE: No way to call UpdateGeneration from outside
     // Add a public reference to player transform or make this a service
 
     // OPTIMIZATION: Gizmos for debugging in Scene view
-    // void OnDrawGizmos()
-    // {
-    //     if (grid == null || !Application.isPlaying) return;
-    //     foreach (var kvp in grid)
-    //     {
-    //         Vector3 pos = new Vector3(
-    //             kvp.Key.lane * config.laneWidth,
-    //             0.5f,
-    //             kvp.Key.z * config.cellLength
-    //         );
-    //         Gizmos.color = kvp.Value.surface == Surface.Hole ? Color.red :
-    //                        kvp.Value.occupant == Occupant.Wall ? Color.blue :
-    //                        kvp.Value.occupant == Occupant.Obstacle ? Color.yellow :
-    //                        Color.green;
-    //         Gizmos.DrawWireCube(pos, Vector3.one * 0.8f);
-    //     }
-    // }
 
 
 }
