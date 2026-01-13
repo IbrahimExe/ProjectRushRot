@@ -77,13 +77,29 @@ public class PlayerController2 : MonoBehaviour
     public float baseWallRunSpeed = 75f;
     public float baseWallRunDuration = 4f;
 
-    private float wallRunSpeed;
+    private float wallRunSpeed; // Now acts as a multiplier to base speed, we can delete later if not needed
     private float wallRunDuration;
     public float wallRunGravityScale = 0.2f;
     public float wallRunMinHeight = 1.1f;
     public float wallRunMinForwardDot = 0.2f;
     public float wallRunCooldown = 1f;
     public float wallRunStick = 0.5f;
+
+    [Header("Wall Run Vertical Momentum")]
+    [Tooltip("How long (seconds) after starting a wall run we preserve incoming upward velocity.")]
+    public float wallRunEntryPreserveTime = 0.15f;
+
+    [Tooltip("Extra upward velocity added when you start a wall run while already moving upward.")]
+    public float wallRunEntryUpBoost = 1.5f;
+
+    [Tooltip("Clamp for upward velocity while wall-running (keeps it from launching too high).")]
+    public float wallRunMaxUpSpeed = 10f;
+
+    [Tooltip("Clamp for downward velocity while wall-running (controls max slide speed down).")]
+    public float wallRunMaxDownSpeed = -8f;
+
+    private float wallRunEntryTime = -999f;
+    private float wallRunEntryUpVel = 0f;
 
     [Header("Wall Run Facing / Lean")]
     public float wallRunFaceTurnLerp = 12f;
@@ -727,6 +743,12 @@ public class PlayerController2 : MonoBehaviour
                     wallRunTangent = t;
                     wallRunEndTime = Time.time + wallRunDuration;
                     state = CharState.WallRunning;
+                    wallRunEntryTime = Time.time;
+
+                    // Capture upward velocity at contact; only preserve upward component.
+                    wallRunEntryUpVel = Mathf.Max(0f, rb.linearVelocity.y);
+                    if (wallRunEntryUpVel > 0f)
+                        wallRunEntryUpVel = Mathf.Min(wallRunEntryUpVel + wallRunEntryUpBoost, wallRunMaxUpSpeed);
                 }
                 else
                 {
@@ -790,20 +812,44 @@ public class PlayerController2 : MonoBehaviour
         float v = Mathf.Max(0f, Input.GetAxis("Vertical"));
 
         Vector3 up = Vector3.up;
-        Vector3 t = wallRunTangent;
-        t = Vector3.ProjectOnPlane(t, up).normalized;
+        Vector3 t = Vector3.ProjectOnPlane(wallRunTangent, up).normalized;
 
-        Vector3 desiredVel = t * (wallRunSpeed * v);
+        // Current planar velocity (ignore vertical)
         Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
 
-        Vector3 velChange = desiredVel - planarVel;
-        rb.AddForce(velChange, ForceMode.VelocityChange);
+        // Base speed should be the intended move speed, not current velocity magnitude
+        float baseSpeed = Mathf.Max(startMoveSpeed, currentMoveSpeed);
 
+        // wallRunSpeed is a multiplier now (ex: 1.25f), 0 at the moment to preserve player base speed
+        float desiredAlong = baseSpeed * wallRunSpeed * v;
+
+        // Only control the component along the wall tangent (prevents "snap-rotation yeet")
+        float currentAlong = Vector3.Dot(planarVel, t);
+
+        // Safety clamps 
+        float maxWallRunSpeed = baseSpeed * wallRunSpeed; // max when v=1
+        desiredAlong = Mathf.Clamp(desiredAlong, 0f, maxWallRunSpeed);
+
+        float deltaAlong = desiredAlong - currentAlong;
+
+        // Acceleration clamp so it can't jump instantly
+        float maxAccel = 25f; // tuneable
+        deltaAlong = Mathf.Clamp(deltaAlong, -maxAccel * Time.fixedDeltaTime, maxAccel * Time.fixedDeltaTime);
+
+        rb.AddForce(t * deltaAlong, ForceMode.VelocityChange);
+
+        // --- Vertical handling (momentum-preserve logic) ---
         Vector3 vel = rb.linearVelocity;
-        if (vel.y > wallStickMaxSpeed)
-            vel.y = wallStickMaxSpeed;
+
+        bool inEntryWindow = (Time.time - wallRunEntryTime) <= wallRunEntryPreserveTime;
+        if (inEntryWindow && wallRunEntryUpVel > 0f)
+            vel.y = Mathf.Max(vel.y, wallRunEntryUpVel);
+
+        vel.y = Mathf.Clamp(vel.y, wallRunMaxDownSpeed, wallRunMaxUpSpeed);
         rb.linearVelocity = vel;
     }
+
+
 
     // ---------------- Jump ----------------
 
