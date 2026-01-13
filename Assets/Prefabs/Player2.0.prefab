@@ -487,6 +487,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8627598378077364ba5d6ae96d172ad2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
+  characterData: {fileID: 0}
   baseStartMoveSpeed: 5
   baseMaxMoveSpeed: 50
   baseAcceleration: 5
@@ -524,11 +525,19 @@ MonoBehaviour:
   wallRunEnabled: 1
   baseWallRunSpeed: 75
   baseWallRunDuration: 4
-  wallRunGravityScale: 0.2
   wallRunMinHeight: 1.1
   wallRunMinForwardDot: 0.2
   wallRunCooldown: 1
   wallRunStick: 0.5
+  wallRunRiseDuration: 1
+  wallRunRiseSpeed: 3
+  wallRunGravityScale: 0.2
+  wallRunSlowFallMaxDownSpeed: -1.25
+  wallRunTangentAccel: 30
+  wallRunEntryBoost: 2
+  wallRunEntryPreserveTime: 0.15
+  wallRunMaxUpSpeed: 10
+  wallRunMaxDownSpeed: -8
   wallRunFaceTurnLerp: 12
   wallRunLeanDegrees: 15
   coyoteTime: 0.12

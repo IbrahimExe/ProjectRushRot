@@ -16,7 +16,7 @@ MonoBehaviour:
   laneWidth: 10
   cellLength: 10
   bufferRows: 20
-  keepRowsBehind: 5
+  keepRowsBehind: 10
   neigbhorhoodZ: 4
   neighborhoodX: 1
   wallChanceEdge: 0.7
