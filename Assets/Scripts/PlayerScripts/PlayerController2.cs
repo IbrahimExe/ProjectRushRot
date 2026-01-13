@@ -74,32 +74,49 @@ public class PlayerController2 : MonoBehaviour
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
 
-    public float baseWallRunSpeed = 75f;
+    public float baseWallRunSpeed = 1.0f;
     public float baseWallRunDuration = 4f;
 
-    private float wallRunSpeed; // Now acts as a multiplier to base speed, we can delete later if not needed
+    private float wallRunSpeed;
     private float wallRunDuration;
-    public float wallRunGravityScale = 0.2f;
     public float wallRunMinHeight = 1.1f;
     public float wallRunMinForwardDot = 0.2f;
     public float wallRunCooldown = 1f;
     public float wallRunStick = 0.5f;
 
-    [Header("Wall Run Vertical Momentum")]
-    [Tooltip("How long (seconds) after starting a wall run we preserve incoming upward velocity.")]
+    [Header("Wall Run Vertical")]
+    [Tooltip("How long (seconds) after sticking to the wall the player is carried upward.")]
+    public float wallRunRiseDuration = 1.0f;
+
+    [Tooltip("Upward speed during the rise phase. Keep small for floaty glide.")]
+    public float wallRunRiseSpeed = 3.0f;
+
+    [Tooltip("How much gravity to apply during wall run (0 = none, 1 = normal).")]
+    [Range(0f, 1f)]
+    public float wallRunGravityScale = 0.08f;
+
+    [Tooltip("Max downward speed while wall-running (slow fall).")]
+    public float wallRunSlowFallMaxDownSpeed = -1.25f;
+
+    // Internal
+    private float wallRunEntryTime = -999f;
+
+    [Tooltip("Max speed change per second along wall tangent (prevents 'yeet').")]
+    public float wallRunTangentAccel = 30f;
+
+    [Tooltip("Extra planar speed added when wall-run starts ('snap into flow').")]
+    public float wallRunEntryBoost = 2.0f;
+
+    [Tooltip("How long we preserve incoming upward velocity after sticking to wall.")]
     public float wallRunEntryPreserveTime = 0.15f;
 
-    [Tooltip("Extra upward velocity added when you start a wall run while already moving upward.")]
-    public float wallRunEntryUpBoost = 1.5f;
-
-    [Tooltip("Clamp for upward velocity while wall-running (keeps it from launching too high).")]
+    [Tooltip("Upward velocity clamp while wall-running.")]
     public float wallRunMaxUpSpeed = 10f;
 
-    [Tooltip("Clamp for downward velocity while wall-running (controls max slide speed down).")]
+    [Tooltip("Downward velocity clamp while wall-running (slide cap).")]
     public float wallRunMaxDownSpeed = -8f;
-
-    private float wallRunEntryTime = -999f;
     private float wallRunEntryUpVel = 0f;
+
 
     [Header("Wall Run Facing / Lean")]
     public float wallRunFaceTurnLerp = 12f;
@@ -289,7 +306,7 @@ public class PlayerController2 : MonoBehaviour
         // keep rigidbody upright (no tipping) when airborne
         if (!isGrounded)
         {
-           
+
             Quaternion rot = rb.rotation;
             rot.eulerAngles = new Vector3(0f, rot.eulerAngles.y, 0f);
             rb.MoveRotation(rot);
@@ -744,11 +761,8 @@ public class PlayerController2 : MonoBehaviour
                     wallRunEndTime = Time.time + wallRunDuration;
                     state = CharState.WallRunning;
                     wallRunEntryTime = Time.time;
+                    wallRunEntryUpVel = Mathf.Max(0f, rb.linearVelocity.y); // preserve only upward component
 
-                    // Capture upward velocity at contact; only preserve upward component.
-                    wallRunEntryUpVel = Mathf.Max(0f, rb.linearVelocity.y);
-                    if (wallRunEntryUpVel > 0f)
-                        wallRunEntryUpVel = Mathf.Min(wallRunEntryUpVel + wallRunEntryUpBoost, wallRunMaxUpSpeed);
                 }
                 else
                 {
@@ -813,42 +827,62 @@ public class PlayerController2 : MonoBehaviour
 
         Vector3 up = Vector3.up;
         Vector3 t = Vector3.ProjectOnPlane(wallRunTangent, up).normalized;
+        Vector3 n = wallRunNormal.normalized;
 
-        // Current planar velocity (ignore vertical)
-        Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
-
-        // Base speed should be the intended move speed, not current velocity magnitude
+        // --- Base speed is the character's move speed (not a separate wall-run speed) ---
         float baseSpeed = Mathf.Max(startMoveSpeed, currentMoveSpeed);
 
-        // wallRunSpeed is a multiplier now (ex: 1.25f), 0 at the moment to preserve player base speed
-        float desiredAlong = baseSpeed * wallRunSpeed * v;
+        // Treat wallRunSpeed as a MULTIPLIER now (e.g., 1.25 / 1.0 to keek base speed)
+        float targetAlong = baseSpeed * wallRunSpeed * v;
 
-        // Only control the component along the wall tangent (prevents "snap-rotation yeet")
+        // Small entry boost 
+        if (Time.time - wallRunEntryTime <= 0.10f && v > 0f)
+            targetAlong += wallRunEntryBoost;
+
+        // Current planar velocity
+        Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, up);
+
+        // Only control the component ALONG the wall tangent (prevents snap-rotation yeet)
         float currentAlong = Vector3.Dot(planarVel, t);
+        float deltaAlong = targetAlong - currentAlong;
 
-        // Safety clamps 
-        float maxWallRunSpeed = baseSpeed * wallRunSpeed; // max when v=1
-        desiredAlong = Mathf.Clamp(desiredAlong, 0f, maxWallRunSpeed);
-
-        float deltaAlong = desiredAlong - currentAlong;
-
-        // Acceleration clamp so it can't jump instantly
-        float maxAccel = 25f; // tuneable
-        deltaAlong = Mathf.Clamp(deltaAlong, -maxAccel * Time.fixedDeltaTime, maxAccel * Time.fixedDeltaTime);
+        // Clamp acceleration per fixed step (prevents insane spikes)
+        float maxDelta = wallRunTangentAccel * Time.fixedDeltaTime;
+        deltaAlong = Mathf.Clamp(deltaAlong, -maxDelta, maxDelta);
 
         rb.AddForce(t * deltaAlong, ForceMode.VelocityChange);
 
-        // --- Vertical handling (momentum-preserve logic) ---
+        // Stick to wall (uses existing wallRunStick setting)
+        // Push slightly into the wall so you don't peel off from tiny bumps.
+        rb.AddForce(-n * wallRunStick, ForceMode.Acceleration);
+
         Vector3 vel = rb.linearVelocity;
 
-        bool inEntryWindow = (Time.time - wallRunEntryTime) <= wallRunEntryPreserveTime;
-        if (inEntryWindow && wallRunEntryUpVel > 0f)
-            vel.y = Mathf.Max(vel.y, wallRunEntryUpVel);
+        float elapsed = Time.time - wallRunEntryTime;
 
-        vel.y = Mathf.Clamp(vel.y, wallRunMaxDownSpeed, wallRunMaxUpSpeed);
+        // Phase 1: Rise (glide upward for ~1 second)
+        if (elapsed <= wallRunRiseDuration)
+        {
+            // Ensure a gentle rise speed.
+            vel.y = Mathf.Max(vel.y, wallRunRiseSpeed);
+        }
+        else
+        {
+            // Phase 2: Float down very slowly (reduced gravity + slow fall cap)
+            // Applied a small gravity amount manually for a gradual descent.
+            vel.y += Physics.gravity.y * wallRunGravityScale * Time.fixedDeltaTime;
+
+            // Prevent fast descent (slow slide)
+            if (vel.y < wallRunSlowFallMaxDownSpeed)
+                vel.y = wallRunSlowFallMaxDownSpeed;
+        }
+
+        // Safety clamp upward
+        if (vel.y > wallRunMaxUpSpeed)
+            vel.y = wallRunMaxUpSpeed;
+
         rb.linearVelocity = vel;
     }
-
 
 
     // ---------------- Jump ----------------
