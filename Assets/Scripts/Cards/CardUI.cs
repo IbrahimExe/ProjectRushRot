@@ -12,12 +12,12 @@ public class CardUI : MonoBehaviour
 
     public void Initialize(CardSO card, UpgradeStats upgrade)
     {
-        Debug.Log("Initializing card: " + card.name);
+        // Debug.Log("Initializing card: " + card.name);
 
         data = card;
         upgradeStats = upgrade ?? FindFirstObjectByType<UpgradeStats>();
 
-        Debug.Log($"CardUI.Initialize: card={card?.name} upgradeStats={(upgradeStats != null)}");
+        // Debug.Log($"CardUI.Initialize: card={card?.name} upgradeStats={(upgradeStats != null)}");
 
         if (cardImage != null && card != null)
             cardImage.sprite = card.cardImage;
@@ -30,7 +30,7 @@ public class CardUI : MonoBehaviour
     {
         if (data == null)
         {
-            Debug.LogError("CardUI.ApplyCardEffect called but data is null on " + gameObject.name);
+            // Debug.LogError("CardUI.ApplyCardEffect called but data is null on " + gameObject.name);
             return;
         }
 
@@ -40,12 +40,12 @@ public class CardUI : MonoBehaviour
             upgradeStats = FindFirstObjectByType<UpgradeStats>();
             if (upgradeStats == null)
             {
-                Debug.LogError("CardUI.ApplyCardEffect: UpgradeStats not found. Cannot apply " + data.name);
+                // Debug.LogError("CardUI.ApplyCardEffect: UpgradeStats not found. Cannot apply " + data.name);
                 return;
             }
         }
 
-        Debug.Log("Applying card effect: " + data.name + " effect=" + data.cardEffect + " value=" + data.effectValue);
+        // Debug.Log("Applying card effect: " + data.name + " effect=" + data.cardEffect + " value=" + data.effectValue);
 
         switch (data.cardEffect)
         {

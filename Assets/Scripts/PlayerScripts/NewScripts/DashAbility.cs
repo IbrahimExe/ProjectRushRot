@@ -250,6 +250,7 @@ public class DashAbility : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log("Dash collided with: " + other.name + "isDashing: " + isDashing);
         if (isDashing && other.CompareTag("Enemy"))
             Destroy(other.gameObject);
     }
