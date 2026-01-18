@@ -1,3 +1,4 @@
+// PlayerControllerBase.cs
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -53,7 +54,6 @@ public class PlayerControllerBase : MonoBehaviour
     public float tiltSpeed = 5f;
     public float groundAlignSpeed = 8f;
 
-    // Ability references (to keep current FixedUpdate ordering)
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -64,9 +64,9 @@ public class PlayerControllerBase : MonoBehaviour
     public Vector3 GroundNormal { get; private set; } = Vector3.up;
 
     // Ability-driven flags
-    public bool SuppressMoveInput { get; set; } = false;      // dash uses this
-    public bool SuppressJumpBuffer { get; set; } = false;     // dash flip uses this
-    public float MaxSpeedMultiplier { get; set; } = 1f;       // dash boost uses this
+    public bool SuppressMoveInput { get; set; } = false;   // dash uses this
+    public bool SuppressJumpBuffer { get; set; } = false;  // dash flip uses this
+    public float MaxSpeedMultiplier { get; set; } = 1f;    // dash boost uses this
 
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
@@ -90,19 +90,21 @@ public class PlayerControllerBase : MonoBehaviour
         baseMaxMoveSpeed = data.maxMoveSpeed;
         baseAcceleration = data.acceleration;
         baseDeceleration = data.deceleration;
-
         baseJumpForce = data.jumpForce;
 
         SetBaseStats();
 
-        // model
+        // model swap
         if (currentModel != null) Destroy(currentModel);
 
-        currentModel = Instantiate(data.modelPrefab, cartModel.parent);
-        cartModel = currentModel.transform;
-        if (dash != null) dash.cartModel = cartModel;
-        if (wallRun != null) wallRun.cartModel = cartModel;
+        if (data.modelPrefab != null)
+        {
+            currentModel = Instantiate(data.modelPrefab, cartModel != null ? cartModel.parent : transform);
+            cartModel = currentModel.transform;
 
+            if (dash != null) dash.cartModel = cartModel;
+            if (wallRun != null) wallRun.cartModel = cartModel;
+        }
     }
 
     public void SetBaseStats()
@@ -126,22 +128,22 @@ public class PlayerControllerBase : MonoBehaviour
                 lastJumpPressedTime = Time.time;
         }
 
-        // Dash input in Update 
+        // Dash input in Update
         if (dash != null) dash.TickUpdate();
     }
 
     void FixedUpdate()
     {
-        // Preserve original ordering 
+        // Preserve ordering: abilities first, then base motor, then visuals
         if (dash != null) dash.TickFixed();
         if (wallRun != null) wallRun.TickFixed();
-        if (wallJump != null) wallJump.TickFixed(); // wall jump only
+        if (wallJump != null) wallJump.TickFixed();
 
         BaseMove();
         ApplyCustomGravity();
         AlignModelToGroundAndTilt_GroundOnly();
 
-        // keep upright when airborne
+        // Keep upright when airborne (physics body)
         if (!IsGrounded)
         {
             Quaternion rot = RB.rotation;
@@ -154,6 +156,10 @@ public class PlayerControllerBase : MonoBehaviour
     {
         // If wall-running, wall-run script owns movement this frame
         if (wallRun != null && wallRun.IsWallRunning)
+            return;
+
+        // If dashing/side-dashing, dash owns movement this frame
+        if (dash != null && (dash.IsDashing || dash.IsSideDashing))
             return;
 
         float h = Input.GetAxis("Horizontal");
@@ -171,6 +177,8 @@ public class PlayerControllerBase : MonoBehaviour
         transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
 
         Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+
+        // NOTE: keeping these untouched as requested
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
         float planarSpeed = planarVel.magnitude;
 
@@ -199,6 +207,7 @@ public class PlayerControllerBase : MonoBehaviour
                 maxFwd,
                 acceleration * Time.deltaTime
             );
+
             currentReverseSpeed = 0f;
         }
         else if (pressingBackward)
@@ -210,6 +219,7 @@ public class PlayerControllerBase : MonoBehaviour
                     0f,
                     manualDeceleration * Time.deltaTime
                 );
+
                 currentReverseSpeed = 0f;
             }
             else
@@ -219,6 +229,7 @@ public class PlayerControllerBase : MonoBehaviour
                     backwardMaxMoveSpeed,
                     backwardAcceleration * Time.deltaTime
                 );
+
                 currentMoveSpeed = 0f;
             }
         }
@@ -243,8 +254,14 @@ public class PlayerControllerBase : MonoBehaviour
         if (wallRun != null && wallRun.IsWallRunning)
             return;
 
+        // Optional: if you want dash hop to feel consistent, let dash own vertical while active
+        // (Side dash sets vertical velocity directly at start, then you can still let gravity act.)
+        // Keeping gravity active during dash is usually fine.
+
+        // Apply base "heavier gravity" feel
         RB.AddForce(Physics.gravity * fallMultiplier, ForceMode.Acceleration);
 
+        // Extra gravity shaping (kept close to your original intent)
         if (RB.linearVelocity.y < 0)
             RB.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
         else if (RB.linearVelocity.y > 0 && !Input.GetButton("Jump"))
@@ -276,11 +293,16 @@ public class PlayerControllerBase : MonoBehaviour
 
     private bool CheckGrounded()
     {
+        if (feetTransform == null)
+            return false;
+
         float rayLen = 1.0f;
 
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
         {
+            // NOTE: keeping this untouched as requested
             RB.linearDamping = linearDrag;
+
             GroundNormal = hit.normal;
             return true;
         }
@@ -291,7 +313,12 @@ public class PlayerControllerBase : MonoBehaviour
 
     private void AlignModelToGroundAndTilt_GroundOnly()
     {
-        if (cartModel == null || rayOrigin == null) return;
+        if (cartModel == null || rayOrigin == null)
+            return;
+
+        // Avoid ground-tilt fighting the dash flip visuals
+        if (dash != null && dash.IsDashFlipping)
+            return;
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -327,7 +354,7 @@ public class PlayerControllerBase : MonoBehaviour
         cartModel.localRotation *= Quaternion.Lerp(Quaternion.identity, moveTilt, Time.deltaTime * tiltSpeed);
     }
 
-    // Upgrade helpers 
+    // Upgrade helpers
     public void addMaxSpeed(float amount) => maxMoveSpeed += amount;
     public void addAcceleration(float amount) => acceleration += amount;
     public void addJumpForce(float amount) => jumpForce += amount;

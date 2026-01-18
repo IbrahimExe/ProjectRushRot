@@ -1,3 +1,4 @@
+// DashAbility.cs
 using UnityEngine;
 
 public class DashAbility : MonoBehaviour
@@ -8,10 +9,21 @@ public class DashAbility : MonoBehaviour
 
     [Header("Dash Settings")]
     public KeyCode dashKey = KeyCode.LeftShift;
+
+    [Tooltip("Sustained dash planar speed after the initial burst.")]
     public float dashSpeed = 30f;
+
+    [Tooltip("Time the dash movement stays active (logic).")]
+    public float dashDuration = 0.25f;
+
     public float dashCooldown = 1.0f;
+
+    [Tooltip("Temporary max-speed multiplier applied to base movement after dash ends.")]
     public float dashSpeedBoostMultiplier = 1.4f;
+
     public float dashBoostDuration = 1.5f;
+
+    [Tooltip("Initial planar burst multiplier applied on dash start.")]
     public float dashInitialBurstMultiplier = 1.5f;
 
     [Header("Side Dash Settings")]
@@ -19,10 +31,12 @@ public class DashAbility : MonoBehaviour
     public float sideDashDuration = 0.5f;
     public float sideDashUpOffset = 28f;
 
-    [Header("Dash Flip / Roll Settings")]
+    [Header("Dash Flip / Roll Settings (Visual Only)")]
     public Transform cartModel;
     public float dashFlipAngle = 360f;
     public float dashFlipDuration = 0.4f;
+
+    [Tooltip("Small hop height for forward/back dash start.")]
     public float dashHopHeight = 28f;
 
     public bool IsDashing => isDashing;
@@ -62,14 +76,18 @@ public class DashAbility : MonoBehaviour
 
         // avoid base movement fighting with dash
         motor.SuppressMoveInput = isDashing || isSideDashing;
+
+        // prevent buffered jumps while dash is controlling motion/visual
         motor.SuppressJumpBuffer = isDashing || isSideDashing || isDashFlipping;
 
+        // post-dash speed boost for base movement
         motor.MaxSpeedMultiplier = (Time.time < dashBoostEndTime) ? dashSpeedBoostMultiplier : 1f;
     }
 
     private void HandleDashInput()
     {
-        if (motor == null || motor.IsGrounded == false) return;
+        if (motor == null) return;
+        if (motor.IsGrounded == false) return;
         if (wallRun != null && wallRun.IsWallRunning) return;
         if (Time.time < nextDashAllowedTime) return;
         if (!Input.GetKeyDown(dashKey)) return;
@@ -87,6 +105,7 @@ public class DashAbility : MonoBehaviour
         bool d = h > 0.1f;
         bool a = h < -0.1f;
 
+        // prioritize lateral if both pressed (feels snappier for dodges)
         if (a) currentDashType = DashType.Left;
         else if (d) currentDashType = DashType.Right;
         else if (s && !w) currentDashType = DashType.Backward;
@@ -94,6 +113,7 @@ public class DashAbility : MonoBehaviour
 
         if (currentDashType == DashType.None) return;
 
+        // Lateral (side) dash: instantaneous velocity set + optional hop
         if (currentDashType == DashType.Left || currentDashType == DashType.Right)
         {
             Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
@@ -107,6 +127,7 @@ public class DashAbility : MonoBehaviour
 
             Vector3 vel = RB.linearVelocity;
 
+            // remove existing lateral component so the dodge is consistent
             Vector3 lateralCurrent = Vector3.Project(vel, sideDashDirectionWorld);
             vel -= lateralCurrent;
 
@@ -122,12 +143,15 @@ public class DashAbility : MonoBehaviour
 
             StartDashFlipRoll(currentDashType);
 
+            // ensure forward/back dash state is off
             isDashing = false;
             dashJustStarted = false;
             return;
         }
 
+        // Forward/back dash: cached planar direction + burst, then maintained planar speed
         Vector3 upDash = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
+
         Vector3 worldDir = transform.TransformDirection(inputDir.normalized);
         dashDirection = Vector3.ProjectOnPlane(worldDir, upDash).normalized;
         if (dashDirection.sqrMagnitude < 0.01f) return;
@@ -135,8 +159,8 @@ public class DashAbility : MonoBehaviour
         isDashing = true;
         dashJustStarted = true;
 
-        dashEndTime = Time.time + dashFlipDuration;
-        dashBoostEndTime = dashEndTime + dashBoostDuration;
+        dashEndTime = Time.time + Mathf.Max(0.01f, dashDuration);
+        dashBoostEndTime = dashEndTime + Mathf.Max(0f, dashBoostDuration);
         nextDashAllowedTime = Time.time + dashCooldown;
 
         StartDashFlipRoll(currentDashType);
@@ -174,6 +198,7 @@ public class DashAbility : MonoBehaviour
             Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
             Vector3 desiredVel = Vector3.ProjectOnPlane(dashDirection, up).normalized * dashSpeed;
 
+            // Smoothly converge to desired planar speed without stomping vertical
             Vector3 velDiff = desiredVel - planarVel;
             RB.AddForce(velDiff, ForceMode.Acceleration);
         }
@@ -231,6 +256,7 @@ public class DashAbility : MonoBehaviour
             return;
 
         float dt = Time.deltaTime;
+
         float totalAnglePerSecond = dashFlipAngle / Mathf.Max(0.01f, dashFlipDuration);
         float angleStep = totalAnglePerSecond * dt * Mathf.Sign(dashFlipAngleRemaining);
 
@@ -250,7 +276,8 @@ public class DashAbility : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Dash collided with: " + other.name + "isDashing: " + isDashing);
+        Debug.Log($"Dash collided with: {other.name} | isDashing: {isDashing}");
+
         if (isDashing && other.CompareTag("Enemy"))
             Destroy(other.gameObject);
     }
