@@ -25,4 +25,4 @@ MonoBehaviour:
   obstacleChanceCenter: 0.3
   dentisyPenalty: 0.1
   allowHoles: 1
-  allowBridges: 1
+  allowBridges: 0

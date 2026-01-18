@@ -5,14 +5,17 @@
 // - Guarantees: each Z row has >= 1 walkable lane
 // - Prefabs handle their own behavior; generator only picks what/where
 // ------------------------------------------------------------
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum Surface
+
+public enum Surface //list
 {
-    Solid,
-    Hole,
-    Bridge,
+    Solid  ,
+    Hole   ,
+    Bridge ,
 }
 public enum Occupant
     {
@@ -86,8 +89,11 @@ public class LevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), GameObject> spawnedObjects = new Dictionary<(int, int), GameObject>();
     private Dictionary<(int z, int lane), GameObject> spawnedOccupant = new();
 
+    
+
     void Start()
     {
+
         grid = new Dictionary<(int, int), CellState>();
         rng = new System.Random();
         spawnedObjects = new Dictionary<(int, int), GameObject>();
@@ -108,7 +114,18 @@ public class LevelGenerator : MonoBehaviour
         //unly update when the player is at x distance?
         if (playerTransform != null)
         {
+            //if player uis not onside update skip mathj
             UpdateGeneration(playerTransform.position.z);
+        }
+    }
+
+    private IEnumerator SpawnTileRoutine(List<GameObject> tiles)
+    {
+        foreach (var tile in tiles)
+        {
+            // Instantiate or activate tile
+
+            yield return new WaitForSeconds(0.5f);
         }
     }
 
@@ -119,13 +136,13 @@ public class LevelGenerator : MonoBehaviour
         return lane == 0 || lane == config.laneCount - 1;
     }
 
-    private bool LaneIsCenter(int lane)
+    private bool LaneIsCenter(int lane) //NOTE: make the center the player at the start
     {
         int mid = (config.laneCount - 1) / 2;
         return lane == mid || (lane == mid + (config.laneCount % 2 == 0 ? 1 : 0));
     }
 
-    float Rand()
+    float Rand()// not very good, better create a seed at start then use all generation from that
     {
         return UnityEngine.Random.value;
     }
@@ -159,9 +176,10 @@ public class LevelGenerator : MonoBehaviour
         CellState c = getCell(z, lane);
         return (c.surface != Surface.Hole) && (c.occupant == Occupant.None || c.occupant == Occupant.Collectible);
         //IS ALSO CHECKING Collectible/Enemy as if they shouldn't block
+        //trash, oly checks if there is a single walkable cell in the row, no connected path check
     }
 
-    private bool RowHasAnyWalkable(int z)
+    private bool RowHasAnyWalkable(int z)// this funtion should be modified to check for connected paths, not just any walkable cell
     {
         for (int lane = 0; lane < config.laneCount; lane++)
         {
@@ -197,15 +215,16 @@ public class LevelGenerator : MonoBehaviour
         return count;
 
         //debating if i put an exit if count > threshold, but that might make it so the function doesnt work on edge cases
-
+        // i want to make it chunk of rows where it takes the last row as a context to connect and then generates a larger cohesive area. 
+        //this way we can have themes or tempos the algorithm can follow
     }
 
-    private int CountNearbySurf(int z, int lane, Surface surfType)
+    private int CountNearbySurf(int z, int lane, Surface surfType) //how many surfaces of type X are near this cell?
     {
 
         int count = 0;
         int zMax = z + config.neigbhorhoodZ - 1;
-        int xMin = Mathf.Max(0, lane - 1);
+        int xMin = Mathf.Max(0, config.neighborhoodX - 1);
         int xMax = Mathf.Min(config.laneCount - 1, lane + 1);
 
         for (int zz = z; zz <= zMax; zz++)
@@ -230,6 +249,7 @@ public class LevelGenerator : MonoBehaviour
 
         //OPTIMIZATION: Cache calculations if checking same cell multiple times
         // OPTIMIZATION: Consider not counting Enemy/Collectible in density??
+        //not very smart, this is where the weights could be implemented
     }
 
     //Scoring
@@ -496,6 +516,7 @@ public class LevelGenerator : MonoBehaviour
 
     public void UpdateGeneration(float playerZWorld)
     {
+        //
         int playerZIndex = Mathf.FloorToInt(playerZWorld / config.cellLength);
         int targetZ = playerZIndex + config.bufferRows;
 
@@ -546,6 +567,7 @@ public class LevelGenerator : MonoBehaviour
 
             grid.Remove(key);
         }
+        //garbsage collection is gonna hitch when it needs to clean up the destroyed objects
 
     }
 
