@@ -45,7 +45,7 @@ public class PlayerControllerBase : MonoBehaviour
     public Transform feetTransform;
 
     [Header("Visual Tilt (Ground Only)")]
-    public Transform cartModel;
+    public Transform cartModel; //----------------------------------------
     public Transform rayOrigin;
     public float rayLength = 1.5f;
     public float tiltForwardAmount = 10f;
@@ -86,22 +86,28 @@ public class PlayerControllerBase : MonoBehaviour
     {
         characterData = data;
 
+        // ---------------- STATS ----------------
         baseStartMoveSpeed = data.startMoveSpeed;
         baseMaxMoveSpeed = data.maxMoveSpeed;
         baseAcceleration = data.acceleration;
         baseDeceleration = data.deceleration;
-
         baseJumpForce = data.jumpForce;
 
         SetBaseStats();
 
-        // model
-        if (currentModel != null) Destroy(currentModel);
+        // ---------------- MODEL ----------------
+        if (currentModel != null)
+            Destroy(currentModel);
 
-        currentModel = Instantiate(data.modelPrefab, cartModel.parent);
-        cartModel = currentModel.transform;
-        if (dash != null) dash.cartModel = cartModel;
-        if (wallRun != null) wallRun.cartModel = cartModel;
+        // Instantiate as child of PlayerModel
+        currentModel = Instantiate(data.modelPrefab, cartModel);
+
+        // Apply local transform offsets
+        Transform t = currentModel.transform;
+        t.localPosition = data.modelOffset;
+        t.localRotation = Quaternion.Euler(data.modelRotation);
+        t.localScale = data.modelScale;
+
 
     }
 
@@ -113,6 +119,7 @@ public class PlayerControllerBase : MonoBehaviour
         deceleration = baseDeceleration;
 
         jumpForce = baseJumpForce;
+
     }
 
     void Update()
