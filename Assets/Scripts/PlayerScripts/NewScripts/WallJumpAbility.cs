@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class WallJumpAbility : MonoBehaviour
 {
@@ -6,6 +7,7 @@ public class WallJumpAbility : MonoBehaviour
     public PlayerControllerBase motor;
     public WallRunAbility wallRun;
     public DashAbility dash; // optional: blocks jump buffering during dash/flip
+    public Transform aimTransform; // set to your camera (or player view) in inspector
 
     [Header("Wall Jump")]
     public float wallJumpUpImpulse = 7.5f;
@@ -37,31 +39,72 @@ public class WallJumpAbility : MonoBehaviour
         if (!motor.WantsJumpBuffered())
             return;
 
-        //  WALL JUMP (only if currently wall-running)
+        //  WALL JUMP (controlled kick, no forward speed boost)
         if (wallRun.IsWallRunning)
         {
-            Vector3 n = wallRun.WallNormal.normalized;
+            Vector3 n = wallRun.WallNormal.normalized; // should point away from wall
             Vector3 up = Vector3.up;
 
-            // Stop wall-run so it doesn't fight the jump 
+            // Stop wall-run so it doesn't fight the jump
             wallRun.ForceStopAndCooldown();
 
+            // Read input
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+
+            // Use camera/view if provided, else motor
+            Transform t = (aimTransform != null) ? aimTransform : motor.transform;
+
+            Vector3 camFwd = Vector3.ProjectOnPlane(t.forward, up).normalized;
+            Vector3 camRight = Vector3.ProjectOnPlane(t.right, up).normalized;
+
+            Vector3 desired = (camFwd * v + camRight * h);
+            if (desired.sqrMagnitude < 0.0001f)
+                desired = camFwd;
+
+            desired.Normalize();
+
+            // "Along wall" direction guided by input (remove into-wall component)
+            Vector3 along = Vector3.ProjectOnPlane(desired, n);
+            if (along.sqrMagnitude < 0.0001f)
+                along = Vector3.ProjectOnPlane(camFwd, n);
+
+            along.Normalize();
+
+            // Blend: mostly away, some along-wall (sideways)
+            float awayWeight = 0.95f;
+            float alongWeight = 0.15f;
+
+            Vector3 kickDir = (n * awayWeight + along * alongWeight).normalized;
+
+            // --- Kill forward boost ---
             Vector3 vel = RB.linearVelocity;
 
-            // Remove any planar velocity going into the wall (prevents re-sticking / dampened kick)
-            Vector3 planar = Vector3.ProjectOnPlane(vel, up);
-            float intoWall = Vector3.Dot(planar, -n);
-            if (intoWall > 0f)
-                planar += n * intoWall;
+            // Remove all horizontal speed 
+            vel = Vector3.Project(vel, up); // keeps only vertical component
 
-            // Stronger kick: keep planar momentum + add away impulse + add upward impulse
-            Vector3 kickPlanar = planar + n * (wallJumpAwayImpulse + extraAwayImpulse);
-            RB.linearVelocity = kickPlanar + up * wallJumpUpImpulse;
+            // Apply controlled kick + upward
+            float kickStrength = wallJumpAwayImpulse + extraAwayImpulse;
+            vel += kickDir * kickStrength;
+            vel += up * wallJumpUpImpulse;
+
+            // Hard clamp planar speed 
+            float maxPlanarAfterWallJump = 35.0f; 
+            Vector3 planar = Vector3.ProjectOnPlane(vel, up);
+            if (planar.magnitude > maxPlanarAfterWallJump)
+                vel -= (planar - planar.normalized * maxPlanarAfterWallJump);
+
+            RB.linearVelocity = vel;
+
+            // Lock out air-upright briefly so the kick isn't visually cancelled
+            motor.NotifyWallJump();
 
             wallJumpLockUntil = Time.time + wallJumpCooldown;
             motor.ConsumeJumpBuffer();
             return;
         }
+
+
 
         //  NORMAL JUMP (ground + coyote)
         if (motor.IsGrounded || motor.CanCoyoteJump())

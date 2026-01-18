@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3490731749619733366}
   m_Layer: 7
   m_Name: Left_Eye
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -302,7 +302,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47abcaf636d0cbd4a8ad0d451f96a0f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyIdleChase
-  Player: {fileID: 0}
+  Player: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
   EyePoint: {fileID: 4606932842664008373}
   DetectionRange: 100
   ViewAngle: 360
@@ -329,7 +329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6ac0f8aedbb8a54a920db23f9579770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDistanceCulling
-  player: {fileID: 0}
+  player: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
   disableDistance: 150
   checkRate: 0.5
 --- !u!1 &7770692172948649851
@@ -346,7 +346,7 @@ GameObject:
   - component: {fileID: 6285253652924787918}
   m_Layer: 7
   m_Name: Right_Eye
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

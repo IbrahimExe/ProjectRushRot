@@ -54,6 +54,13 @@ public class PlayerControllerBase : MonoBehaviour
     public float tiltSpeed = 5f;
     public float groundAlignSpeed = 8f;
 
+    [Header("Air Upright (Visual)")]
+    public float airUprightSpeed = 8f;
+    public bool keepModelUprightInAir = true;
+    public float uprightLockoutAfterWallJump = 0.15f;
+
+    private float lastWallJumpTime = -999f;
+
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -117,6 +124,10 @@ public class PlayerControllerBase : MonoBehaviour
         jumpForce = baseJumpForce;
     }
 
+    public void NotifyWallJump()
+    {
+        lastWallJumpTime = Time.time;
+    }
     void Update()
     {
         IsGrounded = CheckGrounded();
@@ -142,6 +153,8 @@ public class PlayerControllerBase : MonoBehaviour
         BaseMove();
         ApplyCustomGravity();
         AlignModelToGroundAndTilt_GroundOnly();
+        UprightModelInAir();
+
 
         // Keep upright when airborne (physics body)
         if (!IsGrounded)
@@ -151,6 +164,26 @@ public class PlayerControllerBase : MonoBehaviour
             RB.MoveRotation(rot);
         }
     }
+
+    private void UprightModelInAir()
+    {
+        if (!keepModelUprightInAir) return;
+        if (cartModel == null) return;
+
+        if (wallRun != null && wallRun.IsWallRunning) return;
+        if (dash != null && dash.IsDashFlipping) return;
+
+        if (IsGrounded) return;
+
+        //  don't upright right after a wall jump
+        if (Time.time - lastWallJumpTime < uprightLockoutAfterWallJump)
+            return;
+
+        Quaternion target = Quaternion.Euler(0f, RB.rotation.eulerAngles.y, 0f);
+        cartModel.rotation = Quaternion.Slerp(cartModel.rotation, target, Time.deltaTime * airUprightSpeed);
+    }
+
+
 
     private void BaseMove()
     {
