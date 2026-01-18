@@ -31,6 +31,11 @@ public class DashAbility : MonoBehaviour
     public float sideDashDuration = 0.5f;
     public float sideDashUpOffset = 28f;
 
+    [Header("Dash Hit Window")]
+    public float hitWindowAfterDash = 0.25f;
+    private float hitWindowEndTime = 0f;
+
+
     [Header("Dash Flip / Roll Settings (Visual Only)")]
     public Transform cartModel;
     public float dashFlipAngle = 360f;
@@ -139,6 +144,8 @@ public class DashAbility : MonoBehaviour
             isSideDashing = true;
             sideDashElapsed = 0f;
 
+            hitWindowEndTime = dashEndTime + hitWindowAfterDash; // for forward/back dash
+
             nextDashAllowedTime = Time.time + dashCooldown;
 
             StartDashFlipRoll(currentDashType);
@@ -211,6 +218,8 @@ public class DashAbility : MonoBehaviour
     {
         if (!isSideDashing) return;
 
+        hitWindowEndTime = Time.time + sideDashDuration + hitWindowAfterDash;
+
         sideDashElapsed += Time.fixedDeltaTime;
         if (sideDashElapsed >= sideDashDuration)
             isSideDashing = false;
@@ -274,11 +283,36 @@ public class DashAbility : MonoBehaviour
         }
     }
 
+    private bool CanDashKill()
+    {
+        return isDashing || isSideDashing || Time.time <= hitWindowEndTime;
+    }
+
+    private void TryKillEnemy(GameObject otherGO)
+    {
+        if (!CanDashKill()) return;
+        // if (!(isDashing || isSideDashing)) return;
+        if (!otherGO.CompareTag("Enemy")) return;
+
+        Destroy(otherGO);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"Dash collided with: {other.name} | isDashing: {isDashing}");
-
-        if (isDashing && other.CompareTag("Enemy"))
-            Destroy(other.gameObject);
+        TryKillEnemy(other.gameObject);
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        TryKillEnemy(collision.gameObject);
+    }
+
+
+    //private void OnTriggerEnter(Collider other)
+    //{
+    //    Debug.Log($"Dash collided with: {other.name} | isDashing: {isDashing}");
+
+    //    if (isDashing && other.CompareTag("Enemy"))
+    //        Destroy(other.gameObject);
+    //}
 }
