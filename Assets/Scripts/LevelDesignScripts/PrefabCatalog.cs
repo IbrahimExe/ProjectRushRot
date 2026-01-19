@@ -121,7 +121,7 @@ namespace LevelGenerator.Data
         // --- Weighted Selection ---
 
         // picks an item from the list based on weight, with an optional modifier function
-        public PrefabDef GetWeightedRandom(List<PrefabDef> candidates, System.Func<PrefabDef, float> weightModifier = null)
+        public PrefabDef GetWeightedRandom(List<PrefabDef> candidates, System.Random rng, System.Func<PrefabDef, float> weightModifier = null)
         {
             if (candidates == null || candidates.Count == 0) return null;
 
@@ -144,7 +144,7 @@ namespace LevelGenerator.Data
             if (totalWeight <= 0f) return null;
 
             // random pick
-            float r = Random.Range(0, totalWeight);
+            float r = (float)rng.NextDouble() * totalWeight;
             float current = 0f;
 
             for (int i = 0; i < candidates.Count; i++)
@@ -155,5 +155,7 @@ namespace LevelGenerator.Data
 
             return candidates[candidates.Count - 1]; // fallback
         }
+
+
     }
 }

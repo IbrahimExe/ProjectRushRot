@@ -12,17 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: RunnerConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
+  catalog: {fileID: 11400000, guid: e5371f4c10412274b865008573319f9a, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
-  bufferRows: 20
+  bufferRows: 50
   keepRowsBehind: 10
   neigbhorhoodZ: 4
   neighborhoodX: 1
-  wallChanceEdge: 0.7
-  wallCanceFalloff: 0.15
-  holeChance: 0.2
+  wallChanceEdge: 1
+  wallCanceFalloff: 0.153
+  holeChance: 0.101
   obstacleChanceCenter: 0.3
   dentisyPenalty: 0.1
   allowHoles: 1
   allowBridges: 0
+  pathSidePenalty: 1
+  pathSwitchPenalty: 0
+  pathForwardWeight: 0
+  pathCenterBias: 0

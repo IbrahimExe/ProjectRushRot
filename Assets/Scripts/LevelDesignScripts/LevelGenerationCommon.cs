@@ -15,7 +15,8 @@ namespace LevelGenerator.Data
     {
         Solid,
         Hole,
-        Bridge
+        Bridge,
+        SafePath
     }
 
     // types of objects that occupy the surface

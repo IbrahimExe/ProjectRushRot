@@ -49,6 +49,16 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Header("Options")]
     public bool allowHoles = true;
     public bool allowBridges = true;
+
+    [Header("Golden Path Settings")]
+    [Tooltip("Penalty for moving sideways if previous move was sideways (0-1). Higher = fewer repeated side moves.")]
+    [Range(0f, 1f)] public float pathSidePenalty = 0.85f;
+    [Tooltip("Penalty for Switchbacks (Left then Right immediatley). Higher = smoother curves.")]
+    [Range(0f, 1f)] public float pathSwitchPenalty = 0.5f;
+    [Tooltip("Chance to move forward regardless (0-1).")]
+    [Range(0f, 1f)] public float pathForwardWeight = 0.6f;
+    [Tooltip("Tendency to pull back to the center (0-1). Higher = stays near center.")]
+    [Range(0f, 1f)] public float pathCenterBias = 0.2f;
 }
 
 
@@ -57,9 +67,20 @@ public class RunnerLevelGenerator : MonoBehaviour
 {
     [SerializeField] private RunnerGenConfig config;
 
+    [Header("Seeding")]
+    [Tooltip("Seed for deterministic generation")]
+    public string seed = "Runner"; // Hardcoded default
+
+
     private Dictionary<(int z, int lane), CellState> grid;
     private int generatorZ = 0;
     private System.Random rng;
+
+    // Golden Path State
+    private HashSet<(int z, int lane)> goldenPathSet = new HashSet<(int, int)>();
+    private int pathTipZ = -1;
+    private int pathTipLane = 1; 
+    private int lastPathMove = 0; // 0=Forward, -1=Left, 1=Right
 
     [Header("References")]
     [SerializeField] private Transform playerTransform;
@@ -70,25 +91,51 @@ public class RunnerLevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), GameObject> spawnedOccupant = new();
 
     
-
     void Start()
     {
         if (config == null)
         {
-            Debug.LogError("RunnerLevelGenerator: No 'RunnerGenConfig' assigned! Please create a config asset and assign it.");
-            enabled = false;
+            Debug.LogError("you forgot to assign the runner config dummy.");
+            enabled = false;    
             return;
         }
 
         grid = new Dictionary<(int, int), CellState>();
-        rng = new System.Random();
+        if (!string.IsNullOrEmpty(seed))
+            rng = new System.Random(seed.GetHashCode());
+        else
+            rng = new System.Random(); // fallback
         spawnedObjects = new Dictionary<(int, int), GameObject>();
         spawnedOccupant = new Dictionary<(int, int), GameObject>();
-        //Initialize object pools here
+        
+        // Initialize Golden Path
+        pathTipLane = config.laneCount / 2;
+        pathTipZ = -1;
+        lastPathMove = 0;
+
+        // Snap Player to Center/Start
+        if (playerTransform != null)
+        {
+            float centerX = (pathTipLane - (config.laneCount - 1) * 0.5f) * config.laneWidth;
+            Vector3 pPos = playerTransform.position;
+            pPos.x = centerX;
+            
+            // Handle CharacterController which overrides position assignments
+            CharacterController cc = playerTransform.GetComponent<CharacterController>();
+            if (cc != null) {
+                cc.enabled = false;
+                playerTransform.position = pPos;
+                cc.enabled = true;
+            }
+            else {
+                playerTransform.position = pPos;
+            }
+        }
         
         if(config.catalog != null) config.catalog.RebuildCache();
 
         // Generate initial buffer
+        UpdatePathBuffer(config.bufferRows + 10); // Plan path ahead of generation
 
         for (int i = 0; i < config.bufferRows; i++)
         {
@@ -97,14 +144,84 @@ public class RunnerLevelGenerator : MonoBehaviour
         }
     }
     
-
     void Update()
     {
-        //unly update when the player is at x distance?
         if (playerTransform != null)
         {
             //if player uis not onside update skip mathj
             UpdateGeneration(playerTransform.position.z);
+        }
+    }
+
+    private void UpdatePathBuffer(int targetZ)
+    {
+        // "Walker" Logic for Natural Curves
+        while (pathTipZ < targetZ)
+        {
+            // Determine possible moves
+            float wForward = config.pathForwardWeight;
+            float wLeft = 0.5f;
+            float wRight = 0.5f;
+
+            // Apply Penalties based on LAST move
+            if (lastPathMove == 0) // Was Forward
+            {
+               // Default neutral
+            }
+            else if (lastPathMove == -1) // Was Left
+            {
+                wLeft   *= (1.0f - config.pathSidePenalty);   // Discourage Left again (Hard Line)
+                wRight  *= (1.0f - config.pathSwitchPenalty); // Discourage Right (ZigZag)
+            }
+            else if (lastPathMove == 1) // Was Right
+            {
+                wRight *= (1.0f - config.pathSidePenalty);   // Discourage Right again (Hard Line)
+                wLeft  *= (1.0f - config.pathSwitchPenalty); // Discourage Left (ZigZag)
+            }
+
+            // Apply Center Bias
+            // If we are Left of center, boost Right. If Right of center, boost Left.
+            float centerLane = (config.laneCount - 1) / 2f;
+            if (pathTipLane < centerLane) 
+            {
+                wRight += config.pathCenterBias; // Pull right
+            }
+            else if (pathTipLane > centerLane)
+            {
+                wLeft += config.pathCenterBias; // Pull left
+            }
+
+            // Boundary Checks (Hard Limits)
+            if (pathTipLane <= 0) wLeft = 0f;
+            if (pathTipLane >= config.laneCount - 1) wRight = 0f;
+
+            // Weighted Pick
+            float total = wForward + wLeft + wRight;
+            float r = (float)rng.NextDouble() * total;
+
+            int move = 0; // default forward
+            if (r < wLeft) move = -1;
+            else if (r < wLeft + wForward) move = 0;
+            else move = 1;
+
+            // Apply Move
+            if (move == 0)
+            {
+                pathTipZ++;
+            }
+            else
+            {
+                // Sideways move assumes Z stays same?
+                // Actually, usually in runners you move Forward AND Sideways, or Forward OR Sideways.
+                // If we move sideways without Z, we have a horizontal line.
+                // Let's say a "Move" is always Z+1, but lane can change.
+                // This prevents "Freezing" in Z.
+                pathTipZ++;
+                pathTipLane += move;
+            }
+
+            lastPathMove = move;
+            goldenPathSet.Add((pathTipZ, pathTipLane));
         }
     }
 
@@ -131,9 +248,9 @@ public class RunnerLevelGenerator : MonoBehaviour
         return lane == mid || (lane == mid + (config.laneCount % 2 == 0 ? 1 : 0));
     }
 
-    float Rand()// not very good, better create a seed at start then use all generation from that
+    float Rand()
     {
-        return UnityEngine.Random.value;
+        return (float)rng.NextDouble();
     }
 
     private float Clamp(float v)
@@ -349,14 +466,24 @@ public class RunnerLevelGenerator : MonoBehaviour
 
         for (int lane = 0; lane < config.laneCount; lane++)
         {
-            SetCell(z, lane, new CellState(SurfaceType.Solid, OccupantType.None));
-            
+            // CHECK GOLDEN PATH
+            if (goldenPathSet.Contains((z, lane)))
+            {
+                SetCell(z, lane, new CellState(SurfaceType.SafePath, OccupantType.None));
+            }
+            else
+            {
+                SetCell(z, lane, new CellState(SurfaceType.Solid, OccupantType.None));
+            }
         }
 
 
         //border walls first
         for (int lane = 0; lane < config.laneCount; lane++)
         {
+            // Skip SafePath lanes
+            if (getCell(z, lane).surface == SurfaceType.SafePath) continue;
+
             if (!LaneIsBorder(lane)) continue;
 
             float wallScore = ScoreWall(z, lane);
@@ -372,6 +499,7 @@ public class RunnerLevelGenerator : MonoBehaviour
             }
         }
 
+
         if (config.allowHoles)
         {
             for (int lane = 0; lane < config.laneCount; lane++)
@@ -380,6 +508,9 @@ public class RunnerLevelGenerator : MonoBehaviour
                 if (Rand() < holeScore)
                 {
                     CellState candidate = getCell(z, lane);
+
+                    // Skip Safe Path
+                    if (candidate.surface == SurfaceType.SafePath) continue;
 
                     // Only carve holes from solid ground
                     if (candidate.surface != SurfaceType.Solid) continue;
@@ -409,6 +540,7 @@ public class RunnerLevelGenerator : MonoBehaviour
         {
             CellState c = getCell(z, lane);
             if (c.surface == SurfaceType.Hole) continue;
+            if (c.surface == SurfaceType.SafePath) continue; // Keep Safe Path clear
             if (c.occupant != OccupantType.None) continue;
 
             float obsScore = ScoreObstacle(z, lane);
@@ -455,12 +587,12 @@ public class RunnerLevelGenerator : MonoBehaviour
             // Get candidates for the specific surface type
             var surfCandidates = config.catalog.GetCandidates(s.surface);
             // Pick one
-            var surfDef = config.catalog.GetWeightedRandom(surfCandidates); 
+            var surfDef = config.catalog.GetWeightedRandom(surfCandidates, rng); 
             
             if (surfDef != null && surfDef.Prefabs != null && surfDef.Prefabs.Count > 0)
             {
                 // Pick random variant
-                GameObject chosenPrefab = surfDef.Prefabs[UnityEngine.Random.Range(0, surfDef.Prefabs.Count)];
+                GameObject chosenPrefab = surfDef.Prefabs[rng.Next(0, surfDef.Prefabs.Count)];
                 if (chosenPrefab != null)
                 {
                     surfaceObj = Instantiate(chosenPrefab, basePos, Quaternion.identity);
@@ -479,7 +611,7 @@ public class RunnerLevelGenerator : MonoBehaviour
                 // Get candidates
                 var occCandidates = config.catalog.GetCandidates(s.occupant);
                 // Pick one
-                var occDef = config.catalog.GetWeightedRandom(occCandidates);
+                var occDef = config.catalog.GetWeightedRandom(occCandidates, rng);
 
                 if (occDef != null && occDef.Prefabs != null && occDef.Prefabs.Count > 0)
                 {
@@ -488,7 +620,7 @@ public class RunnerLevelGenerator : MonoBehaviour
                     Vector3 occPos = basePos; 
                     
                     // Pick random variant
-                    GameObject chosenPrefab = occDef.Prefabs[UnityEngine.Random.Range(0, occDef.Prefabs.Count)];
+                    GameObject chosenPrefab = occDef.Prefabs[rng.Next(0, occDef.Prefabs.Count)];
                     
                     if (chosenPrefab != null)
                     {
@@ -509,6 +641,9 @@ public class RunnerLevelGenerator : MonoBehaviour
         //
         int playerZIndex = Mathf.FloorToInt(playerZWorld / config.cellLength);
         int targetZ = playerZIndex + config.bufferRows;
+
+        // Ensure we have a path planned up to this point
+        UpdatePathBuffer(targetZ + 20);
 
         while (generatorZ < targetZ)
         {

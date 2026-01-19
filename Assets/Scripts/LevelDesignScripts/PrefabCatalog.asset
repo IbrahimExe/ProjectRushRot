@@ -12,4 +12,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
   m_Name: PrefabCatalog
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
-  Definitions: []
+  Definitions:
+  - ID: BasicFLOOR
+    Name: Floor
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Attributes: 8
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
+  - ID: BasicWALL
+    Name: Wall
+    Prefabs:
+    - {fileID: 4123710351756878346, guid: 449e023b912b22e49a313e3cb43f54ef, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantType: 1
+    Attributes: 0
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
+  - ID: BasicHole
+    Name: Hole
+    Prefabs:
+    - {fileID: 1021981873677495912, guid: 1bb8e1e3c2826ab4d990f2b52bc796a4, type: 3}
+    Layer: 0
+    SurfaceType: 1
+    OccupantType: 2
+    Attributes: 4
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
+  - ID: BasicEnemy
+    Name: Enemy
+    Prefabs:
+    - {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantType: 2
+    Attributes: 15
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
+  - ID: BasicBRIDGE
+    Name: Bridge
+    Prefabs:
+    - {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
+    Layer: 1
+    SurfaceType: 2
+    OccupantType: 0
+    Attributes: 24
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
+  - ID: SafePath
+    Name: safepath
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Attributes: 8
+    Size: {x: 1, y: 1, z: 1}
+    BaseWeight: 100
+    Tags: []
