@@ -9,29 +9,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-
-public enum Surface //list
-{
-    Solid  ,
-    Hole   ,
-    Bridge ,
-}
-public enum Occupant
-    {
-    None,
-    Obstacle,
-    Collectible,
-    Enemy,
-    Wall,
-}
+using LevelGenerator.Data;
 
 [System.Serializable]
 public struct CellState{
-    public Surface surface;
-    public Occupant occupant;
+    public SurfaceType surface;
+    public OccupantType occupant;
 
-    public CellState(Surface s, Occupant o){
+    public CellState(SurfaceType s, OccupantType o){
         surface = s;
         occupant = o;
     }
@@ -40,10 +25,13 @@ public struct CellState{
 [CreateAssetMenu(fileName = "RunnerConfig", menuName = "Runner/GeneratorConfig")]
 public sealed class RunnerGenConfig : ScriptableObject 
 {
+    [Header("Catalog Reference")]
+    public PrefabCatalog catalog;
+
     [Header("Lane Setup")]
     public int laneCount = 3;
     public float laneWidth = 2f;
-    public float cellLength = 10f; // square cell size
+    public float cellLength = 10f; 
 
     [Header("Generation Settings")]
     public int bufferRows = 20; // extra rows to keep loaded beyond player view
@@ -65,21 +53,13 @@ public sealed class RunnerGenConfig : ScriptableObject
 
 
 //main class
-public class LevelGenerator : MonoBehaviour
+public class RunnerLevelGenerator : MonoBehaviour
 {
     [SerializeField] private RunnerGenConfig config;
 
     private Dictionary<(int z, int lane), CellState> grid;
     private int generatorZ = 0;
     private System.Random rng;
-
-    //prefab references
-    [Header("Prefabs")]
-    [SerializeField] private GameObject floorPrefab;
-    [SerializeField] private GameObject wallPrefab;
-    [SerializeField] private GameObject obstaclePrefab;
-    [SerializeField] private GameObject holePrefab;
-    [SerializeField] private GameObject bridgePrefab;
 
     [Header("References")]
     [SerializeField] private Transform playerTransform;
@@ -93,14 +73,23 @@ public class LevelGenerator : MonoBehaviour
 
     void Start()
     {
+        if (config == null)
+        {
+            Debug.LogError("RunnerLevelGenerator: No 'RunnerGenConfig' assigned! Please create a config asset and assign it.");
+            enabled = false;
+            return;
+        }
 
         grid = new Dictionary<(int, int), CellState>();
         rng = new System.Random();
         spawnedObjects = new Dictionary<(int, int), GameObject>();
         spawnedOccupant = new Dictionary<(int, int), GameObject>();
         //Initialize object pools here
+        
+        if(config.catalog != null) config.catalog.RebuildCache();
 
         // Generate initial buffer
+
         for (int i = 0; i < config.bufferRows; i++)
         {
             GenerateRow(i);
@@ -161,7 +150,7 @@ public class LevelGenerator : MonoBehaviour
         {
             return state;
         }
-        return new CellState(Surface.Solid, Occupant.None);
+        return new CellState(SurfaceType.Solid, OccupantType.None);
     }
 
     private void SetCell(int z, int lane, CellState state)
@@ -174,12 +163,11 @@ public class LevelGenerator : MonoBehaviour
     private bool IsWalkable(int z, int lane)
     {
         CellState c = getCell(z, lane);
-        return (c.surface != Surface.Hole) && (c.occupant == Occupant.None || c.occupant == Occupant.Collectible);
+        return (c.surface != SurfaceType.Hole) && (c.occupant == OccupantType.None || c.occupant == OccupantType.Collectible);
         //IS ALSO CHECKING Collectible/Enemy as if they shouldn't block
-        //trash, oly checks if there is a single walkable cell in the row, no connected path check
     }
 
-    private bool RowHasAnyWalkable(int z)// this funtion should be modified to check for connected paths, not just any walkable cell
+    private bool RowHasAnyWalkable(int z)
     {
         for (int lane = 0; lane < config.laneCount; lane++)
         {
@@ -191,9 +179,52 @@ public class LevelGenerator : MonoBehaviour
         return false;
     }
 
+    // --- Connectivity Check (A*) ---
+
+    // Checks if there is a valid path from the start of the current context window to the target z
+    private bool IsConnectedToStart(int targetZ)
+    {
+        // 1. Identify start point: The player's current row or the beginning of the buffer?
+        // For a continuous generator, we just need to ensure the NEW row connections to the EXISTING valid geometry.
+        // We look back 'neighborhoodZ' rows. If we can path from (z - neighborhood) to (z), we are good.
+        
+        int startZ = Mathf.Max(0, targetZ - config.neigbhorhoodZ);
+        if (startZ == targetZ) return true; // First row is always valid
+
+        // Find a walkable start node in startZ
+        (int z, int lane) startNode = (-1, -1);
+        for(int l=0; l<config.laneCount; l++) {
+            if (IsWalkable(startZ, l)) {
+                startNode = (startZ, l);
+                break; 
+            }
+        }
+        if (startNode.z == -1) return false; // Previous area was fully blocked? Should not happen if we maintain invariant.
+
+        // Find a walkable end node in targetZ
+        (int z, int lane) endNode = (-1, -1);
+        for(int l=0; l<config.laneCount; l++) {
+            if (IsWalkable(targetZ, l)) {
+                endNode = (targetZ, l);
+                break;
+            }
+        }
+        if (endNode.z == -1) return false; // Target row is fully blocked
+
+        // Check path
+        var path = PathfindingHelper.FindPath(
+            startNode, 
+            endNode, 
+            0, config.laneCount - 1, 
+            IsWalkable
+        );
+
+        return path != null && path.Count > 0;
+    }
+
     //Neighbors check
 
-    private int CountNearbyOcc(int z, int lane, Occupant occType)
+    private int CountNearbyOcc(int z, int lane, OccupantType occType)
     {
         int count = 0;
         int zMax = z + config.neigbhorhoodZ - 1;
@@ -219,7 +250,7 @@ public class LevelGenerator : MonoBehaviour
         //this way we can have themes or tempos the algorithm can follow
     }
 
-    private int CountNearbySurf(int z, int lane, Surface surfType) //how many surfaces of type X are near this cell?
+    private int CountNearbySurf(int z, int lane, SurfaceType surfType) //how many surfaces of type X are near this cell?
     {
 
         int count = 0;
@@ -237,19 +268,17 @@ public class LevelGenerator : MonoBehaviour
             }
         }
         return count;
-
     }
 
     private float DensityPenalty(int z, int lane)
     {
-        int nearObs = CountNearbyOcc(z, lane, Occupant.Obstacle);
-        int nearWall = CountNearbyOcc(z, lane, Occupant.Wall);
-        int nearHole = CountNearbySurf(z, lane, Surface.Hole);
+        int nearObs = CountNearbyOcc(z, lane, OccupantType.Obstacle);
+        int nearWall = CountNearbyOcc(z, lane, OccupantType.Wall);
+        int nearHole = CountNearbySurf(z, lane, SurfaceType.Hole);
         return (nearObs + nearWall + nearHole) * config.dentisyPenalty;
 
         //OPTIMIZATION: Cache calculations if checking same cell multiple times
         // OPTIMIZATION: Consider not counting Enemy/Collectible in density??
-        //not very smart, this is where the weights could be implemented
     }
 
     //Scoring
@@ -296,80 +325,21 @@ public class LevelGenerator : MonoBehaviour
 
         //temporarily set
         SetCell(z, lane, newState);
-        bool ok = RowHasAnyWalkable(z);
+        
+        // Check dynamic path connectivity
+        bool ok = IsConnectedToStart(z);
 
         //revert
         SetCell(z, lane, old);
 
         return !ok;
 
-        //OPTIMIZATION: Consider caching results if checking same cell multiple times, also consider if this is called too often
+        //OPTIMIZATION: IsConnectedToStart is expensive (A*). 
+        // Calling this for every placement attempt might lag if 'neighborhoodZ' is large.
+        // But since we are only generating 1 row at a time in Update, it might be acceptable.
     }
 
-    private void SpawnFloorBelow(int z, int lane)
-    {
-        Vector3 position = new Vector3(
-            (lane * config.laneWidth),
-            0f,
-            z * config.cellLength
-        );
-        if (floorPrefab != null)
-        {
-            GameObject floor = Instantiate(floorPrefab, position, Quaternion.identity);
-            spawnedObjects[(z, lane)] = floor;
-        }
-    }
-
-    private void ComitAndSpawn(int z, int lane, CellState newState) //Not Used but can be useful for future memmory management
-    {
-        SetCell(z, lane, newState);
-
-        //world position
-        Vector3 position = new Vector3(
-            (lane * config.laneWidth),
-            0f,
-            z * config.cellLength
-        );
-
-
-        //spawn prefabs MEMMORY MANAGEMENT NEEDED
-        //this needs to go, as is the floor spawns and then the wall/obstacle spawns on top of it. But holes need to remove the floor
-
-        GameObject spawned = null;
-
-        // Spawn occupants on top
-        // Room for implementing anchors and seed to move objects inside the cell
-        if (newState.surface == Surface.Hole && holePrefab != null)
-        {
-            Vector3 wallPos = position + Vector3.up * 0.5f;
-            spawned = Instantiate(holePrefab, position, Quaternion.identity);
-        }
-        else if (newState.surface == Surface.Bridge && bridgePrefab != null)
-        {
-            Vector3 obsPos = position + Vector3.up * 0.5f;
-            spawned = Instantiate(bridgePrefab, position, Quaternion.identity);
-            
-        }
-
-        if (newState.occupant == Occupant.Wall && wallPrefab != null)
-        {
-            spawned = Instantiate(wallPrefab, position, Quaternion.identity);
-            
-        }
-        else if (newState.occupant == Occupant.Obstacle && obstaclePrefab != null)
-        {
-            spawned = Instantiate(obstaclePrefab, position, Quaternion.identity);
-           
-        }
-
-
-        if (spawned != null)
-        {
-            spawnedObjects[(z, lane)] = spawned;
-            SpawnFloorBelow(z, lane);
-        }
-
-    }
+    //Unused helper removed/refactored logic into main loop
 
     //Row Generation
 
@@ -379,7 +349,7 @@ public class LevelGenerator : MonoBehaviour
 
         for (int lane = 0; lane < config.laneCount; lane++)
         {
-            SetCell(z, lane, new CellState(Surface.Solid, Occupant.None));
+            SetCell(z, lane, new CellState(SurfaceType.Solid, OccupantType.None));
             
         }
 
@@ -393,7 +363,7 @@ public class LevelGenerator : MonoBehaviour
             if (Rand() < wallScore)
             {
                 CellState candidate = getCell(z, lane);
-                candidate.occupant = Occupant.Wall;
+                candidate.occupant = OccupantType.Wall;
 
                 if (!WouldBreakRowIfPlaced(z, lane, candidate))
                 {
@@ -412,16 +382,16 @@ public class LevelGenerator : MonoBehaviour
                     CellState candidate = getCell(z, lane);
 
                     // Only carve holes from solid ground
-                    if (candidate.surface != Surface.Solid) continue;
+                    if (candidate.surface != SurfaceType.Solid) continue;
 
-                    candidate.surface = Surface.Hole;
-                    candidate.occupant = Occupant.None;
+                    candidate.surface = SurfaceType.Hole;
+                    candidate.occupant = OccupantType.None;
 
                     if (WouldBreakRowIfPlaced(z, lane, candidate))
                     {
                         if (config.allowBridges)
                         {
-                            candidate.surface = Surface.Bridge;
+                            candidate.surface = SurfaceType.Bridge;
                             SetCell(z, lane, candidate);
                         }
                         // else: do nothing, keep solid
@@ -438,14 +408,14 @@ public class LevelGenerator : MonoBehaviour
         for (int lane = 0; lane < config.laneCount; lane++)
         {
             CellState c = getCell(z, lane);
-            if (c.surface == Surface.Hole) continue;
-            if (c.occupant != Occupant.None) continue;
+            if (c.surface == SurfaceType.Hole) continue;
+            if (c.occupant != OccupantType.None) continue;
 
             float obsScore = ScoreObstacle(z, lane);
             if (Rand() < obsScore)
             {
                 CellState obstacleCandidate = c;
-                obstacleCandidate.occupant = Occupant.Obstacle;
+                obstacleCandidate.occupant = OccupantType.Obstacle;
 
                 if (!WouldBreakRowIfPlaced(z, lane, obstacleCandidate))
                 {
@@ -464,53 +434,73 @@ public class LevelGenerator : MonoBehaviour
 
             foreach (int lane in tryLanes)
             {
-                CellState cc = new CellState(Surface.Solid, Occupant.None);
+                CellState cc = new CellState(SurfaceType.Solid, OccupantType.None);
                 SetCell(z, lane, cc);
                 if (RowHasAnyWalkable(z))
                     break;
             }
         }
 
+        // --- Instantiation using Catalog ---
+        if (config.catalog == null) return;
+
         for (int lane = 0; lane < config.laneCount; lane++)
         {
             CellState s = getCell(z, lane);
 
             Vector3 basePos = new Vector3(lane * config.laneWidth, 0f, z * config.cellLength);
-            Vector3 occPos = basePos + Vector3.up * 0.5f;
-
+            
             // ----- Surface -----
             GameObject surfaceObj = null;
-
-            if (s.surface == Surface.Hole)
+            // Get candidates for the specific surface type
+            var surfCandidates = config.catalog.GetCandidates(s.surface);
+            // Pick one
+            var surfDef = config.catalog.GetWeightedRandom(surfCandidates); 
+            
+            if (surfDef != null && surfDef.Prefabs != null && surfDef.Prefabs.Count > 0)
             {
-                if (holePrefab != null) surfaceObj = Instantiate(holePrefab, basePos, Quaternion.identity);
-            }
-            else if (s.surface == Surface.Bridge)
-            {
-                if (bridgePrefab != null) surfaceObj = Instantiate(bridgePrefab, basePos, Quaternion.identity);
+                // Pick random variant
+                GameObject chosenPrefab = surfDef.Prefabs[UnityEngine.Random.Range(0, surfDef.Prefabs.Count)];
+                if (chosenPrefab != null)
+                {
+                    surfaceObj = Instantiate(chosenPrefab, basePos, Quaternion.identity);
+                    spawnedObjects[(z, lane)] = surfaceObj;
+                }
             }
             else
             {
-                if (floorPrefab != null) surfaceObj = Instantiate(floorPrefab, basePos, Quaternion.identity);
+                // Debug: Why no surface?
+                if (surfCandidates.Count == 0) Debug.LogWarning($"No Surface candidates for type {s.surface}");
             }
-
-            if (surfaceObj != null)
-                spawnedObjects[(z, lane)] = surfaceObj;
 
             // ----- Occupant -----
-            GameObject occObj = null;
-
-            if (s.occupant == Occupant.Wall)
+            if (s.occupant != OccupantType.None)
             {
-                if (wallPrefab != null) occObj = Instantiate(wallPrefab, occPos, Quaternion.identity);
-            }
-            else if (s.occupant == Occupant.Obstacle)
-            {
-                if (obstaclePrefab != null) occObj = Instantiate(obstaclePrefab, occPos, Quaternion.identity);
-            }
+                // Get candidates
+                var occCandidates = config.catalog.GetCandidates(s.occupant);
+                // Pick one
+                var occDef = config.catalog.GetWeightedRandom(occCandidates);
 
-            if (occObj != null)
-                spawnedOccupant[(z, lane)] = occObj;
+                if (occDef != null && occDef.Prefabs != null && occDef.Prefabs.Count > 0)
+                {
+                    // Basic positioning: center of tile + slight up? 
+                    // Or rely on pivot. Assuming pivot is bottom-center or bottom-left.
+                    Vector3 occPos = basePos; 
+                    
+                    // Pick random variant
+                    GameObject chosenPrefab = occDef.Prefabs[UnityEngine.Random.Range(0, occDef.Prefabs.Count)];
+                    
+                    if (chosenPrefab != null)
+                    {
+                        GameObject occObj = Instantiate(chosenPrefab, occPos, Quaternion.identity);
+                        spawnedOccupant[(z, lane)] = occObj;
+                    }
+                }
+                else
+                {
+                     if (occCandidates.Count == 0) Debug.LogWarning($"No Occupant candidates for type {s.occupant}");
+                }
+            }
         }
     }
 
