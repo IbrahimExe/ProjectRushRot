@@ -57,6 +57,7 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Range(0f, 1f)] public float pathForwardWeight = 0.6f;
     [Tooltip("Tendency to pull back to the center (0-1). Higher = stays near center.")]
     [Range(0f, 1f)] public float pathCenterBias = 0.2f;
+
     [Header("Golden Path Wave")]
     public bool useWavePath = true;
 
@@ -80,11 +81,19 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Tooltip("Keep path away from edges.")]
     [Range(0, 10)] public int edgePadding = 2;
 
+    [Header("Golden Path Rest Straights")]
+    [Tooltip("Max number of rows in a straight rest segment.")]
+    [Range(2, 300)] public int restAreaMaxLength = 35;
 
+    [Tooltip("Min number of rows in a straight rest segment.")]
+    [Range(2, 300)] public int restAreaMinLength = 15;
 
-    [Header("A* Validation Settings")]
-    [Tooltip("Penalty added when the path changes lateral direction (discourages zig-zag).")]
-    [Range(0f, 10f)] public float aStarTurnCost = 0f;
+    [Tooltip("Chance per row to START a rest (0..1). Example: 0.02 ~ roughly once every ~50 rows).")]
+    [Range(0f, 1f)] public float restAreaFrequency = 0.02f;
+
+    //[Header("A* Validation Settings")]
+    //[Tooltip("Penalty added when the path changes lateral direction (discourages zig-zag).")]
+    //[Range(0f, 10f)] public float aStarTurnCost = 0f;
 
     [Header("Options")]
     public bool allowHoles = true;
@@ -105,6 +114,16 @@ public class RunnerLevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), CellState> grid;
     private int generatorZ = 0;
     private System.Random rng;
+    // Rest-straight state
+    private int restRowsRemaining = 0;
+
+    // Wave phase counter (ADVANCES only when wave is active)
+    // This is what "stretches" the wave during rests.
+    private int wavePhaseZ = 0;
+
+    // Optional tiny cooldown to avoid rest segments back-to-back
+    private int restCooldown = 0;
+
 
     // Golden Path State
     private HashSet<(int z, int lane)> goldenPathSet = new HashSet<(int, int)>();
@@ -147,6 +166,10 @@ public class RunnerLevelGenerator : MonoBehaviour
         // Initialize Golden Path
         pathTipLane = config.laneCount / 2;
         pathLaneF = pathTipLane;
+        restRowsRemaining = 0;
+        restCooldown = 0;
+        wavePhaseZ = 0;
+
         // Deterministic perlin offset from seed
         waveSeedOffset = (seed != null ? seed.GetHashCode() : 0) * 0.001f;
         pathTipZ = -1;
@@ -204,57 +227,85 @@ public class RunnerLevelGenerator : MonoBehaviour
                 continue;
             }
 
+            // --- Rest segment logic (straight line) ---
+            // countdown cooldown so we don't start rests back-to-back
+            if (restCooldown > 0) restCooldown--;
+
+            // If we're currently resting: keep lane constant, DO NOT advance wavePhaseZ
+            if (restRowsRemaining > 0)
+            {
+                restRowsRemaining--;
+                goldenPathSet.Add((pathTipZ, pathTipLane));
+
+                // after a rest ends, add a small cooldown
+                if (restRowsRemaining == 0)
+                    restCooldown = Mathf.Max(0, config.restAreaMinLength / 2);
+
+                continue;
+            }
+
+            // Possibly start a new rest (only if not in cooldown)
+            if (restCooldown == 0 && Rand() < config.restAreaFrequency)
+            {
+                int minLen = Mathf.Max(2, config.restAreaMinLength);
+                int maxLen = Mathf.Max(minLen, config.restAreaMaxLength);
+
+                restRowsRemaining = rng.Next(minLen, maxLen + 1);
+                goldenPathSet.Add((pathTipZ, pathTipLane));
+                continue;
+            }
+
+            // --- Wave path (active) ---
+            // ADVANCE wave phase ONLY when wave is active
+            wavePhaseZ++;
+
             float centerLane = (config.laneCount - 1) * 0.5f;
 
+            // Multi-octave perlin
+            float z = wavePhaseZ; // IMPORTANT: use wavePhaseZ, not pathTipZ
 
-            // --- Multi-octave Perlin (big curves + subtle variation) ---
-            float z = pathTipZ;
+            float n1 = Mathf.PerlinNoise(waveSeedOffset + 10.0f, z * config.waveFrequency);
+            float n2 = Mathf.PerlinNoise(waveSeedOffset + 77.7f, z * (config.waveFrequency * 2.2f));
 
-            float n1 = Mathf.PerlinNoise(waveSeedOffset + 10.0f, z * config.waveFrequency);             // slow wave
-            float n2 = Mathf.PerlinNoise(waveSeedOffset + 77.7f, z * (config.waveFrequency * 2.2f));    // faster detail
-
-            // Map to [-1..1]
             float w1 = (n1 * 2f) - 1f;
             float w2 = (n2 * 2f) - 1f;
 
-            // Combine: mostly slow, little wiggle
             float wave = (w1 * 0.85f) + (w2 * 0.15f);
 
-            // Apply strength + amplitude (this is where your 30-lane sweep comes from)
             float amplitude = config.waveAmplitudeLanes * config.waveStrength;
             float targetLaneF = centerLane + wave * amplitude;
 
-            // Keep away from edges (use your edgePadding)
             float minLaneF = config.edgePadding;
             float maxLaneF = (config.laneCount - 1) - config.edgePadding;
 
-            // Safety: prevent collapsed range
+            // Safety: prevent collapsed lane range
             if (minLaneF >= maxLaneF)
             {
-                Debug.LogWarning($"[GoldenPath] edgePadding ({config.edgePadding}) too large for laneCount ({config.laneCount}). Forcing padding to 0.");
                 minLaneF = 0f;
                 maxLaneF = config.laneCount - 1;
             }
+
             targetLaneF = Mathf.Clamp(targetLaneF, minLaneF, maxLaneF);
 
             // Smoothly chase the target lane
             pathLaneF = Mathf.Lerp(pathLaneF, targetLaneF, config.waveSmoothing);
 
-            // Turn-rate limit (prevents snapping; makes long arcs)
+            // Turn-rate limit
             float limitedNext = Mathf.MoveTowards(
                 (float)pathTipLane,
                 pathLaneF,
                 config.maxLaneChangePerRow
             );
 
-            // Commit discrete lane
             pathTipLane = Mathf.Clamp(Mathf.RoundToInt(limitedNext), (int)minLaneF, (int)maxLaneF);
 
             goldenPathSet.Add((pathTipZ, pathTipLane));
         }
     }
 
-    private float LaneToWorldX(int lane)
+
+
+private float LaneToWorldX(int lane)
     {
         float centerLane = (config.laneCount - 1) * 0.5f;
         return (lane - centerLane) * config.laneWidth;
@@ -322,50 +373,49 @@ public class RunnerLevelGenerator : MonoBehaviour
         return false;
     }
 
-    // --- Connectivity Check (A*) ---
-
-    // Checks if there is a valid path from the start of the current context window to the target z
-    private bool IsConnectedToStart(int targetZ)
-    {
-        // 1. Identify start point: The player's current row or the beginning of the buffer?
-        // For a continuous generator, we just need to ensure the NEW row connections to the EXISTING valid geometry.
-        // We look back 'neighborhoodZ' rows. If we can path from (z - neighborhood) to (z), we are good.
+    //Connectivity Check (A*) now useless 
+    //// Checks if there is a valid path from the start of the current context window to the target z
+    //private bool IsConnectedToStart(int targetZ)
+    //{
+    //    // 1. Identify start point: The player's current row or the beginning of the buffer?
+    //    // For a continuous generator, we just need to ensure the NEW row connections to the EXISTING valid geometry.
+    //    // We look back 'neighborhoodZ' rows. If we can path from (z - neighborhood) to (z), we are good.
         
-        int startZ = Mathf.Max(0, targetZ - config.neigbhorhoodZ);
-        if (startZ == targetZ) return true; // First row is always valid
+    //    int startZ = Mathf.Max(0, targetZ - config.neigbhorhoodZ);
+    //    if (startZ == targetZ) return true; // First row is always valid
 
-        // Find a walkable start node in startZ
-        (int z, int lane) startNode = (-1, -1);
-        for(int l=0; l<config.laneCount; l++) {
-            if (IsWalkable(startZ, l)) {
-                startNode = (startZ, l);
-                break; 
-            }
-        }
-        if (startNode.z == -1) return false; // Previous area was fully blocked? Should not happen if we maintain invariant.
+    //    // Find a walkable start node in startZ
+    //    (int z, int lane) startNode = (-1, -1);
+    //    for(int l=0; l<config.laneCount; l++) {
+    //        if (IsWalkable(startZ, l)) {
+    //            startNode = (startZ, l);
+    //            break; 
+    //        }
+    //    }
+    //    if (startNode.z == -1) return false; // Previous area was fully blocked? Should not happen if we maintain invariant.
 
-        // Find a walkable end node in targetZ
-        (int z, int lane) endNode = (-1, -1);
-        for(int l=0; l<config.laneCount; l++) {
-            if (IsWalkable(targetZ, l)) {
-                endNode = (targetZ, l);
-                break;
-            }
-        }
-        if (endNode.z == -1) return false; // Target row is fully blocked
+    //    // Find a walkable end node in targetZ
+    //    (int z, int lane) endNode = (-1, -1);
+    //    for(int l=0; l<config.laneCount; l++) {
+    //        if (IsWalkable(targetZ, l)) {
+    //            endNode = (targetZ, l);
+    //            break;
+    //        }
+    //    }
+    //    if (endNode.z == -1) return false; // Target row is fully blocked
 
-        // Check path WIRE VALUES HERE
-        var path = PathfindingHelper.FindPath(
-          startNode,
-          endNode,
-          0, config.laneCount - 1,
-          IsWalkable,
-          turnCost: config.aStarTurnCost
-      );
+    //    // Check path WIRE VALUES HERE
+    //    var path = PathfindingHelper.FindPath(
+    //      startNode,
+    //      endNode,
+    //      0, config.laneCount - 1,
+    //      IsWalkable,
+    //      turnCost: config.aStarTurnCost
+    //  );
 
 
-        return path != null && path.Count > 0;
-    }
+    //    return path != null && path.Count > 0;
+    //}
 
     //Neighbors check
 
@@ -462,27 +512,22 @@ public class RunnerLevelGenerator : MonoBehaviour
     //I did 3 functions that basically do the same thing, maybe refactor later
     // OPTIMIZATION: Move hardcoded multipliers to config as public fields
 
-    //Preview methods
-
     private bool WouldBreakRowIfPlaced(int z, int lane, CellState newState)
     {
         CellState old = getCell(z, lane);
 
-        //temporarily set
+        // temporarily set
         SetCell(z, lane, newState);
-        
-        // Check dynamic path connectivity
-        bool ok = IsConnectedToStart(z);
 
-        //revert
+        // simple invariant: row must have at least one walkable lane
+        bool ok = RowHasAnyWalkable(z);
+
+        // revert
         SetCell(z, lane, old);
 
         return !ok;
-
-        //OPTIMIZATION: IsConnectedToStart is expensive (A*). 
-        // Calling this for every placement attempt might lag if 'neighborhoodZ' is large.
-        // But since we are only generating 1 row at a time in Update, it might be acceptable.
     }
+
 
     //Unused helper removed/refactored logic into main loop
 

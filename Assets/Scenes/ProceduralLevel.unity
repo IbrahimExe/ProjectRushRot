@@ -311,6 +311,10 @@ PrefabInstance:
       value: Player2.0
       objectReference: {fileID: 0}
     - target: {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: baseMaxMoveSpeed
+      value: 500
+      objectReference: {fileID: 0}
+    - target: {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: baseStartMoveSpeed
       value: 40
       objectReference: {fileID: 0}

@@ -27,15 +27,17 @@ MonoBehaviour:
   dentisyPenalty: 0.1
   pathSidePenalty: 0.2
   pathSwitchPenalty: 1
-  pathForwardWeight: 0.599
+  pathForwardWeight: 1
   pathCenterBias: 0.102
   useWavePath: 1
-  waveStrength: 1
+  waveStrength: 0.8
   waveAmplitudeLanes: 15
-  waveFrequency: 0.1
-  waveSmoothing: 1
-  maxLaneChangePerRow: 2
+  waveFrequency: 0.06
+  waveSmoothing: 0.7
+  maxLaneChangePerRow: 1.6
   edgePadding: 1
-  aStarTurnCost: 0
+  restAreaMaxLength: 15
+  restAreaMinLength: 3
+  restAreaFrequency: 0.08
   allowHoles: 1
   allowBridges: 0
