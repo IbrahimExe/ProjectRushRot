@@ -46,9 +46,7 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Range(0f, 1f)] public float obstacleChanceCenter = 0.3f; // Base chance of obstacle in center lane
     [Range(0f, 1f)] public float dentisyPenalty = 0.1f; // Reduces spawn if area is dense
 
-    [Header("Options")]
-    public bool allowHoles = true;
-    public bool allowBridges = true;
+  
 
     [Header("Golden Path Settings")]
     [Tooltip("Penalty for moving sideways if previous move was sideways (0-1). Higher = fewer repeated side moves.")]
@@ -59,6 +57,38 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Range(0f, 1f)] public float pathForwardWeight = 0.6f;
     [Tooltip("Tendency to pull back to the center (0-1). Higher = stays near center.")]
     [Range(0f, 1f)] public float pathCenterBias = 0.2f;
+    [Header("Golden Path Wave")]
+    public bool useWavePath = true;
+
+    [Range(0f, 1f)] public float waveStrength = 0.35f;
+    // 0 = straight center, 1 = uses full amplitude
+
+    [Tooltip("Max drift from center in lanes (before clamping).")]
+    [Range(0f, 15f)] public float waveAmplitudeLanes = 10f; // for 30 lanes, 8–12 feels good
+
+    [Tooltip("How fast the wave changes per row. Smaller = longer turns.")]
+    [Range(0.001f, 0.1f)] public float waveFrequency = 0.02f;
+    // 0.02 = ~50 rows per cycle
+    
+    [Tooltip("How quickly we chase the target (0..1).")]
+    [Range(0.01f, 1f)] public float waveSmoothing = 0.12f;
+
+    [Tooltip("Hard limit: max lanes we can shift per row (turn rate).")]
+    [Range(0.05f, 2f)] public float maxLaneChangePerRow = 0.35f;
+    // 0.2–0.5 feels like “smooth steering”
+
+    [Tooltip("Keep path away from edges.")]
+    [Range(0, 10)] public int edgePadding = 2;
+
+
+
+    [Header("A* Validation Settings")]
+    [Tooltip("Penalty added when the path changes lateral direction (discourages zig-zag).")]
+    [Range(0f, 10f)] public float aStarTurnCost = 0f;
+
+    [Header("Options")]
+    public bool allowHoles = true;
+    public bool allowBridges = true;
 }
 
 
@@ -69,7 +99,7 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     [Header("Seeding")]
     [Tooltip("Seed for deterministic generation")]
-    public string seed = "Runner"; // Hardcoded default
+    public string seed = "hjgujklfu"; // Hardcoded default
 
 
     private Dictionary<(int z, int lane), CellState> grid;
@@ -80,7 +110,10 @@ public class RunnerLevelGenerator : MonoBehaviour
     private HashSet<(int z, int lane)> goldenPathSet = new HashSet<(int, int)>();
     private int pathTipZ = -1;
     private int pathTipLane = 1; 
-    private int lastPathMove = 0; // 0=Forward, -1=Left, 1=Right
+    //private int lastPathMove = 0; // 0=Forward, -1=Left, 1=Right
+    private float pathLaneF;          // continuous lane value we lerp
+    //private int laneCooldownTimer = 0;
+    private float waveSeedOffset;     // makes Perlin deterministic per seed
 
     [Header("References")]
     [SerializeField] private Transform playerTransform;
@@ -96,9 +129,12 @@ public class RunnerLevelGenerator : MonoBehaviour
         if (config == null)
         {
             Debug.LogError("you forgot to assign the runner config dummy.");
+           
+
             enabled = false;    
             return;
         }
+        Debug.Log($"[Runner] laneCount={config.laneCount}, edgePadding={config.edgePadding}, waveAmp={config.waveAmplitudeLanes}, waveStrength={config.waveStrength}, waveFreq={config.waveFrequency}");
 
         grid = new Dictionary<(int, int), CellState>();
         if (!string.IsNullOrEmpty(seed))
@@ -110,13 +146,15 @@ public class RunnerLevelGenerator : MonoBehaviour
         
         // Initialize Golden Path
         pathTipLane = config.laneCount / 2;
+        pathLaneF = pathTipLane;
+        // Deterministic perlin offset from seed
+        waveSeedOffset = (seed != null ? seed.GetHashCode() : 0) * 0.001f;
         pathTipZ = -1;
-        lastPathMove = 0;
 
         // Snap Player to Center/Start
         if (playerTransform != null)
         {
-            float centerX = (pathTipLane - (config.laneCount - 1) * 0.5f) * config.laneWidth;
+            float centerX = LaneToWorldX(pathTipLane);
             Vector3 pPos = playerTransform.position;
             pPos.x = centerX;
             
@@ -155,85 +193,73 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     private void UpdatePathBuffer(int targetZ)
     {
-        // "Walker" Logic for Natural Curves
         while (pathTipZ < targetZ)
         {
-            // Determine possible moves
-            float wForward = config.pathForwardWeight;
-            float wLeft = 0.5f;
-            float wRight = 0.5f;
+            pathTipZ++;
 
-            // Apply Penalties based on LAST move
-            if (lastPathMove == 0) // Was Forward
+            // If wave mode is off, just extend current lane
+            if (!config.useWavePath)
             {
-               // Default neutral
-            }
-            else if (lastPathMove == -1) // Was Left
-            {
-                wLeft   *= (1.0f - config.pathSidePenalty);   // Discourage Left again (Hard Line)
-                wRight  *= (1.0f - config.pathSwitchPenalty); // Discourage Right (ZigZag)
-            }
-            else if (lastPathMove == 1) // Was Right
-            {
-                wRight *= (1.0f - config.pathSidePenalty);   // Discourage Right again (Hard Line)
-                wLeft  *= (1.0f - config.pathSwitchPenalty); // Discourage Left (ZigZag)
+                goldenPathSet.Add((pathTipZ, pathTipLane));
+                continue;
             }
 
-            // Apply Center Bias
-            // If we are Left of center, boost Right. If Right of center, boost Left.
-            float centerLane = (config.laneCount - 1) / 2f;
-            if (pathTipLane < centerLane) 
+            float centerLane = (config.laneCount - 1) * 0.5f;
+
+
+            // --- Multi-octave Perlin (big curves + subtle variation) ---
+            float z = pathTipZ;
+
+            float n1 = Mathf.PerlinNoise(waveSeedOffset + 10.0f, z * config.waveFrequency);             // slow wave
+            float n2 = Mathf.PerlinNoise(waveSeedOffset + 77.7f, z * (config.waveFrequency * 2.2f));    // faster detail
+
+            // Map to [-1..1]
+            float w1 = (n1 * 2f) - 1f;
+            float w2 = (n2 * 2f) - 1f;
+
+            // Combine: mostly slow, little wiggle
+            float wave = (w1 * 0.85f) + (w2 * 0.15f);
+
+            // Apply strength + amplitude (this is where your 30-lane sweep comes from)
+            float amplitude = config.waveAmplitudeLanes * config.waveStrength;
+            float targetLaneF = centerLane + wave * amplitude;
+
+            // Keep away from edges (use your edgePadding)
+            float minLaneF = config.edgePadding;
+            float maxLaneF = (config.laneCount - 1) - config.edgePadding;
+
+            // Safety: prevent collapsed range
+            if (minLaneF >= maxLaneF)
             {
-                wRight += config.pathCenterBias; // Pull right
+                Debug.LogWarning($"[GoldenPath] edgePadding ({config.edgePadding}) too large for laneCount ({config.laneCount}). Forcing padding to 0.");
+                minLaneF = 0f;
+                maxLaneF = config.laneCount - 1;
             }
-            else if (pathTipLane > centerLane)
-            {
-                wLeft += config.pathCenterBias; // Pull left
-            }
+            targetLaneF = Mathf.Clamp(targetLaneF, minLaneF, maxLaneF);
 
-            // Boundary Checks (Hard Limits)
-            if (pathTipLane <= 0) wLeft = 0f;
-            if (pathTipLane >= config.laneCount - 1) wRight = 0f;
+            // Smoothly chase the target lane
+            pathLaneF = Mathf.Lerp(pathLaneF, targetLaneF, config.waveSmoothing);
 
-            // Weighted Pick
-            float total = wForward + wLeft + wRight;
-            float r = (float)rng.NextDouble() * total;
+            // Turn-rate limit (prevents snapping; makes long arcs)
+            float limitedNext = Mathf.MoveTowards(
+                (float)pathTipLane,
+                pathLaneF,
+                config.maxLaneChangePerRow
+            );
 
-            int move = 0; // default forward
-            if (r < wLeft) move = -1;
-            else if (r < wLeft + wForward) move = 0;
-            else move = 1;
+            // Commit discrete lane
+            pathTipLane = Mathf.Clamp(Mathf.RoundToInt(limitedNext), (int)minLaneF, (int)maxLaneF);
 
-            // Apply Move
-            if (move == 0)
-            {
-                pathTipZ++;
-            }
-            else
-            {
-                // Sideways move assumes Z stays same?
-                // Actually, usually in runners you move Forward AND Sideways, or Forward OR Sideways.
-                // If we move sideways without Z, we have a horizontal line.
-                // Let's say a "Move" is always Z+1, but lane can change.
-                // This prevents "Freezing" in Z.
-                pathTipZ++;
-                pathTipLane += move;
-            }
-
-            lastPathMove = move;
             goldenPathSet.Add((pathTipZ, pathTipLane));
         }
     }
 
-    private IEnumerator SpawnTileRoutine(List<GameObject> tiles)
+    private float LaneToWorldX(int lane)
     {
-        foreach (var tile in tiles)
-        {
-            // Instantiate or activate tile
-
-            yield return new WaitForSeconds(0.5f);
-        }
+        float centerLane = (config.laneCount - 1) * 0.5f;
+        return (lane - centerLane) * config.laneWidth;
     }
+
 
     //FUNCTIONS
 
@@ -328,13 +354,15 @@ public class RunnerLevelGenerator : MonoBehaviour
         }
         if (endNode.z == -1) return false; // Target row is fully blocked
 
-        // Check path
+        // Check path WIRE VALUES HERE
         var path = PathfindingHelper.FindPath(
-            startNode, 
-            endNode, 
-            0, config.laneCount - 1, 
-            IsWalkable
-        );
+          startNode,
+          endNode,
+          0, config.laneCount - 1,
+          IsWalkable,
+          turnCost: config.aStarTurnCost
+      );
+
 
         return path != null && path.Count > 0;
     }
@@ -580,8 +608,8 @@ public class RunnerLevelGenerator : MonoBehaviour
         {
             CellState s = getCell(z, lane);
 
-            Vector3 basePos = new Vector3(lane * config.laneWidth, 0f, z * config.cellLength);
-            
+            Vector3 basePos = new Vector3(LaneToWorldX(lane), 0f, z * config.cellLength);
+
             // ----- Surface -----
             GameObject surfaceObj = null;
             // Get candidates for the specific surface type

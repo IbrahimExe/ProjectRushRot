@@ -16,7 +16,7 @@ MonoBehaviour:
   laneCount: 30
   laneWidth: 10
   cellLength: 10
-  bufferRows: 50
+  bufferRows: 500
   keepRowsBehind: 10
   neigbhorhoodZ: 4
   neighborhoodX: 1
@@ -25,9 +25,17 @@ MonoBehaviour:
   holeChance: 0.101
   obstacleChanceCenter: 0.3
   dentisyPenalty: 0.1
+  pathSidePenalty: 0.2
+  pathSwitchPenalty: 1
+  pathForwardWeight: 0.599
+  pathCenterBias: 0.102
+  useWavePath: 1
+  waveStrength: 1
+  waveAmplitudeLanes: 15
+  waveFrequency: 0.1
+  waveSmoothing: 1
+  maxLaneChangePerRow: 2
+  edgePadding: 1
+  aStarTurnCost: 0
   allowHoles: 1
   allowBridges: 0
-  pathSidePenalty: 1
-  pathSwitchPenalty: 0
-  pathForwardWeight: 0
-  pathCenterBias: 0

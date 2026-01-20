@@ -26,7 +26,7 @@ namespace LevelGenerator.Data
             (int z, int lane) end, 
             int minLane, int maxLane,
             System.Func<int, int, bool> isWalkable,
-            float turnCost = 2f)
+            float turnCost = 0f)
         {
             var openSet = new List<Node>();
             var closedSet = new HashSet<(int, int)>();
@@ -39,11 +39,15 @@ namespace LevelGenerator.Data
 
             while (openSet.Count > 0)
             {
-                // 1. Get lowest F
+                // 1) Pick node with lowest F (A*). Tie-break: lower H.
                 Node current = openSet[0];
                 for (int i = 1; i < openSet.Count; i++)
                 {
-                    if (openSet[i].F < current.F) current = openSet[i];
+                    Node cand = openSet[i];
+
+                    // Tie-breaker reduces jitter when many nodes share same F
+                    if (cand.F < current.F) current = cand;
+                    else if (Mathf.Approximately(cand.F, current.F) && cand.H < current.H) current = cand;
                 }
 
                 if (current.Z == end.z && current.Lane == end.lane)
@@ -58,8 +62,8 @@ namespace LevelGenerator.Data
                 List<(int z, int lane)> neighbors = new List<(int, int)>
                 {
                     (current.Z + 1, current.Lane),     // Forward
-                    (current.Z, current.Lane - 1),     // Left
-                    (current.Z, current.Lane + 1)      // Right
+                    (current.Z + 1, current.Lane - 1),     // Left
+                    (current.Z + 1, current.Lane + 1)      // Right
                 };
 
                 foreach (var neighborPos in neighbors)
@@ -73,7 +77,7 @@ namespace LevelGenerator.Data
                     // Walkable Check
                     if (!isWalkable(neighborPos.z, neighborPos.lane)) continue;
 
-                    float moveCost = (neighborPos.z != current.Z) ? 1f : 1.5f; // Side movement is slightly pricier
+                    float moveCost = (neighborPos.lane == current.Lane) ? 1f : 1.25f; // Side movement is slightly pricier, discourages diagonals (Might need tweaks)
                     float newG = current.G + moveCost;
 
                     // Turn Penalty? If we changed lane from parent's parent
