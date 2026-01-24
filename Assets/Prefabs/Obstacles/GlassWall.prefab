@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &7557106098623179390
+--- !u!1 &1329092332654493186
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,48 +8,48 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8663065973274481525}
-  - component: {fileID: 8906481009373455581}
-  - component: {fileID: 3015457632014596040}
-  - component: {fileID: 8476602503215243829}
-  - component: {fileID: 3718198835860952488}
+  - component: {fileID: 7710839557366639513}
+  - component: {fileID: 6710815855490305599}
+  - component: {fileID: 7766629462811717659}
+  - component: {fileID: 707753781022391203}
+  - component: {fileID: 5567014216871582004}
   m_Layer: 0
-  m_Name: JumpPad
+  m_Name: GlassWall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8663065973274481525
+--- !u!4 &7710839557366639513
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7557106098623179390}
+  m_GameObject: {fileID: 1329092332654493186}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 31.28677, y: 0.38, z: 60.2282}
-  m_LocalScale: {x: 20.800882, y: -0.43038473, z: 20.800882}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -33.300003, y: 7.55, z: 89.7}
+  m_LocalScale: {x: 15.46, y: 15.46, z: 1.7484279}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &8906481009373455581
+--- !u!33 &6710815855490305599
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7557106098623179390}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &3015457632014596040
+  m_GameObject: {fileID: 1329092332654493186}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &7766629462811717659
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7557106098623179390}
+  m_GameObject: {fileID: 1329092332654493186}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -68,7 +68,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d58971be86487284e8a2fe8753dc981a, type: 2}
+  - {fileID: 2100000, guid: ce0e68a73e55bd542a184c1b02f6e693, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -91,13 +91,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &8476602503215243829
-CapsuleCollider:
+--- !u!65 &707753781022391203
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7557106098623179390}
+  m_GameObject: {fileID: 1329092332654493186}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -106,32 +106,27 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5000001
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
---- !u!114 &3718198835860952488
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5567014216871582004
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7557106098623179390}
+  m_GameObject: {fileID: 1329092332654493186}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 278115057184a9f4dbd73f2c2ffa63cd, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ec9b79a2dc9f1f4ea79712bcd5d89d2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JumpPad
-  strength: 80
-  direction: {x: 0, y: 1, z: 0}
-  useLocalDirection: 1
-  setVelocity: 1
-  preserveHorizontalVelocity: 1
-  cooldown: 0.25
+  m_EditorClassIdentifier: Assembly-CSharp::DestructableWall
   affectedLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  requiredTag: Player
+  destroyGameObject: 1
+  requireDash: 1
