@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f9fc60f384989e4a93a3c6eff27d1b8, type: 3}
+  m_Name: WeightRulesConfig
+  m_EditorClassIdentifier: Assembly-CSharp::WeightRulesConfig
+  edgePenaltyPhysical: 0.3
+  edgeProximityPenalty: 0.7
+  hazardSpacingPenalty: 0.5
+  hazardCheckRadius: 2
+  densityPenalty: 0.1
+  densityCheckRadius: 2
+  collectibleOnPathBoost: 2.5
+  collectibleNearPathBoost: 1.5
+  wallEdgeBoost: 2
+  obstacleCenterBoost: 1.5
+  obstacleEdgePenalty: 0.5
+  enemyOnPathPenalty: 0.1
+  enemyNearPathBoost: 1.3

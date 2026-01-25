@@ -42,6 +42,68 @@ namespace LevelGenerator.Data
         Collectible = 1 << 5   // can be collected by the player
     }
 
+    /// <summary>
+    /// Cell state in the grid
+    /// </summary>
+    [System.Serializable]
+    public struct CellState
+    {
+        public SurfaceType surface;
+        public OccupantType occupant;
+        public PrefabDef surfaceDef;   // Specific prefab for the floor/surface
+        public PrefabDef occupantDef;  // Specific prefab for the object on top
+
+        public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null)
+        {
+            surface = s;
+            occupant = o;
+            surfaceDef = surfaceP;
+            occupantDef = occupantP;
+        }
+    }
+
+    /// Context information for weight calculations
+    /// Contains all data needed to make informed placement decisions
+    public struct PlacementContext
+    {
+        public (int z, int lane) position;
+        public SurfaceType currentSurface;
+        public OccupantType currentOccupant;
+        
+        // References to grid data
+        public System.Func<int, int, CellState> GetCell;
+        public System.Func<(int, int), bool> IsOnGoldenPath;
+        
+        // Grid metadata
+        public int laneCount;
+        public int playerZIndex;
+        
+        // Helper methods
+        public bool IsEdgeLane => position.lane == 0 || position.lane == laneCount - 1;
+        public bool IsCenterLane => position.lane == (laneCount - 1) / 2;
+        public float NormalizedLanePosition => (float)position.lane / (laneCount - 1);
+        
+        public int DistanceToGoldenPath
+        {
+            get
+            {
+                if (IsOnGoldenPath(position)) return 0;
+                
+                // Find nearest golden path cell in same row
+                int minDist = int.MaxValue;
+                for (int lane = 0; lane < laneCount; lane++)
+                {
+                    if (IsOnGoldenPath((position.z, lane)))
+                    {
+                        int dist = Mathf.Abs(position.lane - lane);
+                        if (dist < minDist) minDist = dist;
+                    }
+                }
+                return minDist;
+            }
+        }
+    }
+
     [System.Serializable]
     public class PrefabDef
     {
@@ -64,7 +126,6 @@ namespace LevelGenerator.Data
 
         [Header("Dimensions")]
         // size in grid cells (x, y, z), pivot is assumed to be bottom-left
-        [Tooltip("Size in TiLES (not world units). Default 1 tile.")]
         public Vector3Int Size = new Vector3Int(1, 1, 1);
 
         [Header("Generation Settings")]

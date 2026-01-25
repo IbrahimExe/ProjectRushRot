@@ -79,3 +79,6 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     BaseWeight: 100
     Tags: []
+  debugSafePath: {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+  debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}

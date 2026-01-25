@@ -10,6 +10,14 @@ namespace LevelGenerator.Data
         [Header("Registered Prefabs")]
         public List<PrefabDef> Definitions = new List<PrefabDef>();
 
+        [Header("Debug / Fallbacks")]
+        [Tooltip("Used for the Golden Path/Safe Path if no specific tile is defined.")]
+        public GameObject debugSafePath;
+        [Tooltip("Used for generic solid surface if random selection fails.")]
+        public GameObject debugSurface;
+        [Tooltip("Used if an occupant is required but no candidate found.")]
+        public GameObject debugOccupant;
+
         // cache dictionaries for fast lookup by type or id
         private Dictionary<OccupantType, List<PrefabDef>> _occupantCache;
         private Dictionary<SurfaceType, List<PrefabDef>> _surfaceCache;

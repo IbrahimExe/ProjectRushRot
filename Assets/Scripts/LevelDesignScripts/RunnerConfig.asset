@@ -13,11 +13,13 @@ MonoBehaviour:
   m_Name: RunnerConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
   catalog: {fileID: 11400000, guid: e5371f4c10412274b865008573319f9a, type: 2}
+  weightRules: {fileID: 11400000, guid: 05336aaeaa6b0cc46a7a9b0a458f5038, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
   bufferRows: 500
   keepRowsBehind: 10
+  chunkSize: 10
   neigbhorhoodZ: 4
   neighborhoodX: 1
   wallChanceEdge: 1

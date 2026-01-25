@@ -6,27 +6,16 @@
 // - Prefabs handle their own behavior; generator only picks what/where
 // ------------------------------------------------------------
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LevelGenerator.Data;
-
-[System.Serializable]
-public struct CellState{
-    public SurfaceType surface;
-    public OccupantType occupant;
-
-    public CellState(SurfaceType s, OccupantType o){
-        surface = s;
-        occupant = o;
-    }
-}
 
 [CreateAssetMenu(fileName = "RunnerConfig", menuName = "Runner/GeneratorConfig")]
 public sealed class RunnerGenConfig : ScriptableObject 
 {
     [Header("Catalog Reference")]
     public PrefabCatalog catalog;
+    public WeightRulesConfig weightRules;
 
     [Header("Lane Setup")]
     public int laneCount = 3;
@@ -36,6 +25,7 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Header("Generation Settings")]
     public int bufferRows = 20; // extra rows to keep loaded beyond player view
     public int keepRowsBehind = 5; // rows behind player to keep loaded
+    public int chunkSize = 10; // number of rows to generate together as a chunk
     public int neigbhorhoodZ = 4;
     public int neighborhoodX = 1;
 
@@ -65,7 +55,7 @@ public sealed class RunnerGenConfig : ScriptableObject
     // 0 = straight center, 1 = uses full amplitude
 
     [Tooltip("Max drift from center in lanes (before clamping).")]
-    [Range(0f, 15f)] public float waveAmplitudeLanes = 10f; // for 30 lanes, 8–12 feels good
+    [Range(0f, 15f)] public float waveAmplitudeLanes = 10f; // for 30 lanes, 8ï¿½12 feels good
 
     [Tooltip("How fast the wave changes per row. Smaller = longer turns.")]
     [Range(0.001f, 0.1f)] public float waveFrequency = 0.02f;
@@ -76,7 +66,7 @@ public sealed class RunnerGenConfig : ScriptableObject
 
     [Tooltip("Hard limit: max lanes we can shift per row (turn rate).")]
     [Range(0.05f, 2f)] public float maxLaneChangePerRow = 0.35f;
-    // 0.2–0.5 feels like “smooth steering”
+    // 0.2-0.5 feels like smooth steering
 
     [Tooltip("Keep path away from edges.")]
     [Range(0, 10)] public int edgePadding = 2;
@@ -114,6 +104,9 @@ public class RunnerLevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), CellState> grid;
     private int generatorZ = 0;
     private System.Random rng;
+    private WeightSystem weightSystem;
+
+
     // Rest-straight state
     private int restRowsRemaining = 0;
 
@@ -157,9 +150,14 @@ public class RunnerLevelGenerator : MonoBehaviour
 
         grid = new Dictionary<(int, int), CellState>();
         if (!string.IsNullOrEmpty(seed))
+        { 
             rng = new System.Random(seed.GetHashCode());
+        }
         else
+        {
             rng = new System.Random(); // fallback
+        }
+        weightSystem = new WeightSystem(config.weightRules);
         spawnedObjects = new Dictionary<(int, int), GameObject>();
         spawnedOccupant = new Dictionary<(int, int), GameObject>();
         
@@ -198,12 +196,17 @@ public class RunnerLevelGenerator : MonoBehaviour
         // Generate initial buffer
         UpdatePathBuffer(config.bufferRows + 10); // Plan path ahead of generation
 
-        for (int i = 0; i < config.bufferRows; i++)
+        // Generate initial chunks
+        while (generatorZ < config.bufferRows)
         {
-            GenerateRow(i);
-            generatorZ++;
+            int chunkStart = generatorZ;
+            int actualChunkSize = Mathf.Min(config.chunkSize, config.bufferRows - generatorZ);
+            GenerateChunk(chunkStart, actualChunkSize);
+            generatorZ += actualChunkSize;
         }
     }
+
+
     
     void Update()
     {
@@ -212,6 +215,23 @@ public class RunnerLevelGenerator : MonoBehaviour
             //if player uis not onside update skip mathj
             UpdateGeneration(playerTransform.position.z);
         }
+    }
+
+    private PlacementContext CreateContext(int z, int lane)
+    {
+        CellState cell = getCell(z, lane);
+
+        return new PlacementContext
+        {
+            position = (z, lane),
+            currentSurface = cell.surface,
+            currentOccupant = cell.occupant,
+            GetCell = (checkZ, checkLane) => getCell(checkZ, checkLane),
+            IsOnGoldenPath = (pos) => goldenPathSet.Contains(pos),
+            laneCount = config.laneCount,
+            playerZIndex = playerTransform != null ?
+                Mathf.FloorToInt(playerTransform.position.z / config.cellLength) : 0
+        };
     }
 
     private void UpdatePathBuffer(int targetZ)
@@ -290,14 +310,30 @@ public class RunnerLevelGenerator : MonoBehaviour
             // Smoothly chase the target lane
             pathLaneF = Mathf.Lerp(pathLaneF, targetLaneF, config.waveSmoothing);
 
-            // Turn-rate limit
+            // Turrn-rate limit
             float limitedNext = Mathf.MoveTowards(
                 (float)pathTipLane,
                 pathLaneF,
                 config.maxLaneChangePerRow
             );
 
-            pathTipLane = Mathf.Clamp(Mathf.RoundToInt(limitedNext), (int)minLaneF, (int)maxLaneF);
+            int nextLane = Mathf.Clamp(Mathf.RoundToInt(limitedNext), (int)minLaneF, (int)maxLaneF);
+
+            // CONNECTIVITY FIX:
+            // If we jumped more than 1 lane (e.g. 2 -> 4), we must fill the gap (3) to ensure diagonal connectivity is not broken.
+            // Although maxLaneChangePerRow < 1 prevents this, aggressive settings might break it.
+            if (Mathf.Abs(nextLane - pathTipLane) > 1)
+            {
+                int direction = (int)Mathf.Sign(nextLane - pathTipLane);
+                int fill = pathTipLane + direction;
+                while (fill != nextLane)
+                {
+                    goldenPathSet.Add((pathTipZ, fill)); // Bridge the gap
+                    fill += direction;
+                }
+            }
+
+            pathTipLane = nextLane;
 
             goldenPathSet.Add((pathTipZ, pathTipLane));
         }
@@ -533,179 +569,194 @@ private float LaneToWorldX(int lane)
 
     //Row Generation
 
-    private void GenerateRow(int z)
+    private void GenerateChunk(int startZ, int chunkSize)
     {
-      
+        int endZ = startZ + chunkSize;
 
-        for (int lane = 0; lane < config.laneCount; lane++)
-        {
-            // CHECK GOLDEN PATH
-            if (goldenPathSet.Contains((z, lane)))
-            {
-                SetCell(z, lane, new CellState(SurfaceType.SafePath, OccupantType.None));
-            }
-            else
-            {
-                SetCell(z, lane, new CellState(SurfaceType.Solid, OccupantType.None));
-            }
-        }
-
-
-        //border walls first
-        for (int lane = 0; lane < config.laneCount; lane++)
-        {
-            // Skip SafePath lanes
-            if (getCell(z, lane).surface == SurfaceType.SafePath) continue;
-
-            if (!LaneIsBorder(lane)) continue;
-
-            float wallScore = ScoreWall(z, lane);
-            if (Rand() < wallScore)
-            {
-                CellState candidate = getCell(z, lane);
-                candidate.occupant = OccupantType.Wall;
-
-                if (!WouldBreakRowIfPlaced(z, lane, candidate))
-                {
-                    SetCell(z, lane, candidate);
-                }
-            }
-        }
-
-
-        if (config.allowHoles)
+        // PASS 1: Initialization & Safe Path Stamping
+        for (int z = startZ; z < endZ; z++)
         {
             for (int lane = 0; lane < config.laneCount; lane++)
             {
-                float holeScore = ScoreHole(z, lane);
-                if (Rand() < holeScore)
+                bool isSafe = goldenPathSet.Contains((z, lane));
+                SurfaceType surf = isSafe ? SurfaceType.SafePath : SurfaceType.Solid;
+                
+                SetCell(z, lane, new CellState(surf, OccupantType.None));
+            }
+        }
+
+        // PASS 2: Feature Placement
+        // Now that the canvas is ready, we place objects.
+        // We iterate row by row, but because the grid is initialized ahead of us, 
+        // neighbor checks (looking forward) will see the SafePath/Solid state of future rows.
+        for (int z = startZ; z < endZ; z++)
+        {
+            GenerateRowFeatures(z);
+            SpawnRowVisuals(z);
+        }
+    }
+
+    private void GenerateRowFeatures(int z)
+    {
+        // 1. Place Walls (Border & Weighted)
+        var wallCandidates = config.catalog.GetCandidates(OccupantType.Wall);
+        for (int lane = 0; lane < config.laneCount; lane++)
+        {
+            if (goldenPathSet.Contains((z, lane))) continue;
+
+            PlacementContext ctx = CreateContext(z, lane);
+            
+            PrefabDef selectedWall = weightSystem.SelectWeighted(wallCandidates, ctx, rng);
+            if (selectedWall != null)
+            {
+                if ((selectedWall.Attributes & ObjectAttributes.Walkable) == 0 && goldenPathSet.Contains((z, lane)))
+                    continue; 
+
+                CellState candidate = getCell(z, lane);
+                candidate.occupant = OccupantType.Wall;
+                candidate.occupantDef = selectedWall; // Assign to OCCUPANT
+                
+                if (!WouldBreakRowIfPlaced(z, lane, candidate))
+                    SetCell(z, lane, candidate);
+            }
+        }
+
+        // 2. Place Holes (Weighted)
+        if (config.allowHoles)
+        {
+            var holeCandidates = config.catalog.GetCandidates(SurfaceType.Hole);
+            for (int lane = 0; lane < config.laneCount; lane++)
+            {
+                if (goldenPathSet.Contains((z, lane))) continue;
+
+                PlacementContext ctx = CreateContext(z, lane);
+                PrefabDef selectedHole = weightSystem.SelectWeighted(holeCandidates, ctx, rng);
+                
+                if (selectedHole != null)
                 {
                     CellState candidate = getCell(z, lane);
-
-                    // Skip Safe Path
-                    if (candidate.surface == SurfaceType.SafePath) continue;
-
-                    // Only carve holes from solid ground
-                    if (candidate.surface != SurfaceType.Solid) continue;
+                    if (candidate.occupant != OccupantType.None) continue;
 
                     candidate.surface = SurfaceType.Hole;
-                    candidate.occupant = OccupantType.None;
-
+                    candidate.surfaceDef = selectedHole; // Assign to SURFACE
+                    
                     if (WouldBreakRowIfPlaced(z, lane, candidate))
                     {
                         if (config.allowBridges)
                         {
                             candidate.surface = SurfaceType.Bridge;
+                            candidate.surfaceDef = null; // Reset def (unless we have a bridge def)
                             SetCell(z, lane, candidate);
                         }
-                        // else: do nothing, keep solid
                     }
                     else
                     {
-                        SetCell(z, lane, candidate); // commit Hole
+                        SetCell(z, lane, candidate);
                     }
                 }
             }
         }
 
-        //place obstacles
+        // 3. Place Obstacles (Weighted)
+        var obstacleCandidates = config.catalog.GetCandidates(OccupantType.Obstacle);
         for (int lane = 0; lane < config.laneCount; lane++)
         {
             CellState c = getCell(z, lane);
             if (c.surface == SurfaceType.Hole) continue;
-            if (c.surface == SurfaceType.SafePath) continue; // Keep Safe Path clear
+            
+            bool isSafePath = goldenPathSet.Contains((z, lane));
             if (c.occupant != OccupantType.None) continue;
 
-            float obsScore = ScoreObstacle(z, lane);
-            if (Rand() < obsScore)
+            PlacementContext ctx = CreateContext(z, lane);
+            PrefabDef selectedObstacle = weightSystem.SelectWeighted(obstacleCandidates, ctx, rng);
+            
+            if (selectedObstacle != null)
             {
+                bool isWalkable = (selectedObstacle.Attributes & ObjectAttributes.Walkable) != 0;
+                if (isSafePath && !isWalkable) continue;
+
                 CellState obstacleCandidate = c;
                 obstacleCandidate.occupant = OccupantType.Obstacle;
-
+                obstacleCandidate.occupantDef = selectedObstacle; // Assign to OCCUPANT
+                
                 if (!WouldBreakRowIfPlaced(z, lane, obstacleCandidate))
-                {
                     SetCell(z, lane, obstacleCandidate);
-                }
             }
         }
+    }
 
 
-        //check it works
-
-        if (!RowHasAnyWalkable(z))
-        {
-           int prefferedLane = (config.laneCount - 1) / 2;
-            int[] tryLanes = {prefferedLane, 0, config.laneCount - 1};
-
-            foreach (int lane in tryLanes)
-            {
-                CellState cc = new CellState(SurfaceType.Solid, OccupantType.None);
-                SetCell(z, lane, cc);
-                if (RowHasAnyWalkable(z))
-                    break;
-            }
-        }
-
-        // --- Instantiation using Catalog ---
-        if (config.catalog == null) return;
-
+    private void SpawnRowVisuals(int z)
+    {
         for (int lane = 0; lane < config.laneCount; lane++)
         {
-            CellState s = getCell(z, lane);
+            var cell = getCell(z, lane);
+            Vector3 worldPos = new Vector3(LaneToWorldX(lane), 0, z * config.cellLength);
+            bool isSafePath = goldenPathSet.Contains((z, lane));
 
-            Vector3 basePos = new Vector3(LaneToWorldX(lane), 0f, z * config.cellLength);
-
-            // ----- Surface -----
+            // --- LAYER 0: SURFACE ---
             GameObject surfaceObj = null;
-            // Get candidates for the specific surface type
-            var surfCandidates = config.catalog.GetCandidates(s.surface);
-            // Pick one
-            var surfDef = config.catalog.GetWeightedRandom(surfCandidates, rng); 
-            
-            if (surfDef != null && surfDef.Prefabs != null && surfDef.Prefabs.Count > 0)
+
+            // 1. Check for Holes
+            if (cell.surface == SurfaceType.Hole)
             {
-                // Pick random variant
-                GameObject chosenPrefab = surfDef.Prefabs[rng.Next(0, surfDef.Prefabs.Count)];
-                if (chosenPrefab != null)
-                {
-                    surfaceObj = Instantiate(chosenPrefab, basePos, Quaternion.identity);
-                    spawnedObjects[(z, lane)] = surfaceObj;
-                }
+                if (cell.surfaceDef != null && cell.surfaceDef.Prefabs.Count > 0)
+                    surfaceObj = Instantiate(cell.surfaceDef.Prefabs[rng.Next(cell.surfaceDef.Prefabs.Count)], worldPos, Quaternion.identity, transform);
             }
-            else
+            // 2. Check for Specific Surface Def (Bridge, Special Floor)
+            else if (cell.surfaceDef != null && cell.surfaceDef.Prefabs.Count > 0)
             {
-                // Debug: Why no surface?
-                if (surfCandidates.Count == 0) Debug.LogWarning($"No Surface candidates for type {s.surface}");
+                surfaceObj = Instantiate(cell.surfaceDef.Prefabs[rng.Next(cell.surfaceDef.Prefabs.Count)], worldPos, Quaternion.identity, transform);
+            }
+            // 3. Safe Path (Debug/Fallback)
+            else if (isSafePath)
+            {
+                 // Priority: Config Debug -> Fallback Solid
+                 if (config.catalog.debugSafePath != null)
+                     surfaceObj = Instantiate(config.catalog.debugSafePath, worldPos, Quaternion.identity, transform);
+                 // Else fall through to generic solid if you want, or leave null? 
+                 // Usually SafePath should have a visual.
+            }
+            // 4. Default Solid
+            else if (cell.surface == SurfaceType.Solid || cell.surface == SurfaceType.Bridge) // Treat generated bridge w/o def as solid? or debugSurface?
+            {
+                // Try random solid from catalog
+                var candidates = config.catalog.GetCandidates(SurfaceType.Solid);
+                if (candidates != null && candidates.Count > 0)
+                {
+                    var pick = candidates[rng.Next(candidates.Count)];
+                    if(pick.Prefabs.Count > 0)
+                        surfaceObj = Instantiate(pick.Prefabs[rng.Next(pick.Prefabs.Count)], worldPos, Quaternion.identity, transform);
+                }
+                
+                // Fallback to debug
+                if (surfaceObj == null && config.catalog.debugSurface != null)
+                     surfaceObj = Instantiate(config.catalog.debugSurface, worldPos, Quaternion.identity, transform);
             }
 
-            // ----- Occupant -----
-            if (s.occupant != OccupantType.None)
-            {
-                // Get candidates
-                var occCandidates = config.catalog.GetCandidates(s.occupant);
-                // Pick one
-                var occDef = config.catalog.GetWeightedRandom(occCandidates, rng);
+            if (surfaceObj != null)
+                spawnedObjects[(z, lane)] = surfaceObj;
 
-                if (occDef != null && occDef.Prefabs != null && occDef.Prefabs.Count > 0)
+
+            // --- LAYER 1: OCCUPANT ---
+            GameObject occObj = null;
+
+            if (cell.occupant != OccupantType.None)
+            {
+                // 1. Specific Def
+                if (cell.occupantDef != null && cell.occupantDef.Prefabs.Count > 0)
                 {
-                    // Basic positioning: center of tile + slight up? 
-                    // Or rely on pivot. Assuming pivot is bottom-center or bottom-left.
-                    Vector3 occPos = basePos; 
-                    
-                    // Pick random variant
-                    GameObject chosenPrefab = occDef.Prefabs[rng.Next(0, occDef.Prefabs.Count)];
-                    
-                    if (chosenPrefab != null)
-                    {
-                        GameObject occObj = Instantiate(chosenPrefab, occPos, Quaternion.identity);
-                        spawnedOccupant[(z, lane)] = occObj;
-                    }
+                    occObj = Instantiate(cell.occupantDef.Prefabs[rng.Next(cell.occupantDef.Prefabs.Count)], worldPos, Quaternion.identity, transform);
                 }
-                else
+                // 2. Fallback Debug
+                else if (config.catalog.debugOccupant != null)
                 {
-                     if (occCandidates.Count == 0) Debug.LogWarning($"No Occupant candidates for type {s.occupant}");
+                    occObj = Instantiate(config.catalog.debugOccupant, worldPos, Quaternion.identity, transform);
                 }
             }
+
+            if (occObj != null)
+                spawnedOccupant[(z, lane)] = occObj;
         }
     }
 
@@ -720,8 +771,11 @@ private float LaneToWorldX(int lane)
 
         while (generatorZ < targetZ)
         {
-            GenerateRow(generatorZ);
-            generatorZ++;
+            int chunkStart = generatorZ;
+            int actualChunkSize = Mathf.Min(config.chunkSize, targetZ - generatorZ);
+            GenerateChunk(chunkStart, actualChunkSize);
+            generatorZ += actualChunkSize;
+            //i do this 2 times, so maybe do a function in the future
         }
 
         // Cleanup old rows
