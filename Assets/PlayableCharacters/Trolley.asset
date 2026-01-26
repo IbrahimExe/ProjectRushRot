@@ -18,7 +18,7 @@ MonoBehaviour:
   modelRotation: {x: 0, y: -90, z: 0}
   startMoveSpeed: 5
   maxMoveSpeed: 50
-  acceleration: 25
+  acceleration: 5
   deceleration: 25
   jumpForce: 125
   wallJumpUpImpulse: 7.5
