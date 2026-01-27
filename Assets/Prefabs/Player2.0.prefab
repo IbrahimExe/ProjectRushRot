@@ -130,8 +130,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4636364567374257377}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.15212338, y: 0.0000000034783394, z: -5.353733e-10, w: 0.98836154}
-  m_LocalPosition: {x: 0, y: 1.5823786, z: -5.0186634}
+  m_LocalRotation: {x: 0.21643963, y: 0.00000003249792, z: -0.000000007204615, w: 0.97629607}
+  m_LocalPosition: {x: 0, y: 2.223908, z: -4.769186}
   m_LocalScale: {x: 0.23919158, y: 0.23919158, z: 0.23919158}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -197,7 +197,7 @@ MonoBehaviour:
     BindingMode: 1
     PositionDamping: {x: 1, y: 1, z: 0}
     AngularDampingMode: 0
-    RotationDamping: {x: 0, y: 0.5, z: 0}
+    RotationDamping: {x: 0, y: 0, z: 0}
     QuaternionDamping: 1
   OrbitStyle: 0
   Radius: 22
@@ -224,9 +224,9 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 17.5
-    Center: 17.5
-    Range: {x: 0, y: 30}
+    Value: 25
+    Center: 25
+    Range: {x: 10, y: 30}
     Wrap: 0
     Recentering:
       Enabled: 1
@@ -380,7 +380,7 @@ MonoBehaviour:
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 0.5, y: 0.5}
+  Damping: {x: 0, y: 0}
   Lookahead:
     Enabled: 0
     Time: 0
@@ -398,7 +398,10 @@ GameObject:
   - component: {fileID: 1119539824516189455}
   - component: {fileID: 2854710723262664737}
   - component: {fileID: 5694495406336896746}
-  - component: {fileID: 6980665277055680435}
+  - component: {fileID: 3294469309054466338}
+  - component: {fileID: 7188365373034891474}
+  - component: {fileID: 8129584585677567498}
+  - component: {fileID: 5394457895109117774}
   - component: {fileID: 6457804267282043099}
   - component: {fileID: 6775136799352631955}
   m_Layer: 0
@@ -482,16 +485,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4940313654620728586}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8627598378077364ba5d6ae96d172ad2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
   characterData: {fileID: 0}
   baseStartMoveSpeed: 5
-  baseMaxMoveSpeed: 50
-  baseAcceleration: 5
-  baseDeceleration: 25
+  baseMaxMoveSpeed: 80
+  baseAcceleration: 15
+  baseDeceleration: 20
   currentMoveSpeed: 1
   manualDeceleration: 30
   backwardMaxMoveSpeed: 10
@@ -499,10 +502,10 @@ MonoBehaviour:
   backwardDeceleration: 20
   rotationSpeed: 100
   linearDrag: 5
-  baseJumpForce: 125
+  baseJumpForce: 200
   fallMultiplier: 3
-  lowJumpMultiplier: 1
-  maxFallSpeed: -150
+  lowJumpMultiplier: 10
+  maxFallSpeed: -50
   feetTransform: {fileID: 3971334911968303865}
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}
@@ -518,8 +521,8 @@ MonoBehaviour:
     m_Bits: 64
   wallCheckRadius: 1
   wallCheckDistance: 2
-  baseJumpUpImpulse: 7.5
-  baseJumpAwayImpulse: 8.5
+  baseJumpUpImpulse: 25
+  baseJumpAwayImpulse: 100
   wallStickMaxSpeed: 3.5
   wallJumpCooldown: 0.15
   wallRunEnabled: 1
@@ -553,44 +556,129 @@ MonoBehaviour:
   sideDashUpOffset: 28
   dashFlipAngle: 360
   dashFlipDuration: 0.4
-  dashHopHeight: 28
---- !u!114 &6980665277055680435
+  dashHopHeight: 6
+--- !u!114 &3294469309054466338
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4940313654620728586}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5c957f8cc3045c4c9ac2d9b3ed28635, type: 3}
+  m_Script: {fileID: 11500000, guid: b158bcd1f599a3043b87e5164d4ab7c1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GPlayerController
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerControllerBase
+  characterData: {fileID: 11400000, guid: b876b434fab27f84ab32a8e97bf2f408, type: 2}
   baseStartMoveSpeed: 5
-  baseMaxMoveSpeed: 15
-  baseAcceleration: 20
+  baseMaxMoveSpeed: 50
+  baseAcceleration: 25
   baseDeceleration: 25
-  currentMoveSpeed: 25
+  currentMoveSpeed: 0
   manualDeceleration: 30
-  backwardMaxMoveSpeed: 50
+  backwardMaxMoveSpeed: 10
   backwardAcceleration: 15
   backwardDeceleration: 20
-  rotationSpeed: 100
-  linearDrag: 0.1
-  baseJumpForce: 5
-  fallMultiplier: 7
-  lowJumpMultiplier: 2
-  maxFallSpeed: -50
+  rotationSpeed: 75
+  linearDrag: 5
+  baseJumpForce: 125
+  fallMultiplier: 3
+  lowJumpMultiplier: 1
+  maxFallSpeed: -150
+  coyoteTime: 0.12
+  jumpBuffer: 0.12
   feetTransform: {fileID: 3971334911968303865}
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}
   rayLength: 1.5
-  tiltForwardAmount: 15
-  tiltSideAmount: 20
+  tiltForwardAmount: 10
+  tiltSideAmount: 10
   tiltSpeed: 5
-  airTiltAmount: 30
   groundAlignSpeed: 8
-  maxVisualRoll: 25
+  dash: {fileID: 7188365373034891474}
+  wallRun: {fileID: 8129584585677567498}
+  wallJump: {fileID: 5394457895109117774}
+--- !u!114 &7188365373034891474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3ff9f944ab698d46bb69115cf1c9616, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DashAbility
+  motor: {fileID: 3294469309054466338}
+  wallRun: {fileID: 8129584585677567498}
+  dashKey: 304
+  dashSpeed: 30
+  dashCooldown: 1
+  dashSpeedBoostMultiplier: 1.4
+  dashBoostDuration: 1.5
+  dashInitialBurstMultiplier: 1.5
+  sideDashDistance: 20
+  sideDashDuration: 0.5
+  sideDashUpOffset: 28
+  cartModel: {fileID: 1590221126607413222}
+  dashFlipAngle: 360
+  dashFlipDuration: 0.4
+  dashHopHeight: 28
+--- !u!114 &8129584585677567498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f01ea6cdff84b4783e2d69d439c5d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WallRunAbility
+  motor: {fileID: 3294469309054466338}
+  dash: {fileID: 7188365373034891474}
+  cartModel: {fileID: 1590221126607413222}
+  wallLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallCheckRadius: 1
+  wallCheckDistance: 2
+  wallRunEnabled: 1
+  wallRunSpeedMultiplier: 1
+  wallRunDuration: 4
+  wallRunMinHeight: 1.1
+  wallRunMinForwardDot: 0.2
+  wallRunCooldown: 1
+  wallRunStick: 0.5
+  wallRunRiseDuration: 1
+  wallRunRiseSpeed: 3
+  wallRunGravityScale: 0.08
+  wallRunSlowFallMaxDownSpeed: -1.25
+  wallRunMaxUpSpeed: 6
+  wallRunTangentAccel: 30
+  wallRunEntryBoost: 2
+  wallRunFaceTurnLerp: 12
+--- !u!114 &5394457895109117774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4940313654620728586}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1512ed59c1dc004cbccfe2f1a32edbc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WallJumpAbility
+  motor: {fileID: 3294469309054466338}
+  wallRun: {fileID: 8129584585677567498}
+  dash: {fileID: 7188365373034891474}
+  wallJumpUpImpulse: 7.5
+  wallJumpAwayImpulse: 8.5
+  extraAwayImpulse: 6
+  wallJumpCooldown: 0.15
 --- !u!114 &6457804267282043099
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -691,99 +779,9 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.23919158, y: 0.23919158, z: 0.23919158}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1394068002908875348}
+  m_Children: []
   m_Father: {fileID: 7401148801439138598}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7104575648112213484
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1394068002908875348}
-  - component: {fileID: 5480420271095883843}
-  - component: {fileID: 6971771150806183722}
-  m_Layer: 0
-  m_Name: Trolley_Model
-  m_TagString: Player
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1394068002908875348
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7104575648112213484}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: -2.17, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1590221126607413222}
-  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
---- !u!33 &5480420271095883843
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7104575648112213484}
-  m_Mesh: {fileID: 4924738372026474003, guid: ee729e98fb9a81d4f86d8ec258c18d22, type: 3}
---- !u!23 &6971771150806183722
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7104575648112213484}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &7976950310751080768
 GameObject:
   m_ObjectHideFlags: 0
