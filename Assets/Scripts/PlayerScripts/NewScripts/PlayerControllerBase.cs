@@ -70,6 +70,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
+    private float lastWallJumpTime = -999f;
 
     void Start()
     {
@@ -120,6 +121,11 @@ public class PlayerControllerBase : MonoBehaviour
 
         jumpForce = baseJumpForce;
 
+    }
+
+    public void NotifyWallJump()
+    {
+        lastWallJumpTime = Time.time;
     }
 
     void Update()
