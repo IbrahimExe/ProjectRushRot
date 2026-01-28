@@ -24,6 +24,16 @@ public class OutOfBoundsRespawn : MonoBehaviour
     private float lastRespawnTime = -Mathf.Infinity;
     [SerializeField] private float respawnCooldown = 0.2f;
 
+    private void Start()
+    {
+        Ray ray = new Ray(originOfRaycast.position, Vector3.down);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, lengthOfRaycast, groundLayer))
+        {
+             SaveCheckpoint(hit.point.y);
+        }
+    }
+
     void Update()
     {
         HandleCheckpointSaving();
@@ -90,7 +100,7 @@ public class OutOfBoundsRespawn : MonoBehaviour
     {
         currentRespawnAttempts++;
 
-        // If this checkpoint is killing the player, discard it immediately
+        // If this checkpoint is killing the player, discard it
         if (currentRespawnAttempts >= maxRespawnAttempts && savedCheckpoints.Count > 1)
         {
             // Remove newest (bad) checkpoint

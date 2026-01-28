@@ -3,7 +3,7 @@ using UnityEngine;
 public class OutOfBoundsBlock : MonoBehaviour
 {
     [SerializeField] private Transform playerPos;
-    [SerializeField] private float yOffset = -7f;
+    [SerializeField] private float yOffset = -10f;
     [SerializeField] private float minY = -30f;
 
 
