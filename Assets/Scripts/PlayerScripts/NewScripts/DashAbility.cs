@@ -35,6 +35,12 @@ public class DashAbility : MonoBehaviour
     public float hitWindowAfterDash = 0.25f;
     private float hitWindowEndTime = 0f;
 
+    [Header("Dash Kill -> XP Multiplier")]
+    public int dashKillCap = 10;                 // cap at 10 kills
+    public float secondsToKeepMultiplier = 10f;  // stays for 10s after last kill
+
+    private int dashKillCount = 0;
+    private float lastDashKillTime = -999f;
 
     [Header("Dash Flip / Roll Settings (Visual Only)")]
     public Transform cartModel;
@@ -87,6 +93,9 @@ public class DashAbility : MonoBehaviour
 
         // post-dash speed boost for base movement
         motor.MaxSpeedMultiplier = (Time.time < dashBoostEndTime) ? dashSpeedBoostMultiplier : 1f;
+
+        UpdateDashKillMultiplier();
+
     }
 
     private void HandleDashInput()
@@ -283,6 +292,26 @@ public class DashAbility : MonoBehaviour
         }
     }
 
+    private void UpdateDashKillMultiplier()
+    {
+        // If timer expired, reset
+        if (dashKillCount > 0 && Time.time > lastDashKillTime + secondsToKeepMultiplier)
+        {
+            dashKillCount = 0;
+            PushDashKillMultiplierToXP();
+        }
+    }
+
+    private void PushDashKillMultiplierToXP()
+    {
+        // linear: 2x per kill => 2,4,6,...,20 (cap at 10 kills)
+        float mult = (dashKillCount <= 0) ? 1f : Mathf.Min(2f * dashKillCount, 2f * dashKillCap);
+
+        if (AltExpManager.Instance != null)
+            AltExpManager.Instance.SetDashKillMultiplier(mult);
+    }
+
+
     private bool CanDashKill()
     {
         return isDashing || isSideDashing || Time.time <= hitWindowEndTime;
@@ -291,11 +320,21 @@ public class DashAbility : MonoBehaviour
     private void TryKillEnemy(GameObject otherGO)
     {
         if (!CanDashKill()) return;
-        // if (!(isDashing || isSideDashing)) return;
         if (!otherGO.CompareTag("Enemy")) return;
 
         Destroy(otherGO);
+
+        // Increase combo count (cap at 10)
+        if (dashKillCount < dashKillCap)
+            dashKillCount++;
+
+        // Refresh the 10s timer on every kill
+        lastDashKillTime = Time.time;
+
+        // Push new multiplier to XP system
+        PushDashKillMultiplierToXP();
     }
+
 
     private void OnTriggerEnter(Collider other)
     {

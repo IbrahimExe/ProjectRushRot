@@ -329,7 +329,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6ac0f8aedbb8a54a920db23f9579770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDistanceCulling
-  player: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+  player: {fileID: 0}
   disableDistance: 150
   checkRate: 0.5
 --- !u!1 &7770692172948649851
