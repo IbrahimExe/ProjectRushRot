@@ -104,14 +104,23 @@ public class PlayerControllerBase : MonoBehaviour
         // model swap
         if (currentModel != null) Destroy(currentModel);
 
-        if (data.modelPrefab != null)
-        {
-            currentModel = Instantiate(data.modelPrefab, cartModel != null ? cartModel.parent : transform);
-            cartModel = currentModel.transform;
 
-            if (dash != null) dash.cartModel = cartModel;
+        if (currentModel != null)
+            Destroy(currentModel);
+
+        // Instantiate as child of PlayerModel
+        currentModel = Instantiate(data.modelPrefab, cartModel);
+
+        // Apply local transform offsets
+        Transform t = currentModel.transform;
+        t.localPosition = data.modelOffset;
+        t.localRotation = Quaternion.Euler(data.modelRotation);
+        t.localScale = data.modelScale;
+
+
+        if (dash != null) dash.cartModel = cartModel;
             if (wallRun != null) wallRun.cartModel = cartModel;
-        }
+        
     }
 
     public void SetBaseStats()

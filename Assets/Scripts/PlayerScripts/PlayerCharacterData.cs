@@ -5,6 +5,10 @@ public class PlayerCharacterData : ScriptableObject
 {
     [Header("Visual")]
     public GameObject modelPrefab;
+    // transform offset from the player's origin
+    public Vector3 modelOffset = Vector3.zero;
+    public Vector3 modelScale = Vector3.one;
+    public Vector3 modelRotation = Vector3.zero;
 
     [Header("Base Stats")]
     public float startMoveSpeed = 5f;
@@ -20,6 +24,6 @@ public class PlayerCharacterData : ScriptableObject
     public float wallRunSpeed = 75f;
     public float wallRunDuration = 4f;
 
-    //[Header("Size and Hitbox")] for bypassing the error for testing
+   
 
 }
