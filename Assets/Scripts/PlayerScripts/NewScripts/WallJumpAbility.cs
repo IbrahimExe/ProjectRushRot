@@ -72,8 +72,8 @@ public class WallJumpAbility : MonoBehaviour
             along.Normalize();
 
             // Blend: mostly away, some along-wall (sideways)
-            float awayWeight = 0.95f;
-            float alongWeight = 0.15f;
+            float awayWeight = 0.75f;
+            float alongWeight = 0.25f;
 
             Vector3 kickDir = (n * awayWeight + along * alongWeight).normalized;
 
