@@ -403,4 +403,15 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void BlockForwardMovement() => currentMoveSpeed = 0f;
     public void BlockBackwardMovement() => currentReverseSpeed = 0f;
+
+    // After respawn logic
+    public void Respawn()
+    {
+        // Reset velocities
+        RB.linearVelocity = Vector3.zero;
+        RB.angularVelocity = Vector3.zero;
+        // Clear movement speeds
+        currentMoveSpeed = 0f;
+        currentReverseSpeed = 0f;
+    }
 }
