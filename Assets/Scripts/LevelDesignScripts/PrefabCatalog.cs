@@ -34,6 +34,7 @@ namespace LevelGenerator.Data
             {
                 foreach (var def in Definitions)
                 {
+                    if (def == null) continue;
                     if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
                         def.ID = def.Name.ToUpper().Replace(" ", "_");
                 }

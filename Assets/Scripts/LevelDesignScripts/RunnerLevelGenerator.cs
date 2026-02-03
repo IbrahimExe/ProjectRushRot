@@ -31,10 +31,10 @@ public sealed class RunnerGenConfig : ScriptableObject
 
     [Header("Spawn Chances")]
     [Range(0f, 1f)] public float wallChanceEdge = 0.7f; // Base chance of wall in edge lanes
-    [Range(0f, 1f)] public float wallCanceFalloff = 0.15f; // Reduces wall chance further from edge
+    [Range(0f, 1f)] public float wallChanceFalloff = 0.15f; // Reduces wall chance further from edge
     [Range(0f, 1f)] public float holeChance = 0.2f; // Base chance of hole in any lane
     [Range(0f, 1f)] public float obstacleChanceCenter = 0.3f; // Base chance of obstacle in center lane
-    [Range(0f, 1f)] public float dentisyPenalty = 0.1f; // Reduces spawn if area is dense
+    [Range(0f, 1f)] public float densityPenalty = 0.1f; // Reduces spawn if area is dense
 
   
 
@@ -506,7 +506,7 @@ private float LaneToWorldX(int lane)
         int nearObs = CountNearbyOcc(z, lane, OccupantType.Obstacle);
         int nearWall = CountNearbyOcc(z, lane, OccupantType.Wall);
         int nearHole = CountNearbySurf(z, lane, SurfaceType.Hole);
-        return (nearObs + nearWall + nearHole) * config.dentisyPenalty;
+        return (nearObs + nearWall + nearHole) * config.densityPenalty;
 
         //OPTIMIZATION: Cache calculations if checking same cell multiple times
         // OPTIMIZATION: Consider not counting Enemy/Collectible in density??
@@ -518,7 +518,7 @@ private float LaneToWorldX(int lane)
     {
         float baseChance = config.wallChanceEdge;
         if (!LaneIsBorder(lane))
-            baseChance *= config.wallCanceFalloff;
+            baseChance *= config.wallChanceFalloff;
         return Clamp(baseChance - DensityPenalty(z, lane));
     }
 
