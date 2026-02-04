@@ -9726,22 +9726,22 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 4940313654620728586, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
   m_PrefabInstance: {fileID: 152380996816733992}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &713965982 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
-  m_PrefabInstance: {fileID: 152380996816733992}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 713965978}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8627598378077364ba5d6ae96d172ad2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerController2
 --- !u!4 &713965993 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
   m_PrefabInstance: {fileID: 152380996816733992}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &713965994 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3294469309054466338, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+  m_PrefabInstance: {fileID: 152380996816733992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 713965978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b158bcd1f599a3043b87e5164d4ab7c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerControllerBase
 --- !u!43 &734227765
 Mesh:
   m_ObjectHideFlags: 0
@@ -14996,7 +14996,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85affc4baeeb08b4daa5279ae1032bc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UpgradeStats
-  player: {fileID: 713965982}
+  player: {fileID: 713965994}
 --- !u!114 &1546841898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15016,15 +15016,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 66acef1cbc8b6eb46839b8344bd627f1, type: 2}
   - {fileID: 11400000, guid: 6099f6ca0aa24fc448908cb16729310b, type: 2}
   - {fileID: 11400000, guid: 0d3f5509a0585ea4b963d1fafd8a4bf4, type: 2}
-  - {fileID: 11400000, guid: 13a0024364843a847b00aa101b675085, type: 2}
   - {fileID: 11400000, guid: 92f4022e27c7c62438bb5ddcbbe4d011, type: 2}
   - {fileID: 11400000, guid: 1053b20e8f3be674880d2ae393a1aad0, type: 2}
   - {fileID: 11400000, guid: 49afdf6ae55ed494f998a0e252e0ed6f, type: 2}
-  - {fileID: 11400000, guid: 956f0ca63cb0dc44db5ecb1b7bcbd926, type: 2}
-  - {fileID: 11400000, guid: 78f1d5ed0fe88e6448c75a027abfc76f, type: 2}
   - {fileID: 11400000, guid: cc986095b373c35458ddb0a3e5a4f4dc, type: 2}
   - {fileID: 11400000, guid: 8df7636143bce634ca5c04e6ebb31c2f, type: 2}
-  - {fileID: 11400000, guid: 8765448cdc652b046ab9dd9613cd2d20, type: 2}
+  - {fileID: 11400000, guid: 78f1d5ed0fe88e6448c75a027abfc76f, type: 2}
   cardPositions:
   - {fileID: 1144115561}
   - {fileID: 1144115560}
@@ -16205,7 +16202,7 @@ MonoBehaviour:
   baseXPPerSecond: 4
   player: {fileID: 713965978}
   speedSource: 0
-  customComponentTypeName: GPlayerController
+  customComponentTypeName: PlayerControllerBase
   customSpeedFieldName: currentMoveSpeed
   referenceSpeed: 70
   speedMultiplierSmoothing: 10
@@ -16218,6 +16215,7 @@ MonoBehaviour:
   level: 1
   speedMultiplier: 1
   globalMultiplier: 1
+  dashKillMultiplier: 1
   debugLog: 1
 --- !u!114 &1721444905
 MonoBehaviour:
@@ -24035,7 +24033,7 @@ SceneRoots:
   - {fileID: 414849318}
   - {fileID: 152380996816733992}
   - {fileID: 1141560392}
-  - {fileID: 1721444906}
   - {fileID: 1126884629}
+  - {fileID: 1721444906}
   - {fileID: 1546841899}
   - {fileID: 1144115558}
