@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f9fc60f384989e4a93a3c6eff27d1b8, type: 3}
+  m_Name: NeighborRulesConfig
+  m_EditorClassIdentifier: Assembly-CSharp::NeighborRulesConfig
+  catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
+  entries:
+  - selfID: GRASS_TILE
+    allowed:
+    - neighborID: FOREST_TILE
+      directions: -1
+      weight: 1
+    denied: []
+  - selfID: SAFE_PATH
+    allowed: []
+    denied: []
+  - selfID: LAVA_TILE
+    allowed: []
+    denied: []
+  - selfID: WATER_TILE
+    allowed: []
+    denied: []
+  - selfID: DESERT_TILE
+    allowed: []
+    denied: []
+  - selfID: FOREST_TILE
+    allowed:
+    - neighborID: GRASS_TILE
+      directions: 15
+      weight: 1
+    denied: []
+  - selfID: HOLE
+    allowed: []
+    denied:
+    - neighborID: LAVA_TILE
+      directions: 0
+      weight: 0

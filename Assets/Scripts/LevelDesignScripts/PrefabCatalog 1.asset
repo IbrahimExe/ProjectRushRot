@@ -1,0 +1,108 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
+  m_Name: PrefabCatalog 1
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  Definitions:
+  - ID: GRASS_TILE
+    Name: Grass
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: SAFE_PATH
+    Name: Golden_Path
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: LAVA_TILE
+    Name: Lava
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: WATER_TILE
+    Name: water
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 2926c78776f3d024d95ef91ea6b5290d, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: DESERT_TILE
+    Name: Desert
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 839e85ab62d2ada4eae9c1ebb3848dce, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: FOREST_TILE
+    Name: forest
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: HOLE
+    Name: hole
+    Prefabs:
+    - {fileID: 1021981873677495912, guid: 1bb8e1e3c2826ab4d990f2b52bc796a4, type: 3}
+    Layer: 0
+    SurfaceType: 1
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+  - ID: ENEMY
+    Name: enemy
+    Prefabs:
+    - {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
+    Layer: 1
+    SurfaceType: 1
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 20
+    Tags: []
+  - ID: WALL
+    Name: wall
+    Prefabs:
+    - {fileID: 4123710351756878346, guid: 449e023b912b22e49a313e3cb43f54ef, type: 3}
+    Layer: 1
+    SurfaceType: 1
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 20
+    Tags: []
+  debugSafePath: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
+  debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}

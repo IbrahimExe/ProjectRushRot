@@ -115,17 +115,17 @@ namespace LevelGenerator.Data
         // --- Filtering Helpers ---
 
         // filter a list by attributes and optional tag
-        public List<PrefabDef> Filter(List<PrefabDef> source, ObjectAttributes requiredMask, string requiredTag = null)
-        {
-            var result = new List<PrefabDef>(source.Count);
-            foreach(var def in source)
-            {
-                if ((def.Attributes & requiredMask) != requiredMask) continue;
-                if (requiredTag != null && !def.HasTag(requiredTag)) continue;
-                result.Add(def);
-            }
-            return result;
-        }
+        //public List<PrefabDef> Filter(List<PrefabDef> source, string requiredTag = null)
+        //{
+        //    var result = new List<PrefabDef>(source.Count);
+        //    foreach(var def in source)
+        //    {
+        //        if ((def.Attributes & requiredMask) != requiredMask) continue; unused was for Atributes flags
+        //        if (requiredTag != null && !def.HasTag(requiredTag)) continue;
+        //        result.Add(def);
+        //    }
+        //    return result;
+        //}
 
         // --- Weighted Selection ---
 
@@ -140,7 +140,7 @@ namespace LevelGenerator.Data
             // calculate effective weights
             for (int i = 0; i < candidates.Count; i++)
             {
-                float w = candidates[i].BaseWeight;
+                float w = candidates[i].OccupantWeight;
                 if (weightModifier != null)
                 {
                     // apply external weight adjustments like density penalties

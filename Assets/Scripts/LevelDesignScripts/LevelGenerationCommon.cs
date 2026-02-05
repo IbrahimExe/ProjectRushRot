@@ -30,16 +30,25 @@ namespace LevelGenerator.Data
     }
 
     // attributes for objects, using flags so an object can have multiple traits
-    [System.Flags]
-    public enum ObjectAttributes
+    //[System.Flags]
+    //public enum ObjectAttributes
+    //{
+    //    None        = 0,
+    //    Physical    = 1 << 0,  // has a collider or blocks movement
+    //    Moving      = 1 << 1,  // moves dynamically in the scene
+    //    Hazardous   = 1 << 2,  // causes damage to the player
+    //    Walkable    = 1 << 3,  // player can walk on top of this occupant
+    //    Floating    = 1 << 4,  // can be placed over holes
+    //    Collectible = 1 << 5   // can be collected by the player
+    //}
+
+    // Directions for neighbor lookup
+    public enum Direction
     {
-        None        = 0,
-        Physical    = 1 << 0,  // has a collider or blocks movement
-        Moving      = 1 << 1,  // moves dynamically in the scene
-        Hazardous   = 1 << 2,  // causes damage to the player
-        Walkable    = 1 << 3,  // player can walk on top of this occupant
-        Floating    = 1 << 4,  // can be placed over holes
-        Collectible = 1 << 5   // can be collected by the player
+        Forward,    // Z + 1
+        Backward,   // Z - 1
+        Left,       // Lane - 1
+        Right       // Lane + 1
     }
 
     /// <summary>
@@ -52,6 +61,12 @@ namespace LevelGenerator.Data
         public OccupantType occupant;
         public PrefabDef surfaceDef;   // Specific prefab for the floor/surface
         public PrefabDef occupantDef;  // Specific prefab for the object on top
+        
+        // WFC Fields
+        public bool isCollapsed;
+        public List<PrefabDef> surfaceCandidates;
+        public Dictionary<PrefabDef, float> candidateWeights; // Updated for weighted WFC
+        public float entropy;
 
         public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null)
         {
@@ -59,6 +74,10 @@ namespace LevelGenerator.Data
             occupant = o;
             surfaceDef = surfaceP;
             occupantDef = occupantP;
+            isCollapsed = false;
+            surfaceCandidates = null;
+            candidateWeights = null; // deprecated, so initialize to null
+            entropy = 0f;
         }
     }
 
@@ -121,15 +140,16 @@ namespace LevelGenerator.Data
         public SurfaceType SurfaceType = SurfaceType.Solid;
         public OccupantType OccupantType = OccupantType.None;
 
-        [Header("Attributes")]
-        public ObjectAttributes Attributes;
+        //[Header("Attributes")]
+        //public ObjectAttributes Attributes;
 
         [Header("Dimensions")]
         // size in grid cells (x, y, z), pivot is assumed to be bottom-left
         public Vector3Int Size = new Vector3Int(1, 1, 1);
 
-        [Header("Generation Settings")]
-        [Range(0f, 100f)] public float BaseWeight = 100f;
+        // [WFC] BaseWeight removed. Added OccupantWeight for non-WFC occupant selection if needed.
+        [Tooltip("Used ONLY if Layer == Occupant. Ignored for Surfaces (WFC uses constraints).")]
+        [Range(0f, 100f)] public float OccupantWeight = 10f; 
         
         // tags for specific filtering like 'forest_only' or 'rare'
         public List<string> Tags = new List<string>();
@@ -138,6 +158,6 @@ namespace LevelGenerator.Data
         public bool HasTag(string tag) => Tags.Contains(tag);
         
         // check if this definition has a specific attribute flag
-        public bool HasAttribute(ObjectAttributes attr) => (Attributes & attr) == attr;
+        //public bool HasAttribute(ObjectAttributes attr) => (Attributes & attr) == attr;
     }
 }

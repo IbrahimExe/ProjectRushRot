@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RunnerConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
   catalog: {fileID: 11400000, guid: e5371f4c10412274b865008573319f9a, type: 2}
-  weightRules: {fileID: 11400000, guid: 05336aaeaa6b0cc46a7a9b0a458f5038, type: 2}
+  weightRules: {fileID: 11400000, guid: b4509f51835e4de4b9cbd079ae9052cb, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
@@ -22,11 +22,10 @@ MonoBehaviour:
   chunkSize: 10
   neigbhorhoodZ: 4
   neighborhoodX: 1
-  wallChanceEdge: 1
-  wallCanceFalloff: 0.153
   holeChance: 0.101
-  obstacleChanceCenter: 0.3
-  dentisyPenalty: 0.1
+  densityPenalty: 0.1
+  surfaceVarietySeedChance: 0.1
+  varietySeedOptions: []
   pathSidePenalty: 0.2
   pathSwitchPenalty: 1
   pathForwardWeight: 1
