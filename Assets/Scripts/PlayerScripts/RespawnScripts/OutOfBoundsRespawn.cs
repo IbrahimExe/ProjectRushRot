@@ -64,7 +64,7 @@ public class OutOfBoundsRespawn : MonoBehaviour
     {
         Vector3 checkpoint = new Vector3(
             transform.position.x,
-            groundY,
+            groundY + 5, // <---------------------------------------- increase the number if the player still respawns inside the ground
             transform.position.z
         );
 
