@@ -20,6 +20,7 @@ public class WallRunAbility : MonoBehaviour
     public float wallRunMinForwardDot = 0.2f;
     public float wallRunCooldown = 1f;
     public float wallRunStick = 0.5f;
+    private float wallRunLockUntil = 0f;
 
     [Header("Wall Run Vertical (Sands of Time)")]
     public float wallRunRiseDuration = 1.0f;
@@ -68,6 +69,15 @@ public class WallRunAbility : MonoBehaviour
 
     private void HandleWallRunState()
     {
+        // added this check -------------------------------------------------
+        // prevent wallrun during lock period
+        if (Time.time < wallRunLockUntil)
+        {
+            StopWallRun(false);
+            return;
+        }
+
+
         if (!wallRunEnabled)
         {
             StopWallRun(motor.IsGrounded);
@@ -278,5 +288,11 @@ public class WallRunAbility : MonoBehaviour
         }
 
         return false;
+    }
+
+    // added this method -------------------------------------------------
+    public void LockWallRun(float duration)
+    {
+        wallRunLockUntil = Time.time + duration;
     }
 }
