@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3685506971019746956}
   - component: {fileID: 884284238310470232}
   m_Layer: 0
-  m_Name: RotatingObstacleCounterClockwise
+  m_Name: RotatingWallCounterClockwise
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
