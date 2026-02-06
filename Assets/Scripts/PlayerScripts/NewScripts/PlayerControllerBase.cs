@@ -29,6 +29,8 @@ public class PlayerControllerBase : MonoBehaviour
 
     public float rotationSpeed = 75f;
     public float linearDrag = 5f;
+    public float MoveLockTimer = 0f;
+
 
     [Header("Jump and Gravity Settings")]
     public float baseJumpForce = 125f;
@@ -145,15 +147,22 @@ public class PlayerControllerBase : MonoBehaviour
 
     void FixedUpdate()
     {
+        MoveLockTimer = Mathf.Max(0f, MoveLockTimer - Time.fixedDeltaTime);
+
         // Preserve ordering: abilities first, then base motor, then visuals
         if (dash != null) dash.TickFixed();
         if (wallRun != null) wallRun.TickFixed();
         if (wallJump != null) wallJump.TickFixed();
 
-        BaseMove();
+        if (MoveLockTimer <= 0f)
+        {
+            BaseMove();
+        }
+
         ApplyCustomGravity();
         AlignModelToGroundAndTilt_GroundOnly();
         UprightModelInAir();
+
 
 
         // Keep upright when airborne (physics body)
@@ -175,12 +184,14 @@ public class PlayerControllerBase : MonoBehaviour
 
         if (IsGrounded) return;
 
-        //  don't upright right after a wall jump
-        if (Time.time - lastWallJumpTime < uprightLockoutAfterWallJump)
-            return;
+        float sinceWallJump = Mathf.Max(0f, Time.time - lastWallJumpTime - 0.05f);
+        float ramp = 1f;
+
+        if (sinceWallJump < uprightLockoutAfterWallJump)
+            ramp = Mathf.InverseLerp(0f, uprightLockoutAfterWallJump, sinceWallJump);
 
         Quaternion target = Quaternion.Euler(0f, RB.rotation.eulerAngles.y, 0f);
-        cartModel.rotation = Quaternion.Slerp(cartModel.rotation, target, Time.deltaTime * airUprightSpeed);
+        cartModel.rotation = Quaternion.Slerp(cartModel.rotation, target, Time.deltaTime * airUprightSpeed * ramp);
     }
 
 
@@ -211,7 +222,7 @@ public class PlayerControllerBase : MonoBehaviour
 
         Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
 
-        // NOTE: keeping these untouched as requested
+        // NOTE: keeping these untouched 
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
         float planarSpeed = planarVel.magnitude;
 
@@ -287,14 +298,11 @@ public class PlayerControllerBase : MonoBehaviour
         if (wallRun != null && wallRun.IsWallRunning)
             return;
 
-        // Optional: if you want dash hop to feel consistent, let dash own vertical while active
-        // (Side dash sets vertical velocity directly at start, then you can still let gravity act.)
-        // Keeping gravity active during dash is usually fine.
 
         // Apply base "heavier gravity" feel
         RB.AddForce(Physics.gravity * fallMultiplier, ForceMode.Acceleration);
 
-        // Extra gravity shaping (kept close to your original intent)
+        // Extra gravity shaping 
         if (RB.linearVelocity.y < 0)
             RB.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
         else if (RB.linearVelocity.y > 0 && !Input.GetButton("Jump"))
@@ -333,7 +341,7 @@ public class PlayerControllerBase : MonoBehaviour
 
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
         {
-            // NOTE: keeping this untouched as requested
+            // NOTE: keeping this untouched                                                                                                                                                                                                                       
             RB.linearDamping = linearDrag;
 
             GroundNormal = hit.normal;
