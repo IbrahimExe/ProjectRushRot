@@ -39,11 +39,24 @@ public sealed class RunnerGenConfig : ScriptableObject
     // [Range(0f, 1f)] public float holeChance = 0.2f; REMOVED
     // [Range(0f, 1f)] public float densityPenalty = 0.1f; REMOVED
 
-    [Header("WFC Settings")]
-    [Tooltip("Chance to seed a cell with a variety surface before solving.")]
-    [Range(0f, 1f)] public float surfaceVarietySeedChance = 0.1f;
-    public List<PrefabDef> varietySeedOptions;
-    
+    //[Header("WFC Settings")]
+    //[Tooltip("Chance to seed a cell with a variety surface before solving.")]
+    //[Range(0f, 1f)] public float surfaceVarietySeedChance = 0.1f;
+   // public List<PrefabDef> varietySeedOptions;
+
+    [Header("Biome Clustering")]
+    [Tooltip("Enable biome system for coherent regions instead of noise.")]
+    public bool useBiomeSystem = true;
+
+    [Tooltip("Biome region size. Larger = bigger zones. (10-25=moderate, 30-50=huge)")]
+    [Range(5f, 50f)] public float biomeNoiseScale = 15f;
+
+    [Tooltip("Biome influence strength. 0=disabled, 1=maximum.")]
+    [Range(0f, 1f)] public float biomeInfluence = 0.75f;
+
+    [Tooltip("Use multi-octave noise for organic biome shapes.")]
+    public bool useMultiOctaveBiomes = true;
+
     // [Header("Legacy - Removed")]
     // wallChanceEdge, obstacleChanceCenter etc removed.
 
@@ -64,10 +77,10 @@ public sealed class RunnerGenConfig : ScriptableObject
     // 0 = straight center, 1 = uses full amplitude
 
     [Tooltip("Max drift from center in lanes (before clamping).")]
-    [Range(0f, 15f)] public float waveAmplitudeLanes = 10f; // for 30 lanes, 812 feels good
+    [Range(0f, 150f)] public float waveAmplitudeLanes = 10f; 
 
     [Tooltip("How fast the wave changes per row. Smaller = longer turns.")]
-    [Range(0.001f, 0.1f)] public float waveFrequency = 0.02f;
+    [Range(0.001f, 0.05f)] public float waveFrequency = 0.02f;
     // 0.02 = ~50 rows per cycle
     
     [Tooltip("How quickly we chase the target (0..1).")]
@@ -144,7 +157,14 @@ public class RunnerLevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), GameObject> spawnedObjects = new Dictionary<(int, int), GameObject>();
     private Dictionary<(int z, int lane), GameObject> spawnedOccupant = new();
 
-    
+    // Biome System
+    private Dictionary<(int z, int lane), BiomeType> biomeMap = new Dictionary<(int, int), BiomeType>();
+    private float biomeNoiseOffsetX;
+    private float biomeNoiseOffsetZ;
+
+
+
+
     void Start()
     {
         if (config == null)
@@ -166,10 +186,11 @@ public class RunnerLevelGenerator : MonoBehaviour
         {
             rng = new System.Random(); // fallback
         }
-        // weightSystem = new WeightSystem(config.weightRules); // REMOVED
-        spawnedObjects = new Dictionary<(int, int), GameObject>();
-        spawnedOccupant = new Dictionary<(int, int), GameObject>();
-        
+
+        // Initialize Biome System
+        biomeNoiseOffsetX = (seed != null ? seed.GetHashCode() : 0) * 0.01f;
+        biomeNoiseOffsetZ = (seed != null ? (seed.GetHashCode() * 7919) : 0) * 0.01f;
+
         // Initialize Golden Path
         pathTipLane = config.laneCount / 2;
         pathLaneF = pathTipLane;
@@ -293,8 +314,8 @@ public class RunnerLevelGenerator : MonoBehaviour
             // Multi-octave perlin
             float z = wavePhaseZ; // IMPORTANT: use wavePhaseZ, not pathTipZ
 
-            float n1 = Mathf.PerlinNoise(waveSeedOffset + 10.0f, z * config.waveFrequency);
-            float n2 = Mathf.PerlinNoise(waveSeedOffset + 77.7f, z * (config.waveFrequency * 2.2f));
+            float n1 = Mathf.PerlinNoise(z * config.waveFrequency, waveSeedOffset + 10.0f);
+            float n2 = Mathf.PerlinNoise(z * (config.waveFrequency * 2.2f), waveSeedOffset + 77.7f);
 
             float w1 = (n1 * 2f) - 1f;
             float w2 = (n2 * 2f) - 1f;
@@ -358,6 +379,69 @@ private float LaneToWorldX(int lane)
 
 
     //FUNCTIONS
+
+    // ============================================
+    // BIOME SYSTEM
+    // ============================================
+
+    /// <summary>
+    /// Get biome type for a cell using Perlin noise
+    /// </summary>
+    private BiomeType GetBiomeForCell(int z, int lane)
+    {
+        if (!config.useBiomeSystem) return BiomeType.Default;
+
+        // Check cache
+        if (biomeMap.TryGetValue((z, lane), out BiomeType cached))
+            return cached;
+
+        // Sample Perlin noise
+        float x = lane / config.biomeNoiseScale;
+        float zCoord = z / config.biomeNoiseScale;
+
+        float noise;
+        if (config.useMultiOctaveBiomes)
+        {
+            // Multi-octave for organic shapes
+            float n1 = Mathf.PerlinNoise(biomeNoiseOffsetX + x, biomeNoiseOffsetZ + zCoord);
+            float n2 = Mathf.PerlinNoise(biomeNoiseOffsetX + 100 + x * 2.1f, biomeNoiseOffsetZ + 100 + zCoord * 2.1f);
+            noise = n1 * 0.7f + n2 * 0.3f;
+        }
+        else
+        {
+            noise = Mathf.PerlinNoise(biomeNoiseOffsetX + x, biomeNoiseOffsetZ + zCoord);
+        }
+
+        // Map to biome types (customize these thresholds)
+        BiomeType biome;
+        if (noise < 0.25f)
+            biome = BiomeType.Rocky;
+        else if (noise < 0.5f)
+            biome = BiomeType.Grassy;
+        else if (noise < 0.75f)
+            biome = BiomeType.Sandy;
+        else
+            biome = BiomeType.Crystalline;
+
+        biomeMap[(z, lane)] = biome;
+        return biome;
+    }
+
+    /// <summary>
+    /// Get weight multiplier based on biome affinity
+    /// </summary>
+    private float GetBiomeAffinityWeight(PrefabDef surfaceDef, BiomeType biome)
+    {
+        if (!config.useBiomeSystem || surfaceDef == null)
+            return 1.0f;
+
+        float affinity = surfaceDef.GetBiomeAffinity(biome);
+
+        // Lerp between neutral and affinity based on influence
+        return Mathf.Lerp(1.0f, affinity, config.biomeInfluence);
+    }
+
+
 
     private bool LaneIsBorder(int lane)
     {
@@ -484,31 +568,53 @@ private float LaneToWorldX(int lane)
     {
         int endZ = startZ + chunkSize;
 
-        // PASS 1: Init + Pre-collapse (Safe Path Stamping)
-        // We do this for the WHOLE chunk first, so neighbor rules can "see ahead"
+        // ===================================================
+        // PASS 1: Initialize WFC State
+        // ===================================================
         for (int z = startZ; z < endZ; z++)
         {
             InitializeRowForWFC(z);
+        }
+
+        // ===================================================
+        // PASS 2: GOLDEN PATH (ALWAYS FIRST - HIGHEST PRIORITY)
+        // ===================================================
+        // This MUST happen before WFC solving so the safe path
+        // acts as a constraint that WFC works around
+        for (int z = startZ; z < endZ; z++)
+        {
             PreCollapseSafePath(z);
         }
 
-        // PASS 2: Generation (WFC + Occupants + Visuals)
-        // We can do this row-by-row or standard WFC style.
-        // For strict WFC, we'd solve the whole chunk surface first.
-        
-        // 2a. Solve Surfaces
+        // ===================================================
+        // PASS 3: Solve Surfaces with WFC
+        // ===================================================
+        // Now WFC fills in the rest, respecting the golden path
         SolveChunkSurfaces(startZ, endZ);
 
-        // 2b. Variety Seeding (Optional - could be done in Pass 1)
-        for (int z = startZ; z < endZ; z++)
-        {
-             SeedSurfaceVariety(z);
-        }
+        // ===================================================
+        // PASS 4: Optional Variety Seeding
+        // ===================================================
+        // This can add specific tiles after WFC if desired
+        // (Currently seeds BEFORE solving, so may want to remove this)
+        // for (int z = startZ; z < endZ; z++)
+        // {
+        //     SeedSurfaceVariety(z);
+        // }
 
-        // 2c. Occupants & Visuals
+        // ===================================================
+        // PASS 5: Occupants
+        // ===================================================
         for (int z = startZ; z < endZ; z++)
         {
             GenerateOccupants(z);
+        }
+
+        // ===================================================
+        // PASS 6: Spawn Visuals
+        // ===================================================
+        for (int z = startZ; z < endZ; z++)
+        {
             SpawnRowVisuals(z);
         }
     }
@@ -524,11 +630,19 @@ private float LaneToWorldX(int lane)
             CellState cell = new CellState(SurfaceType.Solid, OccupantType.None);
             cell.surfaceCandidates = new List<PrefabDef>(allSurfaces);
             cell.candidateWeights = new Dictionary<PrefabDef, float>();
-            foreach(var c in allSurfaces) cell.candidateWeights[c] = 1.0f; // Init weights
+
+            // Apply biome affinity to initial weights
+            BiomeType biome = GetBiomeForCell(z, lane);
+
+            foreach (var c in allSurfaces)
+            {
+                float baseWeight = 1.0f;
+                float biomeWeight = GetBiomeAffinityWeight(c, biome);
+                cell.candidateWeights[c] = baseWeight * biomeWeight;
+            }
 
             cell.isCollapsed = false;
-            // Initial entropy calculation
-            cell.entropy = CalculateEntropy(cell.surfaceCandidates); // Removed random jitter for now to test pure logic
+            cell.entropy = CalculateEntropy(cell);
             SetCell(z, lane, cell);
         }
     }
@@ -557,22 +671,22 @@ private float LaneToWorldX(int lane)
         }
     }
 
-    private void SeedSurfaceVariety(int z)
-    {
-        if (config.varietySeedOptions == null || config.varietySeedOptions.Count == 0) return;
+    //private void SeedSurfaceVariety(int z)
+    //{
+    //    if (config.varietySeedOptions == null || config.varietySeedOptions.Count == 0) return;
         
-        for (int lane = 0; lane < config.laneCount; lane++)
-        {
-            if (goldenPathSet.Contains((z, lane))) continue;
+    //    for (int lane = 0; lane < config.laneCount; lane++)
+    //    {
+    //        if (goldenPathSet.Contains((z, lane))) continue;
             
-            // Randomly seed
-            if (Rand() < config.surfaceVarietySeedChance)
-            {
-                 PrefabDef seedDef = config.varietySeedOptions[rng.Next(config.varietySeedOptions.Count)];
-                 CollapseCell(z, lane, seedDef);
-            }
-        }
-    }
+    //        // Randomly seed
+    //        if (Rand() < config.surfaceVarietySeedChance)
+    //        {
+    //             PrefabDef seedDef = config.varietySeedOptions[rng.Next(config.varietySeedOptions.Count)];
+    //             CollapseCell(z, lane, seedDef);
+    //        }
+    //    }
+    //}
 
     private void CollapseCell(int z, int lane, PrefabDef forcedDef)
     {
@@ -732,10 +846,32 @@ private float LaneToWorldX(int lane)
         CollapseCell(z, lane, selected);
     }
 
-    private float CalculateEntropy(List<PrefabDef> candidates)
+    private float CalculateEntropy(CellState cell)
     {
-        // Simple Shannon Entropy approximation: log(count)
-        return Mathf.Log(candidates.Count) + (float)rng.NextDouble() * 0.01f;
+        var candidates = cell.surfaceCandidates;
+        if (candidates == null || candidates.Count == 0) return 0f;
+
+        float sumWeights = 0f;
+        float sumWLogW = 0f;
+
+        foreach (var cand in candidates)
+        {
+            float w = 1.0f;
+            if (cell.candidateWeights != null && cell.candidateWeights.ContainsKey(cand))
+            {
+                w = cell.candidateWeights[cand];
+            }
+
+            if (w <= 1e-6f) continue;
+
+            sumWeights += w;
+            sumWLogW += w * Mathf.Log(w);
+        }
+
+        if (sumWeights <= 1e-6f) return 0f;
+
+        // Weighted Shannon Entropy
+        return Mathf.Log(sumWeights) - (sumWLogW / sumWeights) + (float)rng.NextDouble() * 0.001f;
     }
 
     private void Propagate(int z, int lane, int chunkStartZ, int chunkEndZ)
@@ -784,12 +920,14 @@ private float LaneToWorldX(int lane)
             }
             else
             {
-                // Allowed -> Update weight
-                // WFC: Multiply current probability by incoming compatibility weight
                 if (!target.candidateWeights.ContainsKey(cand)) target.candidateWeights[cand] = 1.0f;
-                
+
                 float oldW = target.candidateWeights[cand];
-                target.candidateWeights[cand] *= w;
+
+                // Apply biome affinity during propagation
+                BiomeType targetBiome = GetBiomeForCell(tz, tl);
+                float biomeAffinity = GetBiomeAffinityWeight(cand, targetBiome);
+                target.candidateWeights[cand] = oldW * w * biomeAffinity;
 
                 if (Mathf.Abs(oldW - target.candidateWeights[cand]) > 0.0001f) changed = true;
             }
@@ -803,7 +941,7 @@ private float LaneToWorldX(int lane)
                 // Debug.Log($"Contradiction found at {tz},{tl} from {sz},{sl} ({dir})");
             }
             
-            target.entropy = CalculateEntropy(target.surfaceCandidates); // Re-calc entropy
+            target.entropy = CalculateEntropy(target); // Re-calc entropy
             SetCell(tz, tl, target);
             
             if (!propagationQueue.Contains((tz, tl)))
@@ -1001,19 +1139,6 @@ private float LaneToWorldX(int lane)
             }
         }
 
-        foreach (var key in toRemove)
-        {
-            // Need to destroy the spawned object first
-            if (spawnedObjects.TryGetValue(key, out GameObject obj))
-            {
-                Destroy(obj);
-                // OPTIMIZATION: Return to object pool instead
-                // ReturnToPool(obj);
-                spawnedObjects.Remove(key);
-            }
-
-            grid.Remove(key);
-        }
         foreach (var key in toRemove)
         {
             if (spawnedObjects.TryGetValue(key, out GameObject surf) && surf != null)

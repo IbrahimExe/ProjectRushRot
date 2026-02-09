@@ -18,7 +18,7 @@ MonoBehaviour:
     allowed:
     - neighborID: GRASS_TILE
       directions: -1
-      weight: 45
+      weight: 40
     - neighborID: SAFE_PATH
       directions: -1
       weight: 0
@@ -27,10 +27,10 @@ MonoBehaviour:
       weight: 5
     - neighborID: DESERT_TILE
       directions: -1
-      weight: 15
+      weight: 10
     - neighborID: FOREST_TILE
       directions: -1
-      weight: 30
+      weight: 15
     - neighborID: HOLE
       directions: -1
       weight: 5
@@ -106,19 +106,19 @@ MonoBehaviour:
     allowed:
     - neighborID: GRASS_TILE
       directions: 15
-      weight: 30
+      weight: 20
     - neighborID: SAFE_PATH
       directions: 15
       weight: 0
     - neighborID: LAVA_TILE
       directions: 15
-      weight: 20
+      weight: 5
     - neighborID: WATER_TILE
       directions: 15
       weight: 10
     - neighborID: DESERT_TILE
-      directions: 3
-      weight: 40
+      directions: -1
+      weight: 50
     denied:
     - neighborID: FOREST_TILE
       directions: 13
@@ -134,7 +134,7 @@ MonoBehaviour:
       weight: 0
     - neighborID: WATER_TILE
       directions: 15
-      weight: 20
+      weight: 10
     - neighborID: HOLE
       directions: -1
       weight: 10

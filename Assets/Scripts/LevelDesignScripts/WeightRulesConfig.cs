@@ -144,6 +144,7 @@ public class NeighborRulesConfig : ScriptableObject
                     {
                         resultCandidates.Add(neighborDef);
                         weights.Add(constraint.weight); // Raw Multiplier
+                        //OPTIMIZATION: If lists get larger (>20 items), convert allCandidates to HashSet before this loop for O(1) lookups.
                     }
                 }
             }

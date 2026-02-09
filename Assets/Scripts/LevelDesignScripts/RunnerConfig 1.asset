@@ -22,22 +22,25 @@ MonoBehaviour:
   chunkSize: 10
   neigbhorhoodZ: 3
   neighborhoodX: 3
-  globalSpawnChance: 0.15
-  surfaceVarietySeedChance: 0.1
-  varietySeedOptions: []
+  densityBudget: 60
+  globalSpawnChance: 1
+  useBiomeSystem: 1
+  biomeNoiseScale: 15
+  biomeInfluence: 0.75
+  useMultiOctaveBiomes: 1
   pathSidePenalty: 0.85
-  pathSwitchPenalty: 0.5
+  pathSwitchPenalty: 0.76
   pathForwardWeight: 0.6
-  pathCenterBias: 0.2
+  pathCenterBias: 0.1
   useWavePath: 1
-  waveStrength: 0.35
-  waveAmplitudeLanes: 10
-  waveFrequency: 0.02
-  waveSmoothing: 0.12
-  maxLaneChangePerRow: 0.35
+  waveStrength: 1
+  waveAmplitudeLanes: 23
+  waveFrequency: 0.0216
+  waveSmoothing: 0.713
+  maxLaneChangePerRow: 2
   edgePadding: 2
   restAreaMaxLength: 35
   restAreaMinLength: 15
-  restAreaFrequency: 0.02
+  restAreaFrequency: 0.05
   allowHoles: 1
   allowBridges: 1

@@ -23,16 +23,22 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: SAFE_PATH
     Name: Golden_Path
     Prefabs:
     - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
     Layer: 0
-    SurfaceType: 0
+    SurfaceType: 3
     OccupantType: 0
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: LAVA_TILE
     Name: Lava
     Prefabs:
@@ -43,6 +49,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: WATER_TILE
     Name: water
     Prefabs:
@@ -53,6 +62,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: DESERT_TILE
     Name: Desert
     Prefabs:
@@ -63,6 +75,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: FOREST_TILE
     Name: forest
     Prefabs:
@@ -73,6 +88,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: HOLE
     Name: hole
     Prefabs:
@@ -83,6 +101,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 0
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: ENEMY
     Name: enemy
     Prefabs:
@@ -93,6 +114,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 20
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   - ID: WALL
     Name: wall
     Prefabs:
@@ -103,6 +127,9 @@ MonoBehaviour:
     Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 20
     Tags: []
+    Cost: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
   debugSafePath: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
   debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}

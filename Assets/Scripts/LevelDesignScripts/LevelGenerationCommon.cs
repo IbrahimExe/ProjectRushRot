@@ -29,18 +29,17 @@ namespace LevelGenerator.Data
         Enemy
     }
 
-    // attributes for objects, using flags so an object can have multiple traits
-    //[System.Flags]
-    //public enum ObjectAttributes
-    //{
-    //    None        = 0,
-    //    Physical    = 1 << 0,  // has a collider or blocks movement
-    //    Moving      = 1 << 1,  // moves dynamically in the scene
-    //    Hazardous   = 1 << 2,  // causes damage to the player
-    //    Walkable    = 1 << 3,  // player can walk on top of this occupant
-    //    Floating    = 1 << 4,  // can be placed over holes
-    //    Collectible = 1 << 5   // can be collected by the player
-    //}
+    // NEW: Biome types for regional coherence
+    public enum BiomeType
+    {
+        Default,      // Neutral/mixed (no preference)
+        Grassy,       // Green, natural, soft surfaces
+        Rocky,        // Stone, hard, grey surfaces
+        Sandy,        // Desert, warm, beige surfaces
+        Crystalline,  // Magical, glowing, fantasy surfaces
+        Swampy,       // Water, murky, dark green surfaces
+        Volcanic      // Fire, lava, red/orange surfaces
+    }
 
     // Directions for neighbor lookup
     public enum Direction
@@ -61,11 +60,11 @@ namespace LevelGenerator.Data
         public OccupantType occupant;
         public PrefabDef surfaceDef;   // Specific prefab for the floor/surface
         public PrefabDef occupantDef;  // Specific prefab for the object on top
-        
+
         // WFC Fields
         public bool isCollapsed;
         public List<PrefabDef> surfaceCandidates;
-        public Dictionary<PrefabDef, float> candidateWeights; // Updated for weighted WFC
+        public Dictionary<PrefabDef, float> candidateWeights;
         public float entropy;
 
         public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null)
@@ -76,7 +75,7 @@ namespace LevelGenerator.Data
             occupantDef = occupantP;
             isCollapsed = false;
             surfaceCandidates = null;
-            candidateWeights = null; // deprecated, so initialize to null
+            candidateWeights = null;
             entropy = 0f;
         }
     }
@@ -88,26 +87,26 @@ namespace LevelGenerator.Data
         public (int z, int lane) position;
         public SurfaceType currentSurface;
         public OccupantType currentOccupant;
-        
+
         // References to grid data
         public System.Func<int, int, CellState> GetCell;
         public System.Func<(int, int), bool> IsOnGoldenPath;
-        
+
         // Grid metadata
         public int laneCount;
         public int playerZIndex;
-        
+
         // Helper methods
         public bool IsEdgeLane => position.lane == 0 || position.lane == laneCount - 1;
         public bool IsCenterLane => position.lane == (laneCount - 1) / 2;
         public float NormalizedLanePosition => (float)position.lane / (laneCount - 1);
-        
+
         public int DistanceToGoldenPath
         {
             get
             {
                 if (IsOnGoldenPath(position)) return 0;
-                
+
                 // Find nearest golden path cell in same row
                 int minDist = int.MaxValue;
                 for (int lane = 0; lane < laneCount; lane++)
@@ -131,7 +130,7 @@ namespace LevelGenerator.Data
 
         [Tooltip("Display Name / Editor Name")]
         public string Name;
-        
+
         [Tooltip("List of prefab variants. One will be picked randomly.")]
         public List<GameObject> Prefabs = new List<GameObject>();
 
@@ -140,25 +139,15 @@ namespace LevelGenerator.Data
         public SurfaceType SurfaceType = SurfaceType.Solid;
         public OccupantType OccupantType = OccupantType.None;
 
-        //[Header("Attributes")]
-        //public ObjectAttributes Attributes;
-
         [Header("Dimensions")]
-        // size in grid cells (x, y, z), pivot is assumed to be bottom-left
         public Vector3Int Size = new Vector3Int(1, 1, 1);
 
-        // [WFC] BaseWeight removed. Added OccupantWeight for non-WFC occupant selection if needed.
         [Tooltip("Used ONLY if Layer == Occupant. Ignored for Surfaces (WFC uses constraints).")]
-        [Range(0f, 100f)] public float OccupantWeight = 10f; 
-        
-        // tags for specific filtering like 'forest_only' or 'rare'
+        [Range(0f, 100f)] public float OccupantWeight = 10f;
+
         public List<string> Tags = new List<string>();
 
-        // check if this definition has a specific tag
-        public bool HasTag(string tag) => Tags.Contains(tag);
-        
-        // check if this definition has a specific attribute flag
-        //public bool HasAttribute(ObjectAttributes attr) => (Attributes & attr) == attr;
+        public bool HasTag(string tag) => Tags?.Contains(tag) ?? false;
 
         [Header("Budget System")]
         [Tooltip("Cost to spawn this occupant (for density budget).")]
@@ -169,5 +158,21 @@ namespace LevelGenerator.Data
 
         [Tooltip("Can the player walk through this object?")]
         public bool IsWalkable = false;
+
+        [Header("Biome System")]
+        [Tooltip("How strongly this tile prefers each biome. Higher = more likely. Leave empty for neutral (1.0).")]
+        public Dictionary<BiomeType, float> BiomeAffinities = new Dictionary<BiomeType, float>();
+
+        /// <summary>
+        /// Gets the biome affinity weight for a specific biome.
+        /// Returns 1.0 (neutral) if no affinity is defined.
+        /// </summary>
+        public float GetBiomeAffinity(BiomeType biome)
+        {
+            if (BiomeAffinities == null || !BiomeAffinities.ContainsKey(biome))
+                return 1.0f; // Neutral - allowed everywhere
+
+            return Mathf.Max(0f, BiomeAffinities[biome]);
+        }
     }
 }
