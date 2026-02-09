@@ -66,7 +66,7 @@ MonoBehaviour:
   - ID: FOREST_TILE
     Name: forest
     Prefabs:
-    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
     Layer: 0
     SurfaceType: 0
     OccupantType: 0

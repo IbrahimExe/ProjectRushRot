@@ -31,8 +31,13 @@ public sealed class RunnerGenConfig : ScriptableObject
     public int neighborhoodX = 1;
 
     [Header("Spawn Chances")]
-    [Range(0f, 1f)] public float holeChance = 0.2f; // Base chance of hole in any lane
-    [Range(0f, 1f)] public float densityPenalty = 0.1f; // Reduces spawn if area is dense
+    [Tooltip("Maximum 'Cost' of occupants per chunk.")]
+    public int densityBudget = 50;
+
+    [Tooltip("Chance to spawn a cell (0-1).")]
+    [Range(0f, 1f)] public float globalSpawnChance = 0.15f; // Replaces legacy density/hole logic
+    // [Range(0f, 1f)] public float holeChance = 0.2f; REMOVED
+    // [Range(0f, 1f)] public float densityPenalty = 0.1f; REMOVED
 
     [Header("WFC Settings")]
     [Tooltip("Chance to seed a cell with a variety surface before solving.")]
@@ -457,64 +462,8 @@ private float LaneToWorldX(int lane)
     //    return path != null && path.Count > 0;
     //}
 
-    //Neighbors check
+    //Neighbors check - REMOVED (Legacy Density/Count methods)
 
-    private int CountNearbyOcc(int z, int lane, OccupantType occType)
-    {
-        int count = 0;
-        int zMax = z + config.neigbhorhoodZ - 1;
-        int xMin = Mathf.Max(0, lane - config.neighborhoodX);
-        int xMax = Mathf.Min(config.laneCount - 1, lane + config.neighborhoodX);
-
-        for (int zz = z; zz <= zMax; zz++)
-        {
-            for (int ll = xMin; ll <= xMax; ll++)
-            {
-                CellState c = getCell(zz, ll);
-                if (c.occupant == occType)
-                {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-
-        //debating if i put an exit if count > threshold, but that might make it so the function doesnt work on edge cases
-        // i want to make it chunk of rows where it takes the last row as a context to connect and then generates a larger cohesive area. 
-        //this way we can have themes or tempos the algorithm can follow
-    }
-
-    private int CountNearbySurf(int z, int lane, SurfaceType surfType) //how many surfaces of type X are near this cell?
-    {
-
-        int count = 0;
-        int zMax = z + config.neigbhorhoodZ - 1;
-        int xMin = Mathf.Max(0, config.neighborhoodX - 1);
-        int xMax = Mathf.Min(config.laneCount - 1, lane + 1);
-
-        for (int zz = z; zz <= zMax; zz++)
-        {
-            for (int ll = xMin; ll <= xMax; ll++)
-            {
-                CellState c = getCell(zz, ll);
-                if (c.surface == surfType)
-                    count++;
-            }
-        }
-        return count;
-    }
-
-    private float DensityPenalty(int z, int lane)
-    {
-        int nearObs = CountNearbyOcc(z, lane, OccupantType.Obstacle);
-        int nearWall = CountNearbyOcc(z, lane, OccupantType.Wall);
-        int nearHole = CountNearbySurf(z, lane, SurfaceType.Hole);
-        return (nearObs + nearWall + nearHole) * config.densityPenalty;
-
-        //OPTIMIZATION: Cache calculations if checking same cell multiple times
-        // OPTIMIZATION: Consider not counting Enemy/Collectible in density??
-    }
 
     //Scoring
 
@@ -535,26 +484,31 @@ private float LaneToWorldX(int lane)
     {
         int endZ = startZ + chunkSize;
 
-        // PASS 1: Init + Pre-collapse
+        // PASS 1: Init + Pre-collapse (Safe Path Stamping)
+        // We do this for the WHOLE chunk first, so neighbor rules can "see ahead"
         for (int z = startZ; z < endZ; z++)
         {
             InitializeRowForWFC(z);
             PreCollapseSafePath(z);
-            SeedSurfaceVariety(z);
         }
 
-        // PASS 2: WFC Surface Solver
+        // PASS 2: Generation (WFC + Occupants + Visuals)
+        // We can do this row-by-row or standard WFC style.
+        // For strict WFC, we'd solve the whole chunk surface first.
+        
+        // 2a. Solve Surfaces
         SolveChunkSurfaces(startZ, endZ);
 
-        // PASS 3: Occupants (Line-by-line)
+        // 2b. Variety Seeding (Optional - could be done in Pass 1)
+        for (int z = startZ; z < endZ; z++)
+        {
+             SeedSurfaceVariety(z);
+        }
+
+        // 2c. Occupants & Visuals
         for (int z = startZ; z < endZ; z++)
         {
             GenerateOccupants(z);
-        }
-
-        // PASS 4: Visuals
-        for (int z = startZ; z < endZ; z++)
-        {
             SpawnRowVisuals(z);
         }
     }
@@ -673,6 +627,33 @@ private float LaneToWorldX(int lane)
                     PerformWeightedCollapse(target.z, target.lane);
                 }
             }
+        }
+
+        // FORCE COLLAPSE (Safety Net)
+        // If loop finished but uncollapsed cells remain (max iterations hit), force them.
+        ForceCollapseRemaining(startZ, endZ);
+    }
+    
+    private void ForceCollapseRemaining(int startZ, int endZ)
+    {
+        int forcedCount = 0;
+        for (int z = startZ; z < endZ; z++)
+        {
+            for (int l = 0; l < config.laneCount; l++)
+            {
+                CellState c = getCell(z, l);
+                if (!c.isCollapsed)
+                {
+                    // Force pick ANY valid candidate (or fallback)
+                    PerformWeightedCollapse(z, l);
+                    forcedCount++;
+                }
+            }
+        }
+        
+        if (forcedCount > 0)
+        {
+            Debug.LogWarning($"[WFC] Force-collapsed {forcedCount} cells in chunk {startZ}-{endZ}. Iteration limit reached?");
         }
     }
 
@@ -833,60 +814,116 @@ private float LaneToWorldX(int lane)
 
     // --- Occupant Generation ---
 
+    // --- Occupant Generation (Budget System) ---
+
+    // Generate occupants based on Surface Compatibility and Density Budget
     private void GenerateOccupants(int z)
     {
-        // Used to be GenerateRowFeatures. Now separate line-by-line pass.
-        // 1. Walls
-        SpawnOccupantType(z, OccupantType.Wall);
+        // 1. Setup Candidates
+        var allOccupants = config.catalog.Definitions
+            .Where(d => d.Layer == ObjectLayer.Occupant)
+            .ToList();
+
+        // 2. Budget Tracking
+        // We track budget per ROW for simplicity in this function, 
+        // but ideally it should be per chunk. since we call this row-by-row,
+        // we might reset it? The user asked for "density budget" which implies a limit.
+        // If we reset per row, it's consistent.
+        // Let's assume the config.densityBudget is per CHUNK or per 10 rows?
+        // Simpler: Per Row budget = Total / ChunkSize? 
+        // Or just a probability check + Cost check.
+        // Let's implement a "Current Row Cost" vs "Max Row Cost" derived from Density.
+        // MaxCostPerRow = config.densityBudget / config.chunkSize? 
+        // Let's use config.densityBudget as "Max Cost Per Row" for now to be safe, 
+        // or just accumulate and stop if we hit a global limit? 
+        // A "Global Spawn Chance" is already a regulator. 
+        // Let's use Budget as a hard cap per row to prevent clumping.
         
-        // 2. Holes (Skipped because they are SURFACES now in WFC)
-        // Note: Holes should be in the WFC Surface Palette.
-        // If config.allowHoles is true, ensure Hole prefabs are in the surface list.
-        
-        // 3. Obstacles
-        SpawnOccupantType(z, OccupantType.Obstacle);
+        int currentCost = 0;
+        int maxCost = config.densityBudget; // Treat as Per-Row or Per-Generation-Pass limit
 
-        // 4. Enemies? Collectibles? (Add if needed)
-    }
+        // 3. Iterate Lanes
+        // Scramble lanes to avoid left-to-right bias in budget consumption
+        var lanes = Enumerable.Range(0, config.laneCount).OrderBy(x => rng.Next()).ToList();
 
-    private void SpawnOccupantType(int z, OccupantType type)
-    {
-        var candidates = config.catalog.GetCandidates(type);
-        if (candidates.Count == 0) return;
-
-        for (int lane = 0; lane < config.laneCount; lane++)
+        foreach (int lane in lanes)
         {
             CellState c = getCell(z, lane);
-            if (c.occupant != OccupantType.None) continue;
-            if (goldenPathSet.Contains((z, lane)) && type == OccupantType.Wall) continue; // Basic rule
-
-            // Density Check
-            if (DensityPenalty(z, lane) > 0.5f) continue; // Simple threshold
-
-            // Surface Compatibility
-            // We check if the candidate can spawn on this surface. 
-            // Currently PrefabDef doesn't have "AllowedSurfaces" list. 
-            // We assume most occupants need Solid/Bridge.
-            if (c.surface == SurfaceType.Hole) continue;
             
-            // Random chance
-            if (Rand() < 0.15f) // Hardcoded 15% generic chance per cell for now, tune via config
-            {
-                PrefabDef pick = config.catalog.GetWeightedRandom(candidates, rng); // Utilize OccupantWeight
-                if (pick == null) continue;
+            // A. Surface Check (Must be valid surface)
+            if (c.surface == SurfaceType.Hole) continue;
+            // Additional: Check 'AllowedSurfaces' implicitly later
 
-                // Check connectivity
-                CellState temp = c;
-                temp.occupant = type;
-                temp.occupantDef = pick;
-                
-                if (!WouldBreakRowIfPlaced(z, lane, temp))
+            // B. Existing Occupant Check (Golden Path or Pre-placed)
+            if (c.occupant != OccupantType.None) 
+            {
+                if (c.occupantDef != null) currentCost += c.occupantDef.Cost;
+                continue;
+            }
+
+            // C. Global Spawn Chance (The "Attempt" roll)
+            if (rng.NextDouble() > config.globalSpawnChance) continue;
+
+            // D. Filter Candidates
+            List<PrefabDef> candidates = new List<PrefabDef>();
+            foreach(var def in allOccupants)
+            {
+                // 1. Budget Check
+                if (currentCost + def.Cost > maxCost) continue;
+
+                // 2. Allowed Surface Check
+                // If list is empty -> Allowed on ALL (except Holes, handled above)
+                if (def.AllowedSurfaceIDs != null && def.AllowedSurfaceIDs.Count > 0)
                 {
-                    SetCell(z, lane, temp);
+                    // If surfaceDef is missing, we can't check ID.
+                    if (c.surfaceDef == null) continue; 
+                    if (!def.AllowedSurfaceIDs.Contains(c.surfaceDef.ID)) continue;
                 }
+
+                // 3. Walkability for Golden Path
+                if (goldenPathSet.Contains((z, lane)) && !def.IsWalkable) continue;
+
+                candidates.Add(def);
+            }
+
+            if (candidates.Count == 0) continue;
+
+            // E. Weighted Selection
+            // Use OccupantWeight from PrefabDef
+            float totalWeight = 0f;
+            foreach(var cand in candidates) totalWeight += cand.OccupantWeight;
+
+            double r = rng.NextDouble() * totalWeight;
+            float sum = 0f;
+            PrefabDef selected = null;
+
+            foreach(var cand in candidates)
+            {
+                sum += cand.OccupantWeight;
+                if (r <= sum)
+                {
+                    selected = cand;
+                    break;
+                }
+            }
+
+            // F. Spawn
+            if (selected != null)
+            {
+                CellState newState = c;
+                newState.occupant = selected.OccupantType;
+                newState.occupantDef = selected;
+                SetCell(z, lane, newState);
+                
+                currentCost += selected.Cost;
             }
         }
     }
+
+        
+
+
+
 
     private void SpawnRowVisuals(int z)
     {
@@ -936,16 +973,20 @@ private float LaneToWorldX(int lane)
         int playerZIndex = Mathf.FloorToInt(playerZWorld / config.cellLength);
         int targetZ = playerZIndex + config.bufferRows;
 
-        // Ensure we have a path planned up to this point
-        UpdatePathBuffer(targetZ + 20);
+        // Ensure we have a path planned WAY ahead (target + chunk + extra)
+        // because we might generate a full chunk that goes beyond targetZ
+        UpdatePathBuffer(targetZ + config.chunkSize + 20);
 
         while (generatorZ < targetZ)
         {
+            // FORCE FULL CHUNK
+            // Instead of clamping to targetZ, we just generate a full chunk.
+            // This means we might generate a bit ahead of the buffer, which is good for WFC coherence.
             int chunkStart = generatorZ;
-            int actualChunkSize = Mathf.Min(config.chunkSize, targetZ - generatorZ);
+            int actualChunkSize = config.chunkSize; 
+            
             GenerateChunk(chunkStart, actualChunkSize);
             generatorZ += actualChunkSize;
-            //i do this 2 times, so maybe do a function in the future
         }
 
         // Cleanup old rows

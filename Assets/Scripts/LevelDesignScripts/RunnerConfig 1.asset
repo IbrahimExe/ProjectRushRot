@@ -10,35 +10,34 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 0}
-  m_Name: RunnerConfig
+  m_Name: RunnerConfig 1
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
-  catalog: {fileID: 11400000, guid: e5371f4c10412274b865008573319f9a, type: 2}
+  catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
   weightRules: {fileID: 11400000, guid: b4509f51835e4de4b9cbd079ae9052cb, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
-  bufferRows: 500
-  keepRowsBehind: 10
+  bufferRows: 100
+  keepRowsBehind: 20
   chunkSize: 10
-  neigbhorhoodZ: 4
-  neighborhoodX: 1
-  holeChance: 0.101
-  densityPenalty: 0.1
+  neigbhorhoodZ: 3
+  neighborhoodX: 3
+  globalSpawnChance: 0.15
   surfaceVarietySeedChance: 0.1
   varietySeedOptions: []
-  pathSidePenalty: 0.2
-  pathSwitchPenalty: 1
-  pathForwardWeight: 1
-  pathCenterBias: 0.102
+  pathSidePenalty: 0.85
+  pathSwitchPenalty: 0.5
+  pathForwardWeight: 0.6
+  pathCenterBias: 0.2
   useWavePath: 1
-  waveStrength: 0.8
-  waveAmplitudeLanes: 15
-  waveFrequency: 0.06
-  waveSmoothing: 0.7
-  maxLaneChangePerRow: 1.6
-  edgePadding: 1
-  restAreaMaxLength: 15
-  restAreaMinLength: 3
-  restAreaFrequency: 0.08
+  waveStrength: 0.35
+  waveAmplitudeLanes: 10
+  waveFrequency: 0.02
+  waveSmoothing: 0.12
+  maxLaneChangePerRow: 0.35
+  edgePadding: 2
+  restAreaMaxLength: 35
+  restAreaMinLength: 15
+  restAreaFrequency: 0.02
   allowHoles: 1
-  allowBridges: 0
+  allowBridges: 1

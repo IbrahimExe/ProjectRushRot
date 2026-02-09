@@ -12,7 +12,13 @@ public class NeighborRulesConfigEditor : Editor
     // UI Cache
     private string[] _surfaceDisplayNames;
     private string[] _surfaceIDs;
+    
+    // Occupants are now handled via "Allowed Surfaces" in PrefabDef, 
+    // but if we keep looking at neighbor rules for surfaces, we need the surface cache.
+    // The user requested removing neighbor rules for occupants.
+
     private bool _cacheDirty = true;
+    private bool _showSurfaces = true;
 
     private void OnEnable()
     {
@@ -56,77 +62,89 @@ public class NeighborRulesConfigEditor : Editor
 
         if (_cacheDirty) UpdateCache();
 
-        // 2. Buttons
+        // 2. Tools
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Tools", EditorStyles.boldLabel);
         
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Sync from Catalog")) SyncFromCatalog();
-        if (GUILayout.Button("Auto-Fix Symmetry")) ValidateAndFixSymmetry();
+        if (GUILayout.Button("Sync Surface Rules")) SyncSurfaceRules(_target);
+        if (GUILayout.Button("Auto-Fix Symmetry")) ValidateAndFixSymmetry(_target);
         EditorGUILayout.EndHorizontal();
 
-        if (GUILayout.Button("Validate Constraints")) ValidateConstraints();
-
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Constraints", EditorStyles.boldLabel);
-
-        // 3. Manual List Drawing
-        SerializedProperty entries = serializedObject.FindProperty("entries");
-
-        for (int i = 0; i < entries.arraySize; i++)
+        
+        // 3. Surface Rules ONLY (Occupants use Budget/AllowedSurfaces now)
+        _showSurfaces = EditorGUILayout.Foldout(_showSurfaces, "Surface Neighbor Rules", true);
+        if (_showSurfaces)
         {
-            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            DrawSurfaceRules(serializedObject.FindProperty("surfaceRules"));
+        }
+
+        // Occupant rules are deprecated/removed from this view as per user request
+        // "occupants should only check the surface their on not their neighboors" -> This is done in PrefabDef now.
+
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawSurfaceRules(SerializedProperty list)
+    {
+        EditorGUI.indentLevel++;
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            SerializedProperty entry = list.GetArrayElementAtIndex(i);
             SerializedProperty selfIDProp = entry.FindPropertyRelative("selfID");
             
-            // Header
+            // Allow selecting the Self ID via Dropdown (if new entry) or just Label
             string currentId = selfIDProp.stringValue;
-            string label = string.IsNullOrEmpty(currentId) ? "[New Entry]" : GetDisplayName(currentId);
-            
-            entry.isExpanded = EditorGUILayout.Foldout(entry.isExpanded, label, true);
+            int currentIndex = System.Array.IndexOf(_surfaceIDs, currentId);
+            string entryLabel = (currentIndex >= 0 && currentIndex < _surfaceDisplayNames.Length) 
+                ? _surfaceDisplayNames[currentIndex] 
+                : (string.IsNullOrEmpty(currentId) ? "[New Entry]" : currentId);
+
+            entry.isExpanded = EditorGUILayout.Foldout(entry.isExpanded, entryLabel, true);
             
             if (entry.isExpanded)
             {
                 EditorGUI.indentLevel++;
                 
-                // Self ID Dropdown
+                // Self ID Selection
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel("Surface:");
-                int currentIndex = System.Array.IndexOf(_surfaceIDs, currentId);
                 int newIndex = EditorGUILayout.Popup(currentIndex, _surfaceDisplayNames);
                 if (newIndex >= 0 && newIndex < _surfaceIDs.Length)
                 {
                     selfIDProp.stringValue = _surfaceIDs[newIndex];
                 }
                 
-                if (GUILayout.Button("Remove Entry", GUILayout.Width(100)))
+                if (GUILayout.Button("Remove", GUILayout.Width(60)))
                 {
-                    entries.DeleteArrayElementAtIndex(i);
+                    list.DeleteArrayElementAtIndex(i);
                     i--;
                     EditorGUI.indentLevel--;
+                    EditorGUILayout.EndHorizontal();
                     continue;
                 }
                 EditorGUILayout.EndHorizontal();
 
                 // Allowed List
-                DrawConstraintList(entry.FindPropertyRelative("allowed"), "Allowed Neighbors");
+                DrawConstraints(entry.FindPropertyRelative("allowed"), "Allowed Neighbors", isAllowed: true);
                 
                 // Denied List
-                DrawConstraintList(entry.FindPropertyRelative("denied"), "Denied Neighbors");
+                DrawConstraints(entry.FindPropertyRelative("denied"), "Denied Neighbors", isAllowed: false);
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
             }
         }
 
-        if (GUILayout.Button("Add New Entry"))
+        if (GUILayout.Button("Add New Surface Rule"))
         {
-            entries.InsertArrayElementAtIndex(entries.arraySize);
+            list.InsertArrayElementAtIndex(list.arraySize);
         }
-
-        serializedObject.ApplyModifiedProperties();
+        EditorGUI.indentLevel--;
     }
 
-    private void DrawConstraintList(SerializedProperty list, string label)
+    private void DrawConstraints(SerializedProperty list, string label, bool isAllowed)
     {
         list.isExpanded = EditorGUILayout.Foldout(list.isExpanded, $"{label} ({list.arraySize})");
         if (!list.isExpanded) return;
@@ -134,25 +152,28 @@ public class NeighborRulesConfigEditor : Editor
         EditorGUI.indentLevel++;
         for (int i = 0; i < list.arraySize; i++)
         {
-            SerializedProperty constraint = list.GetArrayElementAtIndex(i);
-            SerializedProperty idProp = constraint.FindPropertyRelative("neighborID");
-            SerializedProperty dirProp = constraint.FindPropertyRelative("directions");
-            SerializedProperty weightProp = constraint.FindPropertyRelative("weight");
-
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            SerializedProperty item = list.GetArrayElementAtIndex(i);
+            SerializedProperty neighborID = item.FindPropertyRelative("neighborID");
+            SerializedProperty directions = item.FindPropertyRelative("directions");
             
-            // Neighbor Dropdown
+            EditorGUILayout.BeginVertical("box");
             EditorGUILayout.BeginHorizontal();
-            int curIndex = System.Array.IndexOf(_surfaceIDs, idProp.stringValue);
+            
+            // Neighbor ID Dropdown
+            string currentID = neighborID.stringValue;
+            int curIndex = System.Array.IndexOf(_surfaceIDs, currentID);
             int newIndex = EditorGUILayout.Popup(curIndex, _surfaceDisplayNames, GUILayout.MinWidth(150));
-            if (newIndex >= 0) idProp.stringValue = _surfaceIDs[newIndex];
-            else if (curIndex == -1) // If manual string or invalid
+            if (newIndex >= 0 && newIndex < _surfaceIDs.Length)
             {
-                // Fallback text field for custom/error values
-                idProp.stringValue = EditorGUILayout.TextField(idProp.stringValue);
+                neighborID.stringValue = _surfaceIDs[newIndex];
             }
-
-            if (GUILayout.Button("X", GUILayout.Width(25)))
+            else if (curIndex == -1 && !string.IsNullOrEmpty(currentID))
+            {
+                // Keep existing ID if not in list (missing reference?)
+                EditorGUILayout.LabelField(currentID, GUILayout.Width(100));
+            }
+            
+            if (GUILayout.Button("X", GUILayout.Width(20)))
             {
                 list.DeleteArrayElementAtIndex(i);
                 i--;
@@ -162,196 +183,164 @@ public class NeighborRulesConfigEditor : Editor
             }
             EditorGUILayout.EndHorizontal();
 
-            // Directions & Weight
-            EditorGUILayout.PropertyField(dirProp, new GUIContent("Directions"));
-            if (weightProp != null) // Denied list might reuse class but ignore weight visually? No, reuse class.
+            // Directions
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel("Directions:");
+            directions.enumValueFlag = (int)(NeighborRulesConfig.DirectionMask)EditorGUILayout.EnumFlagsField((NeighborRulesConfig.DirectionMask)directions.enumValueFlag);
+            EditorGUILayout.EndHorizontal();
+
+            // Weight (Only for Allowed)
+            if (isAllowed)
             {
-                EditorGUILayout.PropertyField(weightProp);
+                SerializedProperty weight = item.FindPropertyRelative("weight");
+                if (weight != null)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.PrefixLabel("Weight:");
+                    weight.floatValue = EditorGUILayout.Slider(weight.floatValue, 0f, 100f);
+                    EditorGUILayout.EndHorizontal();
+                }
             }
 
             EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(2);
         }
 
-        if (GUILayout.Button("+ Add Neighbor"))
+        if (GUILayout.Button("Add Neighbor"))
         {
             list.InsertArrayElementAtIndex(list.arraySize);
-            var newElem = list.GetArrayElementAtIndex(list.arraySize - 1);
-            newElem.FindPropertyRelative("weight").floatValue = 1.0f;
-            newElem.FindPropertyRelative("directions").intValue = 0; // None
-            newElem.FindPropertyRelative("neighborID").stringValue = "";
+            var newItem = list.GetArrayElementAtIndex(list.arraySize - 1);
+            if (isAllowed) 
+            { 
+                newItem.FindPropertyRelative("weight").floatValue = 10f; 
+            }
+            newItem.FindPropertyRelative("directions").enumValueFlag = (int)NeighborRulesConfig.DirectionMask.Forward;
         }
         EditorGUI.indentLevel--;
     }
 
-    private string GetDisplayName(string id)
-    {
-        if (_target.catalog == null) return id;
-        var def = _target.catalog.GetByID(id);
-        return def != null ? def.Name : id;
-    }
-
     // --- LOGIC ---
 
-    private void SyncFromCatalog()
+    private void SyncSurfaceRules(NeighborRulesConfig config)
     {
-        Undo.RecordObject(_target, "Sync Neighbor Rules");
-        bool changed = false;
-        var surfaces = _target.catalog.Definitions.Where(d => d.Layer == ObjectLayer.Surface).ToList();
+        if (config.catalog == null) return;
 
-        foreach (var def in surfaces)
+        int added = 0;
+        foreach (var def in config.catalog.Definitions)
         {
             if (string.IsNullOrEmpty(def.ID)) continue;
-            if (!_target.entries.Any(e => e.selfID == def.ID))
+            if (def.Layer != ObjectLayer.Surface) continue;
+
+            if (!config.surfaceRules.Any(e => e.selfID == def.ID))
             {
-                _target.entries.Add(new NeighborRulesConfig.NeighborEntry { selfID = def.ID });
-                changed = true;
+                config.surfaceRules.Add(new NeighborRulesConfig.NeighborEntry { selfID = def.ID });
+                added++;
             }
         }
+        Debug.Log($"Synced surface rules. Added {added} entries.");
         _cacheDirty = true;
-        if (changed) Debug.Log("Sync Complete: Added missing entries.");
-        else Debug.Log("Sync Complete: No changes.");
     }
 
-    private void ValidateAndFixSymmetry()
+    private void ValidateAndFixSymmetry(NeighborRulesConfig config)
     {
-        Undo.RecordObject(_target, "Auto-Fix Symmetry");
         bool changed = false;
-        var entryMap = _target.entries.Where(e => !string.IsNullOrEmpty(e.selfID)).ToDictionary(e => e.selfID);
-
-        // Helper to ensure B's entry exists
-        NeighborRulesConfig.NeighborEntry GetOrCreateEntry(string id)
-        {
-            if (entryMap.TryGetValue(id, out var e)) return e;
-            var newE = new NeighborRulesConfig.NeighborEntry { selfID = id };
-            _target.entries.Add(newE);
-            entryMap[id] = newE;
-            changed = true;
-            return newE;
-        }
-
-        foreach (var entryA in _target.entries)
-        {
-            if (string.IsNullOrEmpty(entryA.selfID)) continue;
-
-            // ALLOWED
-            foreach (var constA in entryA.allowed)
-            {
-                if (string.IsNullOrEmpty(constA.neighborID) || constA.directions == NeighborRulesConfig.DirectionMask.None) continue;
-
-                var entryB = GetOrCreateEntry(constA.neighborID);
-                var requiredMaskForB = GetOppositeMask(constA.directions);
-
-                // Check if B already covers these directions for A
-                // We must ensure for EVERY bit in requiredMaskForB, B->A allows it.
-                // We iterate existing constraints on B->A
-                
-                var existingConstraints = entryB.allowed.Where(c => c.neighborID == entryA.selfID).ToList();
-                var coveredMask = NeighborRulesConfig.DirectionMask.None;
-                foreach(var ec in existingConstraints) coveredMask |= ec.directions;
-
-                // What is missing?
-                var missingMask = requiredMaskForB & ~coveredMask; // bits in required but not covered
-
-                if (missingMask != NeighborRulesConfig.DirectionMask.None)
-                {
-                    // Add new constraint or append to existing?
-                    // Simpler to add new specific constraint or append to first match
-                    var match = existingConstraints.FirstOrDefault();
-                    if (match != null && Mathf.Abs(match.weight - constA.weight) < 0.001f)
-                    {
-                        // Merge constraints
-                        match.directions |= missingMask;
-                        changed = true;
-                        Debug.Log($"Merged directions for {entryB.selfID}->{entryA.selfID}");
-                    }
-                    else
-                    {
-                        // Add new
-                        entryB.allowed.Add(new NeighborRulesConfig.NeighborConstraint
-                        {
-                            neighborID = entryA.selfID,
-                            directions = missingMask,
-                            weight = constA.weight
-                        });
-                        changed = true;
-                        Debug.Log($"Added missing symmetry: {entryB.selfID} allows {entryA.selfID} ({missingMask})");
-                    }
-                }
-            }
-
-            // DENIED (Logic same as allowed but weight 0)
-            foreach (var constA in entryA.denied)
-            {
-                if (string.IsNullOrEmpty(constA.neighborID) || constA.directions == NeighborRulesConfig.DirectionMask.None) continue;
-
-                var entryB = GetOrCreateEntry(constA.neighborID);
-                var requiredMaskForB = GetOppositeMask(constA.directions);
-
-                var existingConstraints = entryB.denied.Where(c => c.neighborID == entryA.selfID).ToList();
-                var coveredMask = NeighborRulesConfig.DirectionMask.None;
-                foreach(var ec in existingConstraints) coveredMask |= ec.directions;
-
-                var missingMask = requiredMaskForB & ~coveredMask;
-
-                if (missingMask != NeighborRulesConfig.DirectionMask.None)
-                {
-                    var match = existingConstraints.FirstOrDefault();
-                    if (match != null)
-                    {
-                        match.directions |= missingMask;
-                        changed = true;
-                    }
-                    else
-                    {
-                        entryB.denied.Add(new NeighborRulesConfig.NeighborConstraint
-                        {
-                            neighborID = entryA.selfID,
-                            directions = missingMask,
-                            weight = 0
-                        });
-                        changed = true;
-                        Debug.Log($"Added missing denial: {entryB.selfID} denies {entryA.selfID}");
-                    }
-                }
-            }
-        }
-
-        if (changed) Debug.Log("Symmetry Auto-Fix Applied.");
-        else Debug.Log("Symmetry Verified: Detailed checks passed.");
+        FixSymmetryForList(config.surfaceRules, config.surfaceRules, ref changed);
+        if (changed) EditorUtility.SetDirty(config);
+        Debug.Log("Symmetry check complete.");
     }
 
-    private void ValidateConstraints()
+    private void FixSymmetryForList(List<NeighborRulesConfig.NeighborEntry> list, List<NeighborRulesConfig.NeighborEntry> ruleSet, ref bool changed)
     {
-        foreach (var entry in _target.entries)
-        {
-            // Simple conflict check: Is same neighbor allowed AND denied for same direction bit?
-            
-            // Build map of Denied Directions per Neighbor
-            var deniedMap = new Dictionary<string, NeighborRulesConfig.DirectionMask>();
-            foreach(var d in entry.denied)
-            {
-                if(string.IsNullOrEmpty(d.neighborID)) continue;
-                if(!deniedMap.ContainsKey(d.neighborID)) deniedMap[d.neighborID] = NeighborRulesConfig.DirectionMask.None;
-                deniedMap[d.neighborID] |= d.directions;
-            }
+        // Work on a snapshot of the list to allow adding new entries safely if needed
+        var snapshot = new List<NeighborRulesConfig.NeighborEntry>(list);
 
-            foreach(var a in entry.allowed)
+        foreach (var entryA in snapshot)
+        {
+            // 1. REFLECT ALLOWED
+            var allowedSnapshot = new List<NeighborRulesConfig.NeighborConstraint>(entryA.allowed);
+            foreach (var constraint in allowedSnapshot)
             {
-                if(string.IsNullOrEmpty(a.neighborID)) continue;
-                if(deniedMap.TryGetValue(a.neighborID, out var deniedMask))
+                if (string.IsNullOrEmpty(constraint.neighborID)) continue;
+
+                // Find or Create Entry B
+                var entryB = ruleSet.FirstOrDefault(e => e.selfID == constraint.neighborID);
+                if (entryB == null)
                 {
-                    // Intersection?
-                    var conflict = a.directions & deniedMask;
-                    if (conflict != NeighborRulesConfig.DirectionMask.None)
-                    {
-                        Debug.LogError($"Conflict in {GetDisplayName(entry.selfID)}: {GetDisplayName(a.neighborID)} is Allowed & Denied for ({conflict})");
-                    }
+                     entryB = new NeighborRulesConfig.NeighborEntry { selfID = constraint.neighborID };
+                     ruleSet.Add(entryB);
+                     changed = true;
+                     Debug.Log($"Auto-Fixed: Created new rule entry for {constraint.neighborID} (Symmetry)");
                 }
 
-                if(a.weight < 0) Debug.LogError($"Negative weight in {entry.selfID}->{a.neighborID}");
+                var requiredDirFromB = GetOppositeMask(constraint.directions);
+                
+                // Does B allow A in the required direction?
+                var matchingConstraint = entryB.allowed.FirstOrDefault(c => c.neighborID == entryA.selfID);
+                
+                if (matchingConstraint == null)
+                {
+                    // Case 1: No rule at all -> Add it
+                    entryB.allowed.Add(new NeighborRulesConfig.NeighborConstraint 
+                    { 
+                        neighborID = entryA.selfID, 
+                        directions = requiredDirFromB,
+                        weight = constraint.weight 
+                    });
+                    changed = true;
+                    Debug.Log($"Auto-Fixed: {entryB.selfID} now allows {entryA.selfID} (Symmetry)");
+                }
+                else
+                {
+                    // Case 2: Exists, but maybe missing directions?
+                    if ((matchingConstraint.directions & requiredDirFromB) != requiredDirFromB)
+                    {
+                        matchingConstraint.directions |= requiredDirFromB;
+                        changed = true;
+                        Debug.Log($"Auto-Fixed: Updated {entryB.selfID} to allow {entryA.selfID} in more directions (Symmetry)");
+                    }
+                }
+            }
+
+            // 2. REFLECT DENIED
+            var deniedSnapshot = new List<NeighborRulesConfig.NeighborDenial>(entryA.denied);
+            foreach (var denial in deniedSnapshot)
+            {
+                if (string.IsNullOrEmpty(denial.neighborID)) continue;
+
+                var entryB = ruleSet.FirstOrDefault(e => e.selfID == denial.neighborID);
+                if (entryB == null)
+                {
+                     entryB = new NeighborRulesConfig.NeighborEntry { selfID = denial.neighborID };
+                     ruleSet.Add(entryB);
+                     changed = true;
+                     Debug.Log($"Auto-Fixed: Created new rule entry for {denial.neighborID} (Symmetry from Denial)");
+                }
+
+                var requiredDirFromB = GetOppositeMask(denial.directions);
+
+                var matchingDenial = entryB.denied.FirstOrDefault(d => d.neighborID == entryA.selfID);
+                
+                if (matchingDenial == null)
+                {
+                     entryB.denied.Add(new NeighborRulesConfig.NeighborDenial 
+                     { 
+                         neighborID = entryA.selfID, 
+                         directions = requiredDirFromB 
+                     });
+                     changed = true;
+                     Debug.Log($"Auto-Fixed: {entryB.selfID} now denies {entryA.selfID} (Symmetry)");
+                }
+                else
+                {
+                    if ((matchingDenial.directions & requiredDirFromB) != requiredDirFromB)
+                    {
+                        matchingDenial.directions |= requiredDirFromB;
+                        changed = true;
+                        Debug.Log($"Auto-Fixed: Updated {entryB.selfID} to deny {entryA.selfID} in more directions (Symmetry)");
+                    }
+                }
             }
         }
-        Debug.Log("Validation Check Complete.");
     }
 
     private NeighborRulesConfig.DirectionMask GetOppositeMask(NeighborRulesConfig.DirectionMask mask)

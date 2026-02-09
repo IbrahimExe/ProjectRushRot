@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1109a507cc1e91439270b133be3c746, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
-  config: {fileID: 11400000, guid: a65c9294209b92c41b2992c5d6ec35cb, type: 2}
+  config: {fileID: 11400000, guid: d4355c315ad3cd84db257d2cd136440d, type: 2}
   seed: Runner
   playerTransform: {fileID: 883337444}
 --- !u!1 &706359191

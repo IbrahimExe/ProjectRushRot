@@ -159,5 +159,15 @@ namespace LevelGenerator.Data
         
         // check if this definition has a specific attribute flag
         //public bool HasAttribute(ObjectAttributes attr) => (Attributes & attr) == attr;
+
+        [Header("Budget System")]
+        [Tooltip("Cost to spawn this occupant (for density budget).")]
+        public int Cost = 1;
+
+        [Tooltip("List of Surface IDs this occupant is allowed to spawn on. If empty, allowed on any.")]
+        public List<string> AllowedSurfaceIDs = new List<string>();
+
+        [Tooltip("Can the player walk through this object?")]
+        public bool IsWalkable = false;
     }
 }
