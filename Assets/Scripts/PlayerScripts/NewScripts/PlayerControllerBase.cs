@@ -414,4 +414,9 @@ public class PlayerControllerBase : MonoBehaviour
         currentMoveSpeed = 0f;
         currentReverseSpeed = 0f;
     }
+
+    public void ChangeCharacter(PlayerCharacterData newData)
+    {
+        ApplyCharacter(newData);
+    }
 }
