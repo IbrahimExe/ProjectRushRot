@@ -3,10 +3,10 @@ using UnityEngine;
 using LevelGenerator.Data;
 using System.Linq;
 
-/// <summary>
-/// Replaces the old WeightRulesConfig.
-/// Holds the bidirectional constraints for the WFC solver using String IDs.
-/// </summary>
+
+//Replaces the old WeightRulesConfig.
+// Holds the bidirectional constraints for the WFC solver using String IDs.
+
 [CreateAssetMenu(fileName = "NeighborRulesConfig", menuName = "Runner/Neighbor Rules Config")]
 public class NeighborRulesConfig : ScriptableObject
 {
@@ -16,11 +16,13 @@ public class NeighborRulesConfig : ScriptableObject
     public enum DirectionMask
     {
         None = 0,
-        Forward = 1 << 0,
-        Backward = 1 << 1,
-        Left = 1 << 2,
-        Right = 1 << 3,
-        All = Forward | Backward | Left | Right
+        Forward = 1 << 0,        // Z + 1
+        Backward = 1 << 1,       // Z - 1
+        Left = 1 << 2,           // Lane - 1
+        Right = 1 << 3,          // Lane + 1
+        Corners = 1 << 4,        // All 4 diagonal neighbors
+        All = Forward | Backward | Left | Right,
+        AllWithCorners = Forward | Backward | Left | Right | Corners
     }
 
     [System.Serializable]
@@ -81,12 +83,11 @@ public class NeighborRulesConfig : ScriptableObject
         _initialized = true;
     }
 
-    /// <summary>
+
     /// Returns a list of Allowed Neighbors for a specific direction.
     /// If NO rules exist for that direction, it returns ALL candidates (implicit allow).
     /// If ANY rule exists for that direction, it becomes an EXCLUSIVE list.
     /// Denied neighbors are always removed.
-    /// </summary>
     public List<PrefabDef> GetAllowedNeighbors(
         PrefabDef self, 
         Direction direction, 

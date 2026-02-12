@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RunnerConfig 1
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
   catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
-  weightRules: {fileID: 11400000, guid: b4509f51835e4de4b9cbd079ae9052cb, type: 2}
+  weightRules: {fileID: 11400000, guid: 10457bcc88ea4f846bccd56818e51743, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
@@ -23,15 +23,21 @@ MonoBehaviour:
   neigbhorhoodZ: 3
   neighborhoodX: 3
   densityBudget: 60
-  globalSpawnChance: 1
+  globalSpawnChance: 0.5
   useBiomeSystem: 1
-  biomeNoiseScale: 15
-  biomeInfluence: 0.75
+  biomeNoiseScale: 18
+  biomeInfluence: 1
   useMultiOctaveBiomes: 1
-  pathSidePenalty: 0.85
-  pathSwitchPenalty: 0.76
-  pathForwardWeight: 0.6
-  pathCenterBias: 0.1
+  biomeOctaves: 8
+  biomeLacunarity: 1.2
+  biomeGain: 0.2
+  biomeWarpStrength: 1
+  biomeWarpScale: 0.5
+  biomeBlur: 0.5
+  temperature: 0
+  floor: 0
+  biomeCollapseBias: 8
+  biomeMinAffinity: 0.12
   useWavePath: 1
   waveStrength: 1
   waveAmplitudeLanes: 23
@@ -44,3 +50,4 @@ MonoBehaviour:
   restAreaFrequency: 0.05
   allowHoles: 1
   allowBridges: 1
+  edgeWallPrefab: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}

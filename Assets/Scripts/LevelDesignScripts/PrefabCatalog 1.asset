@@ -24,8 +24,13 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities:
+    - biome: 1
+      weight: 2
   - ID: SAFE_PATH
     Name: Golden_Path
     Prefabs:
@@ -37,8 +42,11 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities: []
   - ID: LAVA_TILE
     Name: Lava
     Prefabs:
@@ -50,8 +58,15 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 1
+    - biome: 1
+      weight: 0
   - ID: WATER_TILE
     Name: water
     Prefabs:
@@ -63,8 +78,17 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities:
+    - biome: 1
+      weight: 1
+    - biome: 2
+      weight: 0.5
+    - biome: 3
+      weight: 0
   - ID: DESERT_TILE
     Name: Desert
     Prefabs:
@@ -76,8 +100,14 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
-    AllowedSurfaceIDs: []
+    MinRowGap: 2
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - 
     IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 2
   - ID: FOREST_TILE
     Name: forest
     Prefabs:
@@ -89,8 +119,13 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities:
+    - biome: 2
+      weight: 2
   - ID: HOLE
     Name: hole
     Prefabs:
@@ -102,8 +137,11 @@ MonoBehaviour:
     OccupantWeight: 0
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities: []
   - ID: ENEMY
     Name: enemy
     Prefabs:
@@ -115,8 +153,11 @@ MonoBehaviour:
     OccupantWeight: 20
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities: []
   - ID: WALL
     Name: wall
     Prefabs:
@@ -128,8 +169,12 @@ MonoBehaviour:
     OccupantWeight: 20
     Tags: []
     Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    biomeAffinities: []
   debugSafePath: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
   debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
+  debugEdgeWall: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}

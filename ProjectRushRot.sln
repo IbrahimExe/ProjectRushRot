@@ -3,7 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}"
 EndProject
+<<<<<<< Updated upstream
+=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Boxophobic.SkyboxCubemapExtended.Editor", "Boxophobic.SkyboxCubemapExtended.Editor.csproj", "{C5DBCAF1-A0BE-337C-9C9F-ABF196A1BEE1}"
+EndProject
+>>>>>>> Stashed changes
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Boxophobic.Utils.Scripts", "Boxophobic.Utils.Scripts.csproj", "{66CBD32C-746F-32F9-C009-3681A3667B35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +22,21 @@ Global
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDD28717-48A3-A9E0-C01E-0F2ABFBDBAC9}.Release|Any CPU.Build.0 = Release|Any CPU
+<<<<<<< Updated upstream
+=======
+		{C5DBCAF1-A0BE-337C-9C9F-ABF196A1BEE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5DBCAF1-A0BE-337C-9C9F-ABF196A1BEE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5DBCAF1-A0BE-337C-9C9F-ABF196A1BEE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5DBCAF1-A0BE-337C-9C9F-ABF196A1BEE1}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> Stashed changes
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D66DF52-8637-5FB2-39F6-B7F0294CBDA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66CBD32C-746F-32F9-C009-3681A3667B35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66CBD32C-746F-32F9-C009-3681A3667B35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66CBD32C-746F-32F9-C009-3681A3667B35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66CBD32C-746F-32F9-C009-3681A3667B35}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

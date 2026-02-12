@@ -17,6 +17,8 @@ namespace LevelGenerator.Data
         public GameObject debugSurface;
         [Tooltip("Used if an occupant is required but no candidate found.")]
         public GameObject debugOccupant;
+        [Tooltip("Used for edge lane walls if no EdgeWall PrefabDef is defined in the catalog.")]
+        public GameObject debugEdgeWall;
 
         // cache dictionaries for fast lookup by type or id
         private Dictionary<OccupantType, List<PrefabDef>> _occupantCache;
@@ -25,7 +27,7 @@ namespace LevelGenerator.Data
         private bool _initialized = false;
 
         private void OnEnable() => RebuildCache();
-        
+
         // ensures cache is rebuilt in the editor if values change
         private void OnValidate()
         {
@@ -39,7 +41,7 @@ namespace LevelGenerator.Data
                         def.ID = def.Name.ToUpper().Replace(" ", "_");
                 }
             }
-            _initialized = false; 
+            _initialized = false;
         }
 
         // rebuilds the lookup dictionaries
@@ -52,7 +54,7 @@ namespace LevelGenerator.Data
             // initialize lists for each enum type
             foreach (OccupantType t in System.Enum.GetValues(typeof(OccupantType)))
                 _occupantCache[t] = new List<PrefabDef>();
-            
+
             foreach (SurfaceType t in System.Enum.GetValues(typeof(SurfaceType)))
                 _surfaceCache[t] = new List<PrefabDef>();
 
@@ -68,13 +70,13 @@ namespace LevelGenerator.Data
                 // index by type based on layer
                 if (def.Layer == ObjectLayer.Surface)
                 {
-                    if (!_surfaceCache.ContainsKey(def.SurfaceType)) 
+                    if (!_surfaceCache.ContainsKey(def.SurfaceType))
                         _surfaceCache[def.SurfaceType] = new List<PrefabDef>();
                     _surfaceCache[def.SurfaceType].Add(def);
                 }
                 else if (def.Layer == ObjectLayer.Occupant)
                 {
-                    if (!_occupantCache.ContainsKey(def.OccupantType)) 
+                    if (!_occupantCache.ContainsKey(def.OccupantType))
                         _occupantCache[def.OccupantType] = new List<PrefabDef>();
                     _occupantCache[def.OccupantType].Add(def);
                 }

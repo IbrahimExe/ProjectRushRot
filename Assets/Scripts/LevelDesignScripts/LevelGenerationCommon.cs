@@ -16,7 +16,9 @@ namespace LevelGenerator.Data
         Solid,
         Hole,
         Bridge,
-        SafePath
+        SafePath,
+        Edge        // The two boundary lanes that flank the playable area.
+                    // Always non-walkable. WFC and occupant system never touch these.
     }
 
     // types of objects that occupy the surface
@@ -44,22 +46,30 @@ namespace LevelGenerator.Data
     // Directions for neighbor lookup
     public enum Direction
     {
-        Forward,    // Z + 1
-        Backward,   // Z - 1
-        Left,       // Lane - 1
-        Right       // Lane + 1
+        Forward,          // Z + 1, Lane
+        Backward,         // Z - 1, Lane
+        Left,             // Z, Lane - 1
+        Right,            // Z, Lane + 1
+        ForwardLeft,      // Z + 1, Lane - 1
+        ForwardRight,     // Z + 1, Lane + 1
+        BackwardLeft,     // Z - 1, Lane - 1
+        BackwardRight     // Z - 1, Lane + 1
     }
 
-    /// <summary>
-    /// Cell state in the grid
-    /// </summary>
+
+    //Cell state in the grid
+
     [System.Serializable]
     public struct CellState
     {
         public SurfaceType surface;
         public OccupantType occupant;
-        public PrefabDef surfaceDef;   // Specific prefab for the floor/surface
-        public PrefabDef occupantDef;  // Specific prefab for the object on top
+        public PrefabDef surfaceDef;
+        public PrefabDef occupantDef;
+
+        // True for the two boundary lanes outside the playable area.
+        // Set once at initialization, never changed.
+        public bool isEdgeLane;
 
         // WFC Fields
         public bool isCollapsed;
@@ -67,12 +77,13 @@ namespace LevelGenerator.Data
         public Dictionary<PrefabDef, float> candidateWeights;
         public float entropy;
 
-        public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null)
+        public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null, bool edgeLane = false)
         {
             surface = s;
             occupant = o;
             surfaceDef = surfaceP;
             occupantDef = occupantP;
+            isEdgeLane = edgeLane;
             isCollapsed = false;
             surfaceCandidates = null;
             candidateWeights = null;
@@ -93,11 +104,14 @@ namespace LevelGenerator.Data
         public System.Func<(int, int), bool> IsOnGoldenPath;
 
         // Grid metadata
-        public int laneCount;
+        public int laneCount;       // playable lane count (does NOT include the 2 edge lanes)
         public int playerZIndex;
 
+        // True when this cell is one of the two structural boundary lanes.
+        public bool isEdgeLane;
+
         // Helper methods
-        public bool IsEdgeLane => position.lane == 0 || position.lane == laneCount - 1;
+        public bool IsEdgeLane => isEdgeLane;
         public bool IsCenterLane => position.lane == (laneCount - 1) / 2;
         public float NormalizedLanePosition => (float)position.lane / (laneCount - 1);
 
@@ -153,6 +167,12 @@ namespace LevelGenerator.Data
         [Tooltip("Cost to spawn this occupant (for density budget).")]
         public int Cost = 1;
 
+        [Tooltip("Minimum number of rows between two spawns of this type in the same lane. 0 = no restriction.")]
+        [Range(0, 20)] public int MinRowGap = 2;
+
+        [Tooltip("How many rows this occupant occupies in Z. Cells ahead are reserved to prevent overlap. 1 = single cell.")]
+        [Range(1, 5)] public int SizeZ = 1;
+
         [Tooltip("List of Surface IDs this occupant is allowed to spawn on. If empty, allowed on any.")]
         public List<string> AllowedSurfaceIDs = new List<string>();
 
@@ -163,16 +183,30 @@ namespace LevelGenerator.Data
         [Tooltip("How strongly this tile prefers each biome. Higher = more likely. Leave empty for neutral (1.0).")]
         public Dictionary<BiomeType, float> BiomeAffinities = new Dictionary<BiomeType, float>();
 
-        /// <summary>
         /// Gets the biome affinity weight for a specific biome.
         /// Returns 1.0 (neutral) if no affinity is defined.
-        /// </summary>
+        [System.Serializable]
+        public struct BiomeAffinity
+        {
+            public BiomeType biome;
+            public float weight; // multiplier (0..whatever)
+        }
+
+        [Header("Biome System")]
+        [Tooltip("Biome weight multipliers. 1 = neutral, >1 prefers, <1 avoids.")]
+        public List<BiomeAffinity> biomeAffinities = new List<BiomeAffinity>();
+
         public float GetBiomeAffinity(BiomeType biome)
         {
-            if (BiomeAffinities == null || !BiomeAffinities.ContainsKey(biome))
-                return 1.0f; // Neutral - allowed everywhere
+            if (biomeAffinities == null) return 1f;
 
-            return Mathf.Max(0f, BiomeAffinities[biome]);
+            for (int i = 0; i < biomeAffinities.Count; i++)
+            {
+                if (biomeAffinities[i].biome == biome)
+                    return Mathf.Max(0f, biomeAffinities[i].weight);
+            }
+            return 1f;
         }
     }
+
 }
