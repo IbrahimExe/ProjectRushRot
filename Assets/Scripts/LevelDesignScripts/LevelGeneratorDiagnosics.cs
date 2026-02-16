@@ -19,11 +19,13 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     [SerializeField] private bool showWFCState = false;
     [SerializeField] private bool showOccupants = true;
     [SerializeField] private bool showEdgeLanes = true;
+    [SerializeField] private bool showEdgeWallSegments = true;
 
     [Header("Debug Output")]
     [SerializeField] private bool logChunkGeneration = true;
     [SerializeField] private bool logWFCSteps = false;
     [SerializeField] private bool logConstraintViolations = true;
+    [SerializeField] private bool logEdgeWallGeneration = true;
 
     [Header("Performance Monitoring")]
     [SerializeField] private bool trackPerformance = true;
@@ -256,10 +258,47 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
                     case OccupantType.Obstacle: occupantColor = new Color(1f, 0.5f, 0f); break;
                     case OccupantType.Collectible: occupantColor = Color.yellow; break;
                     case OccupantType.Enemy: occupantColor = Color.magenta; break;
+                    case OccupantType.EdgeWall: occupantColor = new Color(0.5f, 0f, 0.5f); break; // Purple
                 }
 
                 Gizmos.color = occupantColor;
                 Gizmos.DrawSphere(pos + Vector3.up * 0.5f, 0.3f);
+            }
+
+            // Edge Wall Segments (show multi-row walls as connected boxes)
+            if (showEdgeWallSegments && cell.occupant == OccupantType.EdgeWall && cell.occupantDef != null)
+            {
+                // Check if this is the origin cell (first cell of multi-row wall)
+                bool isOrigin = true;
+                if (z > 0 && grid.TryGetValue((z - 1, lane), out CellState prevCell))
+                {
+                    if (prevCell.occupant == OccupantType.EdgeWall && prevCell.occupantDef == cell.occupantDef)
+                    {
+                        isOrigin = false; // Previous cell has same wall, so this isn't the origin
+                    }
+                }
+
+                // Only draw segment visualization from origin cell
+                if (isOrigin)
+                {
+                    int sizeZ = cell.occupantDef.SizeZ;
+                    float segmentLength = cellLength * sizeZ;
+                    Vector3 segmentCenter = pos + Vector3.forward * (segmentLength - cellLength) * 0.5f;
+
+                    // Draw wireframe box showing entire wall segment
+                    Gizmos.color = new Color(0.8f, 0f, 0.8f, 0.8f); // Bright purple
+                    Gizmos.DrawWireCube(
+                        segmentCenter + Vector3.up * 0.5f,
+                        new Vector3(laneWidth * 0.9f, 1f, segmentLength * 0.95f)
+                    );
+
+                    // Draw filled box at base
+                    Gizmos.color = new Color(0.5f, 0f, 0.5f, 0.3f); // Translucent purple
+                    Gizmos.DrawCube(
+                        segmentCenter,
+                        new Vector3(laneWidth * 0.8f, 0.1f, segmentLength * 0.9f)
+                    );
+                }
             }
         }
     }
@@ -287,6 +326,7 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         allPassed &= VerifyBiomeCoherence();
         allPassed &= VerifyConstraintCompliance();
         allPassed &= VerifyEdgeLaneIntegrity();
+        allPassed &= VerifyEdgeWallCoverage();
 
         if (allPassed)
         {
@@ -629,6 +669,143 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             Debug.LogError($"✗ {edgeViolations} edge lane violations!");
             return false;
+        }
+    }
+
+    bool VerifyEdgeWallCoverage()
+    {
+        if (!logEdgeWallGeneration) return true;
+
+        Debug.Log("\n--- Edge Wall Coverage Check ---");
+
+        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
+
+        var configField = typeof(RunnerLevelGenerator).GetField("config",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var config = configField?.GetValue(generator) as RunnerGenConfig;
+
+        if (grid == null || config == null)
+        {
+            Debug.LogWarning("⚠ Cannot verify edge walls");
+            return true;
+        }
+
+        int totalLanes = config.laneCount + 2;
+        int leftLane = 0;
+        int rightLane = totalLanes - 1;
+
+        // Get all edge lane cells sorted by Z
+        var leftCells = grid.Where(kvp => kvp.Key.lane == leftLane).OrderBy(kvp => kvp.Key.z).ToList();
+        var rightCells = grid.Where(kvp => kvp.Key.lane == rightLane).OrderBy(kvp => kvp.Key.z).ToList();
+
+        int leftWalls = 0, rightWalls = 0;
+        int leftEmpty = 0, rightEmpty = 0;
+        Dictionary<int, int> leftWallLengths = new Dictionary<int, int>();
+        Dictionary<int, int> rightWallLengths = new Dictionary<int, int>();
+
+        // Analyze left lane
+        foreach (var kvp in leftCells)
+        {
+            if (kvp.Value.occupant == OccupantType.EdgeWall)
+            {
+                leftWalls++;
+                int sizeZ = kvp.Value.occupantDef?.SizeZ ?? 1;
+                if (!leftWallLengths.ContainsKey(sizeZ))
+                    leftWallLengths[sizeZ] = 0;
+                leftWallLengths[sizeZ]++;
+            }
+            else if (kvp.Value.occupant == OccupantType.None)
+            {
+                leftEmpty++;
+            }
+        }
+
+        // Analyze right lane
+        foreach (var kvp in rightCells)
+        {
+            if (kvp.Value.occupant == OccupantType.EdgeWall)
+            {
+                rightWalls++;
+                int sizeZ = kvp.Value.occupantDef?.SizeZ ?? 1;
+                if (!rightWallLengths.ContainsKey(sizeZ))
+                    rightWallLengths[sizeZ] = 0;
+                rightWallLengths[sizeZ]++;
+            }
+            else if (kvp.Value.occupant == OccupantType.None)
+            {
+                rightEmpty++;
+            }
+        }
+
+        Debug.Log($"Left lane: {leftWalls} wall cells, {leftEmpty} empty cells (Total: {leftCells.Count})");
+        Debug.Log($"Right lane: {rightWalls} wall cells, {rightEmpty} empty cells (Total: {rightCells.Count})");
+
+        if (leftWallLengths.Count > 0)
+        {
+            Debug.Log("Left wall distribution:");
+            foreach (var kvp in leftWallLengths.OrderBy(k => k.Key))
+            {
+                Debug.Log($"  SizeZ={kvp.Key}: {kvp.Value} cells");
+            }
+        }
+
+        if (rightWallLengths.Count > 0)
+        {
+            Debug.Log("Right wall distribution:");
+            foreach (var kvp in rightWallLengths.OrderBy(k => k.Key))
+            {
+                Debug.Log($"  SizeZ={kvp.Key}: {kvp.Value} cells");
+            }
+        }
+
+        // Count unique wall segments (origin cells only)
+        int leftSegments = 0, rightSegments = 0;
+
+        for (int i = 0; i < leftCells.Count; i++)
+        {
+            var cell = leftCells[i].Value;
+            if (cell.occupant == OccupantType.EdgeWall)
+            {
+                // Check if this is an origin cell (prev cell doesn't have same def)
+                bool isOrigin = true;
+                if (i > 0 && leftCells[i - 1].Value.occupant == OccupantType.EdgeWall
+                    && leftCells[i - 1].Value.occupantDef == cell.occupantDef)
+                {
+                    isOrigin = false;
+                }
+                if (isOrigin) leftSegments++;
+            }
+        }
+
+        for (int i = 0; i < rightCells.Count; i++)
+        {
+            var cell = rightCells[i].Value;
+            if (cell.occupant == OccupantType.EdgeWall)
+            {
+                bool isOrigin = true;
+                if (i > 0 && rightCells[i - 1].Value.occupant == OccupantType.EdgeWall
+                    && rightCells[i - 1].Value.occupantDef == cell.occupantDef)
+                {
+                    isOrigin = false;
+                }
+                if (isOrigin) rightSegments++;
+            }
+        }
+
+        Debug.Log($"Wall segments: Left={leftSegments}, Right={rightSegments}");
+
+        if (leftSegments <= 1 || rightSegments <= 1)
+        {
+            Debug.LogError($"✗ Very few wall segments detected! Left={leftSegments}, Right={rightSegments}");
+            Debug.LogError("   This suggests edge walls are only spawning once per chunk.");
+            return false;
+        }
+        else
+        {
+            Debug.Log($"✓ Multiple wall segments detected in both lanes");
+            return true;
         }
     }
 

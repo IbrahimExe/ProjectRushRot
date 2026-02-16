@@ -28,7 +28,8 @@ namespace LevelGenerator.Data
         Wall,
         Obstacle,
         Collectible,
-        Enemy
+        Enemy,
+        EdgeWall      // Walls that keep player in bounds on edge lanes
     }
 
     // NEW: Biome types for regional coherence
@@ -60,7 +61,7 @@ namespace LevelGenerator.Data
     //Cell state in the grid
 
     [System.Serializable]
-    public struct CellState
+    public class CellState
     {
         public SurfaceType surface;
         public OccupantType occupant;
@@ -77,6 +78,7 @@ namespace LevelGenerator.Data
         public Dictionary<PrefabDef, float> candidateWeights;
         public float entropy;
 
+        // Constructor
         public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null, bool edgeLane = false)
         {
             surface = s;
@@ -84,6 +86,20 @@ namespace LevelGenerator.Data
             surfaceDef = surfaceP;
             occupantDef = occupantP;
             isEdgeLane = edgeLane;
+            isCollapsed = false;
+            surfaceCandidates = null;
+            candidateWeights = null;
+            entropy = 0f;
+        }
+
+        // Default constructor for class
+        public CellState()
+        {
+            surface = SurfaceType.Solid;
+            occupant = OccupantType.None;
+            surfaceDef = null;
+            occupantDef = null;
+            isEdgeLane = false;
             isCollapsed = false;
             surfaceCandidates = null;
             candidateWeights = null;

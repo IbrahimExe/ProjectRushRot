@@ -164,7 +164,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1109a507cc1e91439270b133be3c746, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
-  config: {fileID: 11400000, guid: d4355c315ad3cd84db257d2cd136440d, type: 2}
+  biomeConfigs:
+  - {fileID: 11400000, guid: 68fde778a61b0a14b8ca2869ab4988de, type: 2}
+  startBiomeIndex: 0
+  biomeBias: 0.25
   seed: Runner
   playerTransform: {fileID: 883337444}
 --- !u!114 &146239477
@@ -180,14 +183,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGeneratorDiagnostics
   showGoldenPath: 0
-  showBiomes: 1
+  showBiomes: 0
   showSurfaceTypes: 0
   showWFCState: 0
   showOccupants: 0
   showEdgeLanes: 0
+  showEdgeWallSegments: 1
   logChunkGeneration: 0
   logWFCSteps: 0
-  logConstraintViolations: 1
+  logConstraintViolations: 0
+  logEdgeWallGeneration: 1
   trackPerformance: 0
   maxFrameTimeMs: 16
 --- !u!1 &706359191
@@ -474,8 +479,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1315179410}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.21643963, y: 0.00000003249792, z: -0.000000007204617, w: 0.976296}
-  m_LocalPosition: {x: 10.670255, y: 11.467602, z: 0.47875214}
+  m_LocalRotation: {x: 0.15212338, y: 0.0000000034783385, z: -5.353675e-10, w: 0.98836154}
+  m_LocalPosition: {x: 10.670255, y: 8.785528, z: -0.56425095}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

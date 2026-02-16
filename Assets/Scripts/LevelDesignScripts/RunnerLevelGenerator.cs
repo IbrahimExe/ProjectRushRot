@@ -27,6 +27,8 @@ public sealed class RunnerGenConfig : ScriptableObject
     public int bufferRows = 20; // extra rows to keep loaded beyond player view
     public int keepRowsBehind = 5; // rows behind player to keep loaded
     public int chunkSize = 10; // number of rows to generate together as a chunk
+    [Tooltip("Number of rows of existing context to keep, VERY HEAVY.")]
+    public int contextRows = 1;
     public int neigbhorhoodZ = 4;
     public int neighborhoodX = 1;
 
@@ -53,40 +55,36 @@ public sealed class RunnerGenConfig : ScriptableObject
     public bool useMultiOctaveBiomes = true;
 
     [Header("Biome Noise Quality")]
-    [Tooltip("Number of noise layers combined. More = richer detail, but too high can add speckle. Typical: 3–5.")]
+    [Tooltip("Number of noise layers combined. More = richer detail, but too high can add speckle. Typical: 3 5.")]
     [Range(1, 8)] public int biomeOctaves = 4;
 
     [Tooltip("Frequency multiplier per octave. Higher = more detail each octave. Typical: ~2.0. Too high can cause busy patterns.")]
     [Range(1.2f, 3.5f)] public float biomeLacunarity = 2.0f;
 
-    [Tooltip("Amplitude multiplier per octave. Lower = smoother (less high-frequency influence). Higher = more detail/speckle. Typical: 0.45–0.6.")]
+    [Tooltip("Amplitude multiplier per octave. Lower = smoother (less high-frequency influence). Higher = more detail/speckle. Typical: 0.45--0.6.")]
     [Range(0.2f, 0.8f)] public float biomeGain = 0.5f;
 
     [Tooltip("How much we 'warp' the noise coordinates to create rounder, more organic regions. 0 = no warp. Too high = swirly/distorted.")]
     [Range(0f, 3f)] public float biomeWarpStrength = 0.9f;
 
-    [Tooltip("Scale of the warp field. Lower = broad bends. Higher = tighter twisting. Typical: 1.5–3.0.")]
+    [Tooltip("Scale of the warp field. Lower = broad bends. Higher = tighter twisting. Typical: 1.5--3.0.")]
     [Range(0.5f, 6f)] public float biomeWarpScale = 2.0f;
 
     [Tooltip("Extra smoothing by averaging nearby noise samples. 0 = none. Higher = softer boundaries, fewer tiny islands. Too high = muddy transitions.")]
     [Range(0f, 1f)] public float biomeBlur = 0.35f;
-    
+
     [Tooltip("temperature > 1 flattens differences -> more variety.")]
-    [SerializeField]public float temperature = 1.9f; // try 1.4–2.6 (higher = more variety)
+    [SerializeField] public float temperature = 1.9f; // try 1.4--2.6 (higher = more variety)
 
     [Tooltip("floor prevents any biome from becoming impossible")]
-    [SerializeField]public float floor = 0.04f;      // try 0.02–0.10 (higher = rarer biomes show up more)
+    [SerializeField] public float floor = 0.04f;      // try 0.02--0.10 (higher = rarer biomes show up more)
 
     [Header("Biome - WFC Coupling")]
     [Tooltip("Extra biome bias when WFC collapses a cell. 1 = no extra. Higher = biomes win more often.")]
     [Range(1f, 8f)] public float biomeCollapseBias = 2.5f;
 
-    [Tooltip("Optional: remove candidates that are very off-biome. 0 keeps all. 0.1–0.25 makes biomes much more consistent.")]
+    [Tooltip("Optional: remove candidates that are very off-biome. 0 keeps all. 0.1--0.25 makes biomes much more consistent.")]
     [Range(0f, 0.6f)] public float biomeMinAffinity = 0.12f;
-
-
-
-
 
     [Header("Golden Path Wave")]
     public bool useWavePath = true;
@@ -121,22 +119,26 @@ public sealed class RunnerGenConfig : ScriptableObject
     [Tooltip("Chance per row to START a rest (0..1). Example: 0.02 ~ roughly once every ~50 rows).")]
     [Range(0f, 1f)] public float restAreaFrequency = 0.02f;
 
-    [Header("Options")]
-    public bool allowHoles = true;
-    public bool allowBridges = true;
-
-    [Header("Edge Lanes")]
-    [Tooltip("Prefab spawned on the two boundary lanes every row to form the side walls. " +
-             "If null, falls back to catalog.debugEdgeWall.")]
-    public GameObject edgeWallPrefab;
-
 }
 
 
 //main class
 public class RunnerLevelGenerator : MonoBehaviour
 {
-    [SerializeField] private RunnerGenConfig config;
+    [Header("Biome Configs")]
+    [Tooltip("List of biome generator configs. Each can point to a different PrefabCatalog + NeighborRulesConfig.")]
+    [SerializeField] private List<RunnerGenConfig> biomeConfigs = new List<RunnerGenConfig>();
+
+    [Tooltip("Starting biome config index in the list above.")]
+    [SerializeField] private int startBiomeIndex = 0;
+
+    [Tooltip("Probability (0..1) to switch biome config on the NEXT generated chunk.")]
+    [Range(0f, 1f)] public float biomeBias = 0.25f;
+
+    // Active config (selected from biomeConfigs). All generation reads from this.
+    private RunnerGenConfig config;
+    private int currentBiomeIndex = -1;
+
 
     // CONSTANTS - Centralized configuration values
 
@@ -160,7 +162,7 @@ public class RunnerLevelGenerator : MonoBehaviour
     [Header("Seeding")]
     [Tooltip("Seed for deterministic generation")]
     public string seed = "hjgujklfu"; // Hardcoded default
-    
+
     private Dictionary<(int z, int lane), CellState> grid;
     private int generatorZ = 0;
     private System.Random rng;
@@ -195,14 +197,20 @@ public class RunnerLevelGenerator : MonoBehaviour
     // Currently missing - need this to pool/destroy spawned objects
     private Dictionary<(int z, int lane), GameObject> spawnedObjects = new Dictionary<(int, int), GameObject>();
     private Dictionary<(int z, int lane), GameObject> spawnedOccupant = new();
-    // Tracks the wall GameObjects on the two edge lanes for cleanup alongside surface/occupant objects.
-    private Dictionary<(int z, int lane), GameObject> spawnedEdgeWalls = new Dictionary<(int, int), GameObject>();
+
+    // MinRowGap enforcement: tracks the last Z a given (lane, OccupantType) was placed
+    // Must persist across chunks to properly enforce gaps
+    private Dictionary<(int lane, OccupantType type), int> lastSpawnedZ = new Dictionary<(int, OccupantType), int>();
 
     // Total physical lane count = playable lanes + 2 edge lanes (one on each side).
     // Lane index 0 and (TotalLaneCount - 1) are always edge lanes.
     // Playable lanes run from index 1 to (TotalLaneCount - 2) inclusive.
     private int TotalLaneCount => config.laneCount + 2;
     private bool IsEdgeLaneIndex(int lane) => lane == 0 || lane == TotalLaneCount - 1;
+
+    // Per-lane cooldown: next Z index where ANY occupant is allowed in that lane.
+    private Dictionary<int, int> laneNextAllowedZ = new Dictionary<int, int>();
+
 
     // Biome System
     private Dictionary<(int z, int lane), BiomeType> biomeMap = new Dictionary<(int, int), BiomeType>();
@@ -220,6 +228,15 @@ public class RunnerLevelGenerator : MonoBehaviour
             enabled = false;
             return;
         }
+
+        // Pick the initial biome config before any generation logic uses it.
+        if (!TryApplyBiomeConfig(Mathf.Clamp(startBiomeIndex, 0, Mathf.Max(0, biomeConfigs.Count - 1))))
+        {
+            Debug.LogError("[RunnerLevelGenerator] No valid biome config selected. Generator not enabled.");
+            enabled = false;
+            return;
+        }
+
 
         grid = new Dictionary<(int, int), CellState>();
         if (!string.IsNullOrEmpty(seed))
@@ -277,9 +294,13 @@ public class RunnerLevelGenerator : MonoBehaviour
         {
             int chunkStart = generatorZ;
             int actualChunkSize = Mathf.Min(config.chunkSize, config.bufferRows - generatorZ);
+
+            MaybeSwitchBiomeForNextChunk();
+
             GenerateChunk(chunkStart, actualChunkSize);
             generatorZ += actualChunkSize;
         }
+
     }
 
 
@@ -452,7 +473,7 @@ public class RunnerLevelGenerator : MonoBehaviour
 
         // halfWidth controls how wide each biome is before it fades.
         // feather controls overlap/softness. More feather = more mixing.
-        float halfWidth = 0.11f;                 // try 0.08–0.14
+        float halfWidth = 0.11f;                 // try 0.08--0.14
         float feather = Mathf.Clamp(config.biomeBlur, 0.02f, 0.18f); // re-use your blur as a softness knob
 
         float g = BandScore(noise, cg, halfWidth, feather);
@@ -661,9 +682,15 @@ public class RunnerLevelGenerator : MonoBehaviour
         // ===================================================
         // PASS 5: Occupants
         // ===================================================
-        // Budget is shared across the whole chunk — not reset per row.
-        // Edge lanes are skipped inside the method.
+        // Budget is shared across the whole chunk -- not reset per row.
+        // Edge lanes are populated separately.
         GenerateOccupantsForChunk(startZ, endZ);
+
+        // ===================================================
+        // PASS 5.5: Edge Walls
+        // ===================================================
+        // Fill edge lanes with EdgeWall occupants (100% coverage, variable lengths)
+        GenerateEdgeWalls(startZ, endZ);
 
         // ===================================================
         // PASS 6: Spawn Visuals
@@ -682,7 +709,7 @@ public class RunnerLevelGenerator : MonoBehaviour
 
         for (int lane = 0; lane < TotalLaneCount; lane++)
         {
-            // Edge lanes are structural boundaries — pre-collapse immediately as Edge
+            // Edge lanes are structural boundaries -- pre-collapse immediately as Edge
             // so WFC never touches them and they never appear as candidates for neighbors.
             if (IsEdgeLaneIndex(lane))
             {
@@ -717,7 +744,7 @@ public class RunnerLevelGenerator : MonoBehaviour
     {
         for (int lane = 0; lane < TotalLaneCount; lane++)
         {
-            // Edge lanes are pre-collapsed as Edge surface — golden path never touches them.
+            // Edge lanes are pre-collapsed as Edge surface -- golden path never touches them.
             if (IsEdgeLaneIndex(lane)) continue;
 
             if (goldenPathSet.Contains((z, lane)))
@@ -785,14 +812,20 @@ public class RunnerLevelGenerator : MonoBehaviour
         queuedCells.Clear();
 
         // Re-seed propagation from any pre-collapsed cells (Safe Path, etc.)
-        for (int z = startZ; z < endZ; z++)
+        // PLUS: include 1 row of context behind the chunk to avoid seams.
+        int seedStartZ = Mathf.Max(0, startZ - config.contextRows);
+
+        for (int z = seedStartZ; z < endZ; z++)
         {
             for (int l = 0; l < TotalLaneCount; l++)
             {
                 if (IsEdgeLaneIndex(l)) continue;
 
+                // Only seed if the cell actually exists in the grid (important for z < startZ)
+                if (!grid.ContainsKey((z, l))) continue;
+
                 var c = getCell(z, l);
-                if (c.isCollapsed)
+                if (c.isCollapsed && c.surfaceDef != null)
                 {
                     if (queuedCells.Add((z, l)))
                         propagationQueue.Enqueue((z, l));
@@ -835,86 +868,72 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     private bool ValidateConfiguration()
     {
-        bool valid = true;
+        if (biomeConfigs == null || biomeConfigs.Count == 0)
+        {
+            Debug.LogError("[RunnerLevelGenerator] No biome configs assigned (Biome Configs list is empty).", this);
+            return false;
+        }
 
+        // Ensure we have an active config.
         if (config == null)
         {
-            Debug.LogError("[RunnerLevelGenerator] Config is not assigned!", this);
-            valid = false;
+            int idx = Mathf.Clamp(startBiomeIndex, 0, biomeConfigs.Count - 1);
+            if (!TryApplyBiomeConfig(idx))
+            {
+                Debug.LogError("[RunnerLevelGenerator] Could not apply starting biome config.", this);
+                return false;
+            }
         }
-        else
+
+        bool valid = true;
+
+        // IMPORTANT: lane geometry MUST be consistent across biomes.
+        var baseCfg = biomeConfigs.FirstOrDefault(c => c != null);
+        if (baseCfg == null)
         {
-            if (config.catalog == null)
+            Debug.LogError("[RunnerLevelGenerator] All biome configs are null.", this);
+            return false;
+        }
+
+        for (int i = 0; i < biomeConfigs.Count; i++)
+        {
+            var cfg = biomeConfigs[i];
+            if (cfg == null)
             {
-                Debug.LogError("[RunnerLevelGenerator] Config.catalog is not assigned!", this);
+                Debug.LogError($"[RunnerLevelGenerator] Biome config at index {i} is null.", this);
+                valid = false;
+                continue;
+            }
+
+            if (cfg.catalog == null)
+            {
+                Debug.LogError($"[RunnerLevelGenerator] Biome config '{cfg.name}' is missing a catalog.", this);
+                valid = false;
+            }
+            if (cfg.weightRules == null)
+            {
+                Debug.LogError($"[RunnerLevelGenerator] Biome config '{cfg.name}' is missing weightRules.", this);
                 valid = false;
             }
 
-            if (config.weightRules == null)
+            if (cfg.laneCount != baseCfg.laneCount ||
+                !Mathf.Approximately(cfg.laneWidth, baseCfg.laneWidth) ||
+                !Mathf.Approximately(cfg.cellLength, baseCfg.cellLength))
             {
-                Debug.LogError("[RunnerLevelGenerator] Config.weightRules is not assigned!", this);
-                valid = false;
-            }
-
-            if (config.catalog != null)
-            {
-                var surfaces = config.catalog.Definitions?.Where(d => d.Layer == ObjectLayer.Surface).ToList();
-                if (surfaces == null || surfaces.Count == 0)
-                {
-                    Debug.LogError("[RunnerLevelGenerator] Catalog has no Surface definitions!", this);
-                    valid = false;
-                }
-
-                if (config.catalog.debugSafePath == null)
-                {
-                    Debug.LogWarning("[RunnerLevelGenerator] Config.catalog.debugSafePath is not assigned. Golden path will use fallback.", this);
-                }
-
-                if (config.catalog.debugSurface == null)
-                {
-                    Debug.LogWarning("[RunnerLevelGenerator] Config.catalog.debugSurface is not assigned. WFC contradictions may fail.", this);
-                }
-
-                if (config.catalog.debugEdgeWall == null && config.edgeWallPrefab == null)
-                {
-                    Debug.LogError("[RunnerLevelGenerator] Neither edgeWallPrefab nor debugEdgeWall is assigned. Edge lanes will be invisible!", this);
-                    valid = false;
-                }
-            }
-
-            if (config.weightRules != null && config.catalog != null)
-            {
-                if (config.weightRules.catalog != config.catalog)
-                {
-                    Debug.LogWarning("[RunnerLevelGenerator] weightRules.catalog doesn't match config.catalog. This may cause ID resolution issues.", this);
-                }
-
-                if (config.weightRules.surfaceRules == null || config.weightRules.surfaceRules.Count == 0)
-                {
-                    Debug.LogWarning("[RunnerLevelGenerator] weightRules has no surfaceRules. WFC may produce random results.", this);
-                }
-            }
-
-            if (config.laneCount < 1)
-            {
-                Debug.LogError("[RunnerLevelGenerator] laneCount must be at least 1!", this);
-                valid = false;
-            }
-
-            if (config.chunkSize < 1)
-            {
-                Debug.LogError("[RunnerLevelGenerator] chunkSize must be at least 1!", this);
+                Debug.LogError(
+                    $"[RunnerLevelGenerator] Lane geometry mismatch between biomes. " +
+                    $"All biome configs must share laneCount/laneWidth/cellLength. " +
+                    $"Base='{baseCfg.name}', Problem='{cfg.name}'", this);
                 valid = false;
             }
         }
 
         if (playerTransform == null)
-        {
             Debug.LogWarning("[RunnerLevelGenerator] playerTransform is not assigned. Level will generate but won't update dynamically.", this);
-        }
 
         return valid;
     }
+
 
     private void ForceCollapseRemaining(int startZ, int endZ)
     {
@@ -1080,8 +1099,14 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     private void CheckNeighbor(int sz, int sl, int tz, int tl, Direction dir, PrefabDef sourceDef, int minZ, int maxZ)
     {
-        // Bounds check — use TotalLaneCount so edge lanes are included in the grid
-        if (tz < minZ || tz >= maxZ || tl < 0 || tl >= TotalLaneCount) return;
+        // Bounds check -- use TotalLaneCount so edge lanes are included in the grid
+        if (tz >= maxZ || tl < 0 || tl >= TotalLaneCount) return;
+
+        // If target is before chunk start, only propagate if cell exists (previous chunk already generated)
+        if (tz < minZ)
+        {
+            if (!grid.ContainsKey((tz, tl))) return; // Cell doesn't exist yet
+        }
 
         CellState target = getCell(tz, tl);
         if (target.isCollapsed) return;
@@ -1150,17 +1175,12 @@ public class RunnerLevelGenerator : MonoBehaviour
     {
         var allOccupants = config.catalog.Definitions
             .Where(d => d.Layer == ObjectLayer.Occupant)
+            .Where(d => d.OccupantType != OccupantType.EdgeWall) // EdgeWalls only for edge lanes
             .ToList();
 
         if (allOccupants.Count == 0) return;
 
         int remainingBudget = config.densityBudget;
-
-        // Tracks the last Z a given (lane, OccupantType) was placed to enforce MinRowGap.
-        var lastSpawnedZ = new Dictionary<(int lane, OccupantType type), int>();
-
-        // Cells reserved by multi-row occupants (SizeZ > 1).
-        var reservedCells = new HashSet<(int z, int lane)>();
 
         for (int z = startZ; z < endZ; z++)
         {
@@ -1176,40 +1196,54 @@ public class RunnerLevelGenerator : MonoBehaviour
 
             foreach (int lane in lanes)
             {
-                // Hard skip: edge lanes never receive occupants.
                 if (IsEdgeLaneIndex(lane)) continue;
+
+                // --- NEW: lane cooldown (blocks any occupant type in this lane) ---
+                if (laneNextAllowedZ.TryGetValue(lane, out int nextAllowed) && z < nextAllowed)
+                    continue;
 
                 CellState c = getCell(z, lane);
 
                 if (c.surface == SurfaceType.Hole) continue;
                 if (c.occupant != OccupantType.None) continue;
-                if (reservedCells.Contains((z, lane))) continue;
 
                 if (rng.NextDouble() > config.globalSpawnChance) continue;
 
                 var candidates = new List<PrefabDef>();
+
                 foreach (var def in allOccupants)
                 {
                     if (remainingBudget - def.Cost < 0) continue;
 
+                    // AllowedSurfaceIDs
                     if (def.AllowedSurfaceIDs != null && def.AllowedSurfaceIDs.Count > 0)
                     {
                         if (c.surfaceDef == null) continue;
                         if (!def.AllowedSurfaceIDs.Contains(c.surfaceDef.ID)) continue;
                     }
 
+                    // Golden path walkability
                     if (goldenPathSet.Contains((z, lane)) && !def.IsWalkable) continue;
+
+                    // Maintain at least one walkable lane
                     if (!def.IsWalkable && walkableLanes <= 1) continue;
+
+                    // --- Per-type gap rule (still applies) ---
+                    int cooldownZ = GetFootprintZ(def);                 // SizeZ override else Size.z
+                    int effectiveTypeGap = Mathf.Max(def.MinRowGap, cooldownZ);
 
                     var gapKey = (lane, def.OccupantType);
                     if (lastSpawnedZ.TryGetValue(gapKey, out int lastZ))
-                        if (z - lastZ < def.MinRowGap) continue;
+                    {
+                        if (z - lastZ < effectiveTypeGap) continue;
+                    }
 
                     candidates.Add(def);
                 }
 
                 if (candidates.Count == 0) continue;
 
+                // Weighted random selection
                 float totalWeight = candidates.Sum(d => d.OccupantWeight);
                 float roll = (float)(rng.NextDouble() * totalWeight);
                 float acc = 0f;
@@ -1221,16 +1255,21 @@ public class RunnerLevelGenerator : MonoBehaviour
                     if (roll <= acc) { selected = cand; break; }
                 }
 
+                // Place occupant ONLY in this cell
                 c.occupant = selected.OccupantType;
                 c.occupantDef = selected;
                 SetCell(z, lane, c);
 
                 remainingBudget -= selected.Cost;
                 lastSpawnedZ[(lane, selected.OccupantType)] = z;
+
+                // Walkability accounting for this row
                 if (!selected.IsWalkable) walkableLanes--;
 
-                for (int extraZ = 1; extraZ < selected.SizeZ; extraZ++)
-                    reservedCells.Add((z + extraZ, lane));
+                // --- NEW: set lane cooldown until AFTER this spawn ---
+                // Example: z=1, cooldown=4 => nextAllowed = 5
+                int placedCooldown = GetFootprintZ(selected);
+                laneNextAllowedZ[lane] = z + Mathf.Max(1, placedCooldown);
 
                 if (remainingBudget <= 0) break;
             }
@@ -1239,27 +1278,102 @@ public class RunnerLevelGenerator : MonoBehaviour
         }
     }
 
+
+    // --- Edge Wall Generation ---
+    // Spawns EdgeWall occupants with 100% probability (always spawns when checking a cell)
+    // but respects SizeZ so walls have natural gaps between them
+    private void GenerateEdgeWalls(int startZ, int endZ)
+    {
+        var edgeWallDefs = config.catalog.GetCandidates(OccupantType.EdgeWall);
+
+        if (edgeWallDefs == null || edgeWallDefs.Count == 0)
+        {
+            Debug.LogWarning($"[EdgeWalls] No EdgeWall occupants found in catalog!");
+            return;
+        }
+
+        int[] edgeLanes = { 0, TotalLaneCount - 1 };
+
+        foreach (int lane in edgeLanes)
+        {
+            for (int z = startZ; z < endZ; z++)
+            {
+                // --- NEW: lane cooldown ---
+                if (laneNextAllowedZ.TryGetValue(lane, out int nextAllowed) && z < nextAllowed)
+                    continue;
+
+                CellState cell = getCell(z, lane);
+                if (cell.occupant != OccupantType.None) continue;
+
+                PrefabDef selectedWall = edgeWallDefs[rng.Next(edgeWallDefs.Count)];
+
+                // Place ONLY at this Z
+                cell.occupant = OccupantType.EdgeWall;
+                cell.occupantDef = selectedWall;
+                SetCell(z, lane, cell);
+
+                // Cooldown based on SizeZ override else Size.z
+                int cooldown = GetFootprintZ(selectedWall);
+                laneNextAllowedZ[lane] = z + Mathf.Max(1, cooldown);
+
+                // Optional: keep tracking consistent
+                lastSpawnedZ[(lane, OccupantType.EdgeWall)] = z;
+            }
+        }
+    }
+
+
     private void SpawnRowVisuals(int z)
     {
-        // Resolve which wall prefab to use for edge lanes (config field takes priority).
-        GameObject wallPrefab = config.edgeWallPrefab != null
-            ? config.edgeWallPrefab
-            : config.catalog.debugEdgeWall;
-
         for (int lane = 0; lane < TotalLaneCount; lane++)
         {
             var cell = getCell(z, lane);
             Vector3 worldPos = new Vector3(LaneToWorldX(lane), 0, z * config.cellLength);
 
-            // --- EDGE LANE: spawn wall prefab, nothing else ---
+            // --- EDGE LANE: spawn edge surface + EdgeWall occupant ---
             if (IsEdgeLaneIndex(lane))
             {
-                if (wallPrefab != null)
+                // SURFACE: Spawn Edge surface type (for visual floor, influences WFC neighbors)
+                GameObject surfObj = null;
+                var edgeSurfaceCandidates = config.catalog.GetCandidates(SurfaceType.Edge);
+                if (edgeSurfaceCandidates != null && edgeSurfaceCandidates.Count > 0)
                 {
-                    GameObject wallObj = Instantiate(wallPrefab, worldPos, Quaternion.identity, transform);
-                    spawnedEdgeWalls[(z, lane)] = wallObj;
+                    PrefabDef edgeSurfaceDef = edgeSurfaceCandidates[rng.Next(edgeSurfaceCandidates.Count)];
+                    if (edgeSurfaceDef.Prefabs != null && edgeSurfaceDef.Prefabs.Count > 0)
+                    {
+                        surfObj = Instantiate(
+                            edgeSurfaceDef.Prefabs[rng.Next(edgeSurfaceDef.Prefabs.Count)],
+                            worldPos,
+                            Quaternion.identity,
+                            transform
+                        );
+                    }
+                }
+                if (surfObj != null) spawnedObjects[(z, lane)] = surfObj;
+
+                // OCCUPANT: Spawn EdgeWall occupant
+                GameObject edgeWallObj = null;
+
+                if (cell.occupant == OccupantType.EdgeWall && cell.occupantDef != null && cell.occupantDef.Prefabs.Count > 0)
+                {
+                    edgeWallObj = Instantiate(
+                        cell.occupantDef.Prefabs[rng.Next(cell.occupantDef.Prefabs.Count)],
+                        worldPos,
+                        Quaternion.identity,
+                        transform
+                    );
+                }
+                else if (cell.occupant == OccupantType.EdgeWall && config.catalog.debugEdgeWall != null)
+                {
+                    edgeWallObj = Instantiate(config.catalog.debugEdgeWall, worldPos, Quaternion.identity, transform);
+                }
+
+                if (edgeWallObj != null)
+                {
+                    spawnedOccupant[(z, lane)] = edgeWallObj;
                 }
                 continue;
+
             }
 
             // --- PLAYABLE LANE: surface then occupant (unchanged logic) ---
@@ -1283,13 +1397,34 @@ public class RunnerLevelGenerator : MonoBehaviour
 
             // OCCUPANT
             GameObject occObj = null;
-            if (cell.occupantDef != null && cell.occupantDef.Prefabs.Count > 0)
+
+            // For multi-row occupants (SizeZ > 1), only spawn at the origin cell
+            // Check if this is the origin cell by looking backwards
+            bool isOriginCell = true;
+            if (cell.occupantDef != null && cell.occupantDef.SizeZ > 1)
             {
-                occObj = Instantiate(cell.occupantDef.Prefabs[rng.Next(cell.occupantDef.Prefabs.Count)], worldPos, Quaternion.identity, transform);
+                // Check if previous row has the same occupant definition
+                // CRITICAL: Use ID comparison instead of reference comparison
+                CellState prevCell = getCell(z - 1, lane);
+                if (prevCell.occupantDef != null &&
+                    prevCell.occupant == cell.occupant &&
+                    prevCell.occupantDef.ID == cell.occupantDef.ID)
+                {
+                    isOriginCell = false; // This is a reserved cell, not the origin
+                }
             }
-            else if (cell.occupant != OccupantType.None && config.catalog.debugOccupant != null)
+
+            // Only spawn if this is the origin cell (or single-cell occupant)
+            if (isOriginCell)
             {
-                occObj = Instantiate(config.catalog.debugOccupant, worldPos, Quaternion.identity, transform);
+                if (cell.occupantDef != null && cell.occupantDef.Prefabs.Count > 0)
+                {
+                    occObj = Instantiate(cell.occupantDef.Prefabs[rng.Next(cell.occupantDef.Prefabs.Count)], worldPos, Quaternion.identity, transform);
+                }
+                else if (cell.occupant != OccupantType.None && config.catalog.debugOccupant != null)
+                {
+                    occObj = Instantiate(config.catalog.debugOccupant, worldPos, Quaternion.identity, transform);
+                }
             }
 
             if (occObj != null) spawnedOccupant[(z, lane)] = occObj;
@@ -1313,6 +1448,8 @@ public class RunnerLevelGenerator : MonoBehaviour
             // This means we might generate a bit ahead of the buffer, which is good for WFC coherence.
             int chunkStart = generatorZ;
             int actualChunkSize = config.chunkSize;
+
+            MaybeSwitchBiomeForNextChunk();
 
             GenerateChunk(chunkStart, actualChunkSize);
             generatorZ += actualChunkSize;
@@ -1344,15 +1481,33 @@ public class RunnerLevelGenerator : MonoBehaviour
                 spawnedOccupant.Remove(key);
             }
 
-            // Edge wall cleanup — same lifetime as the row it belongs to.
-            if (spawnedEdgeWalls.TryGetValue(key, out GameObject wall) && wall != null)
-            {
-                Destroy(wall);
-                spawnedEdgeWalls.Remove(key);
-            }
-
             grid.Remove(key);
         }
+
+        // Clean up old lastSpawnedZ entries to prevent memory growth
+        // Remove entries where the last spawn Z is far behind the player
+        var gapKeysToRemove = new List<(int, OccupantType)>();
+        foreach (var gapKey in lastSpawnedZ.Keys)
+        {
+            if (lastSpawnedZ[gapKey] < minKeepZ)
+            {
+                gapKeysToRemove.Add(gapKey);
+            }
+        }
+        foreach (var gapKey in gapKeysToRemove)
+        {
+            lastSpawnedZ.Remove(gapKey);
+        }
+
+        // clean lane cooldowns if they're far behind
+        var laneKeysToRemove = new List<int>();
+        foreach (var kv in laneNextAllowedZ)
+        {
+            if (kv.Value < minKeepZ) laneKeysToRemove.Add(kv.Key);
+        }
+        foreach (var k in laneKeysToRemove) laneNextAllowedZ.Remove(k);
+
+
         //garbsage collection is gonna hitch when it needs to clean up the destroyed objects
 
     }
@@ -1468,6 +1623,54 @@ public class RunnerLevelGenerator : MonoBehaviour
         }
 
         return n; // 0..1
+    }
+
+    private int GetFootprintZ(PrefabDef def)
+    {
+        if (def == null) return 1;
+
+        int z = 1;
+
+        if (def.SizeZ > 1) z = def.SizeZ;
+        else z = def.Size.z;
+
+        return Mathf.Max(1, z);
+    }
+
+    private bool TryApplyBiomeConfig(int index)
+    {
+        if (biomeConfigs == null || biomeConfigs.Count == 0) return false;
+        index = Mathf.Clamp(index, 0, biomeConfigs.Count - 1);
+
+        var next = biomeConfigs[index];
+        if (next == null) return false;
+        if (next.catalog == null) return false;
+        if (next.weightRules == null) return false;
+
+        config = next;
+        currentBiomeIndex = index;
+
+        // Ensure caches are ready and NeighborRules points at the right catalog.
+        config.catalog.RebuildCache();
+        config.weightRules.catalog = config.catalog;
+        config.weightRules.BuildCache();
+
+        return true;
+    }
+
+    private void MaybeSwitchBiomeForNextChunk()
+    {
+        if (rng == null) return;
+        if (biomeConfigs == null || biomeConfigs.Count <= 1) return;
+
+        if (rng.NextDouble() > biomeBias) return;
+
+        // Pick a different biome than the current one.
+        int newIndex = rng.Next(biomeConfigs.Count - 1);
+        if (newIndex >= currentBiomeIndex) newIndex++;
+
+        // If the chosen config is invalid, just keep current.
+        TryApplyBiomeConfig(newIndex);
     }
 
 

@@ -33,10 +33,10 @@ MonoBehaviour:
     allowed:
     - neighborID: GRASS_TILE
       directions: 31
-      weight: 10
+      weight: 40
     - neighborID: DESERT_TILE
       directions: -1
-      weight: 70
+      weight: 60
     denied:
     - neighborID: FOREST_TILE
       directions: -1
@@ -65,7 +65,7 @@ MonoBehaviour:
       directions: -1
       weight: 50
     - neighborID: SAFE_PATH
-      directions: 1
+      directions: 3
       weight: 20
     denied:
     - neighborID: DESERT_TILE

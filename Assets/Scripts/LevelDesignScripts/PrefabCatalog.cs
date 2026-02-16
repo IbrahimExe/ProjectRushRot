@@ -34,11 +34,41 @@ namespace LevelGenerator.Data
             // generate ids if missing
             if (Definitions != null)
             {
+                // Build a set of all surface IDs for validation
+                HashSet<string> validSurfaceIDs = new HashSet<string>();
                 foreach (var def in Definitions)
                 {
                     if (def == null) continue;
                     if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
                         def.ID = def.Name.ToUpper().Replace(" ", "_");
+
+                    // Collect surface IDs
+                    if (def.Layer == ObjectLayer.Surface && !string.IsNullOrEmpty(def.ID))
+                        validSurfaceIDs.Add(def.ID);
+                }
+
+                // Validate AllowedSurfaceIDs for occupants
+                foreach (var def in Definitions)
+                {
+                    if (def == null) continue;
+                    if (def.Layer != ObjectLayer.Occupant) continue;
+                    if (def.AllowedSurfaceIDs == null || def.AllowedSurfaceIDs.Count == 0) continue;
+
+                    for (int i = def.AllowedSurfaceIDs.Count - 1; i >= 0; i--)
+                    {
+                        string surfaceID = def.AllowedSurfaceIDs[i];
+                        if (string.IsNullOrEmpty(surfaceID))
+                        {
+                            def.AllowedSurfaceIDs.RemoveAt(i);
+                            continue;
+                        }
+
+                        if (!validSurfaceIDs.Contains(surfaceID))
+                        {
+                            Debug.LogWarning($"[PrefabCatalog] Occupant '{def.Name}' references unknown surface ID '{surfaceID}'. " +
+                                           $"Valid surface IDs: {string.Join(", ", validSurfaceIDs)}");
+                        }
+                    }
                 }
             }
             _initialized = false;
@@ -99,6 +129,7 @@ namespace LevelGenerator.Data
         }
 
         // get all candidates for a specific occupant type
+        // Use OccupantType.EdgeWall to get edge wall variants
         public List<PrefabDef> GetCandidates(OccupantType type)
         {
             ValidateCache();
@@ -114,20 +145,6 @@ namespace LevelGenerator.Data
             return new List<PrefabDef>();
         }
 
-        // --- Filtering Helpers ---
-
-        // filter a list by attributes and optional tag
-        //public List<PrefabDef> Filter(List<PrefabDef> source, string requiredTag = null)
-        //{
-        //    var result = new List<PrefabDef>(source.Count);
-        //    foreach(var def in source)
-        //    {
-        //        if ((def.Attributes & requiredMask) != requiredMask) continue; unused was for Atributes flags
-        //        if (requiredTag != null && !def.HasTag(requiredTag)) continue;
-        //        result.Add(def);
-        //    }
-        //    return result;
-        //}
 
         // --- Weighted Selection ---
 

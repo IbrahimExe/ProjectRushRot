@@ -174,7 +174,40 @@ MonoBehaviour:
     AllowedSurfaceIDs: []
     IsWalkable: 0
     biomeAffinities: []
+  - ID: Edge_WALL
+    Name: wall
+    Prefabs:
+    - {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantType: 5
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 1
+    MinRowGap: 0
+    SizeZ: 2
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities: []
+  - ID: Edge_SURFACE
+    Name: wall
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    Layer: 0
+    SurfaceType: 4
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 20
+    Tags: []
+    Cost: 1
+    MinRowGap: 1
+    SizeZ: 4
+    AllowedSurfaceIDs:
+    - 
+    IsWalkable: 0
+    biomeAffinities: []
   debugSafePath: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
   debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
-  debugEdgeWall: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugEdgeWall: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
