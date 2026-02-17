@@ -139,6 +139,9 @@ public class PlayerControllerBase : MonoBehaviour
     }
     void Update()
     {
+        // Guard for checking if the game has started or not (For Start Camera)(Ibrahim)
+        if (!GameState.IsStarted) return;
+
         IsGrounded = CheckGrounded();
         if (IsGrounded) lastGroundedTime = Time.time;
 
