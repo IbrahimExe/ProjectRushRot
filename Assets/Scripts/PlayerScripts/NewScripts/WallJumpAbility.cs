@@ -12,6 +12,8 @@ public class WallJumpAbility : MonoBehaviour
     public float wallJumpAwayImpulse = 8.5f;
     public float extraAwayImpulse = 6f;
     public float wallJumpCooldown = 0.15f;
+    //private float wallJumpLockUntil = 0f; <-------------------------------------------------------- modified this line
+    private float nextWallJumpAllowedTime = 0f;
 
     [Header("Side Influence")]
     [Range(0f, 1f)] public float alongWallInfluence = 0.25f;
