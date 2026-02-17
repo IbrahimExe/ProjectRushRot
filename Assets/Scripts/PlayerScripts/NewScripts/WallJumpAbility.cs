@@ -1,26 +1,28 @@
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class WallJumpAbility : MonoBehaviour
 {
     [Header("Refs")]
     public PlayerControllerBase motor;
     public WallRunAbility wallRun;
-    public DashAbility dash; // optional: blocks jump buffering during dash/flip
-    public Transform aimTransform; // set to your camera (or player view) in inspector
+    public DashAbility dash;
 
     [Header("Wall Jump")]
     public float wallJumpUpImpulse = 7.5f;
     public float wallJumpAwayImpulse = 8.5f;
-
-    [Tooltip("Extra push away from the wall (use this to make the kick-off stronger).")]
-    public float extraAwayImpulse = 6f; 
-
-    [Tooltip("Prevents repeated wall jumps in the same instant.")]
+    public float extraAwayImpulse = 6f;
     public float wallJumpCooldown = 0.15f;
 
-    //private float wallJumpLockUntil = 0f; <-------------------------------------------------------- modified this line
-    private float nextWallJumpAllowedTime = 0f;
+    [Header("Side Influence")]
+    [Range(0f, 1f)] public float alongWallInfluence = 0.25f;
+
+    [Header("Smooth Kick Ramp")]
+    public float wallKickRampTime = 0.08f;
+
+    private float wallJumpLockUntil = 0f;
+
+    private Vector3 pendingWallKick = Vector3.zero;
+    private float wallKickEndTime = 0f;
 
     private Rigidbody RB => motor != null ? motor.RB : null;
 
@@ -29,76 +31,81 @@ public class WallJumpAbility : MonoBehaviour
         if (motor == null || wallRun == null || RB == null)
             return;
 
-        // don't use buffered jump during dash/flip/side dash
+        // If dash owns movement, don't start a jump here
         if (dash != null && (dash.IsDashing || dash.IsSideDashing || dash.IsDashFlipping))
             return;
 
-        //if (Time.time < wallJumpLockUntil) <-------------------------------------------------------- modified this line
-        //    return;
+        // 1) ALWAYS apply any pending ramp kick (independent of jump buffering)
+        ApplyPendingWallKick();
 
-        bool WallJumpOnCooldown = Time.time < nextWallJumpAllowedTime;
-        // -------------------------------------------------------------------------------------------------------
-
-        // Jump buffer check comes from the base controller
+        // 2) If no buffered jump, do nothing else
         if (!motor.WantsJumpBuffered())
             return;
 
-        //  WALL JUMP (controlled kick, no forward speed boost)
-        if (wallRun.IsWallRunning && !WallJumpOnCooldown)
+        // 3) Prefer wall jump when wallrunning
+        if (wallRun.IsWallRunning)
         {
-            Vector3 n = wallRun.WallNormal.normalized; // should point away from wall
-            Vector3 up = Vector3.up;
+            TryDoWallJump();
+            return; // IMPORTANT: don't also do normal jump in same tick
+        }
 
-            // Stop wall-run so it doesn't fight the jump
-            wallRun.ForceStopAndCooldown();
+        // 4) Otherwise do normal jump (ground or coyote)
+        if (motor.IsGrounded || motor.CanCoyoteJump())
+        {
+            motor.DoNormalJump();
+            motor.ConsumeJumpBuffer();
+        }
+    }
 
-            // Read input
-            float h = Input.GetAxisRaw("Horizontal");
-            float v = Input.GetAxisRaw("Vertical");
+    private void ApplyPendingWallKick()
+    {
+        if (Time.time >= wallKickEndTime) return;
+        if (pendingWallKick == Vector3.zero) return;
 
-            // Use camera/view if provided, else motor
-            Transform t = (aimTransform != null) ? aimTransform : motor.transform;
+        float frac = Time.fixedDeltaTime / Mathf.Max(0.01f, wallKickRampTime);
+        frac = Mathf.Clamp01(frac);
 
-            Vector3 camFwd = Vector3.ProjectOnPlane(t.forward, up).normalized;
-            Vector3 camRight = Vector3.ProjectOnPlane(t.right, up).normalized;
+        Vector3 step = pendingWallKick * frac;
 
-            Vector3 desired = (camFwd * v + camRight * h);
-            if (desired.sqrMagnitude < 0.0001f)
-                desired = camFwd;
+        RB.AddForce(step, ForceMode.VelocityChange);
+        pendingWallKick -= step;
 
-            desired.Normalize();
+        if (pendingWallKick.magnitude < 0.01f)
+            pendingWallKick = Vector3.zero;
+    }
 
-            // "Along wall" direction guided by input (remove into-wall component)
-            Vector3 along = Vector3.ProjectOnPlane(desired, n);
-            if (along.sqrMagnitude < 0.0001f)
-                along = Vector3.ProjectOnPlane(camFwd, n);
+    private void TryDoWallJump()
+    {
+        if (Time.time < wallJumpLockUntil)
+            return;
 
-            along.Normalize();
+        // Cache wall info FIRST (ForceStop clears state)
+        Vector3 n = wallRun.WallNormal.normalized;   // away from wall
+        Vector3 t = wallRun.WallTangent.normalized;  // along wall
 
-            // Blend: mostly away, some along-wall (sideways)
-            float awayWeight = 0.75f;
-            float alongWeight = 0.25f;
+        // Safety: if for any reason normals are invalid, bail to avoid zero-kick
+        if (n.sqrMagnitude < 0.5f || t.sqrMagnitude < 0.5f)
+            return;
 
-            Vector3 kickDir = (n * awayWeight + along * alongWeight).normalized;
+        wallRun.ForceStopAndCooldown();
 
-            // --- Kill forward boost ---
-            Vector3 vel = RB.linearVelocity;
+        // Clear planar velocity so kick isn't overwritten by current movement
+        Vector3 vel = RB.linearVelocity;
+        vel = Vector3.Project(vel, Vector3.up);
+        RB.linearVelocity = vel;
 
-            // Remove all horizontal speed 
-            vel = Vector3.Project(vel, up); // keeps only vertical component
+        // Kick direction (mostly away, a bit along wall for style)
+        Vector3 kickDir = (n * (1f - alongWallInfluence) + t * alongWallInfluence).normalized;
 
-            // Apply controlled kick + upward
-            float kickStrength = wallJumpAwayImpulse + extraAwayImpulse;
-            vel += kickDir * kickStrength;
-            vel += up * wallJumpUpImpulse;
+        // Up impulse happens instantly
+        RB.AddForce(Vector3.up * wallJumpUpImpulse, ForceMode.VelocityChange);
 
-            // Hard clamp planar speed 
-            float maxPlanarAfterWallJump = 35.0f; 
-            Vector3 planar = Vector3.ProjectOnPlane(vel, up);
-            if (planar.magnitude > maxPlanarAfterWallJump)
-                vel -= (planar - planar.normalized * maxPlanarAfterWallJump);
+        // Away impulse ramps smoothly (prevents yank)
+        pendingWallKick = kickDir * (wallJumpAwayImpulse + extraAwayImpulse);
+        wallKickEndTime = Time.time + Mathf.Max(0.01f, wallKickRampTime);
 
-            RB.linearVelocity = vel;
+        // Prevent BaseMove from erasing kick this frame / next couple ticks
+        motor.MoveLockTimer = 0.12f;
 
             // added this block ---------------------------------------------------------
             // Prevent immediate re-entry into wallrun
