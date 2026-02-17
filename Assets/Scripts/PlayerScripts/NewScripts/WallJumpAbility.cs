@@ -81,24 +81,45 @@ public class WallJumpAbility : MonoBehaviour
 
             Vector3 kickDir = (n * awayWeight + along * alongWeight).normalized;
 
-            // --- Kill forward boost ---
+            // ----------------------------------------------------------------
+            // MOMENTUM PRESERVING WALL JUMP
             Vector3 vel = RB.linearVelocity;
 
-            // Remove all horizontal speed 
-            vel = Vector3.Project(vel, up); // keeps only vertical component
+            // Preserve the tangential (along-wall) velocity component
+            Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
+            Vector3 tangentialVel = Vector3.ProjectOnPlane(planarVel, n);
+            
+            // Remove only velocity going INTO the wall (negative dot product)
+            float intoWall = Vector3.Dot(vel, n);
+            if (intoWall < 0f)
+                vel -= n * intoWall;
 
-            // Apply controlled kick + upward
+            // Add jump impulses (these ADD to existing momentum, not replace)
             float kickStrength = wallJumpAwayImpulse + extraAwayImpulse;
             vel += kickDir * kickStrength;
             vel += up * wallJumpUpImpulse;
+            
+            // Preserve the tangential momentum from wall running
+            // Re-add the tangential component to maintain forward speed
+            Vector3 newPlanar = Vector3.ProjectOnPlane(vel, up);
+            Vector3 newTangential = Vector3.ProjectOnPlane(newPlanar, n);
+            
+            // If the new tangential is less than what we had, restore the original
+            if (newTangential.magnitude < tangentialVel.magnitude)
+            {
+                vel += (tangentialVel - newTangential);
+            }
 
-            // Hard clamp planar speed 
-            float maxPlanarAfterWallJump = 35.0f; 
-            Vector3 planar = Vector3.ProjectOnPlane(vel, up);
-            if (planar.magnitude > maxPlanarAfterWallJump)
-                vel -= (planar - planar.normalized * maxPlanarAfterWallJump);
+            // Only clamp if the speed is extremely high
+            // This prevents the clamp from reducing normal wall run speeds
+            //float maxPlanar = 60f;
+            //Vector3 planar = Vector3.ProjectOnPlane(vel, up);
+            //if (planar.magnitude > maxPlanar)
+            //    vel -= (planar - planar.normalized * maxPlanar);
 
             RB.linearVelocity = vel;
+
+            // ----------------------------------------------------------------
 
             // added this block ---------------------------------------------------------
             // Prevent immediate re-entry into wallrun

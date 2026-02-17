@@ -91,8 +91,21 @@ public class DashAbility : MonoBehaviour
         // prevent buffered jumps while dash is controlling motion/visual
         motor.SuppressJumpBuffer = isDashing || isSideDashing || isDashFlipping;
 
-        // post-dash speed boost for base movement
-        motor.MaxSpeedMultiplier = (Time.time < dashBoostEndTime) ? dashSpeedBoostMultiplier : 1f;
+        // post-dash speed boost for base movement - smoothly decrease to 1.0
+        if (Time.time < dashBoostEndTime)
+        {
+            // Calculate how much time has passed since dash ended
+            float timeSinceDashEnd = Time.time - dashEndTime;
+            float boostDuration = dashBoostEndTime - dashEndTime;
+            
+            // Smoothly lerp from boost multiplier to 1.0
+            float t = Mathf.Clamp01(timeSinceDashEnd / boostDuration);
+            motor.MaxSpeedMultiplier = Mathf.Lerp(dashSpeedBoostMultiplier, 1f, t);
+        }
+        else
+        {
+            motor.MaxSpeedMultiplier = 1f;
+        }
 
         UpdateDashKillMultiplier();
 
@@ -141,11 +154,19 @@ public class DashAbility : MonoBehaviour
 
             Vector3 vel = RB.linearVelocity;
 
-            // remove existing lateral component so the dodge is consistent
-            Vector3 lateralCurrent = Vector3.Project(vel, sideDashDirectionWorld);
+            // Preserve forward/backward momentum, only replace lateral component
+            Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
+            Vector3 lateralCurrent = Vector3.Project(planarVel, sideDashDirectionWorld);
+            
+            // Remove only the lateral component, keep the forward/backward momentum
             vel -= lateralCurrent;
-
+            
+            // Add the new lateral velocity
             vel += sideDashDirectionWorld * lateralSpeed;
+            
+            // Add upward hop (replace vertical component for consistency)
+            Vector3 verticalVel = Vector3.Project(vel, up);
+            vel -= verticalVel;
             vel += up * upSpeed;
 
             RB.linearVelocity = vel;
@@ -199,11 +220,24 @@ public class DashAbility : MonoBehaviour
         {
             dashJustStarted = false;
 
-            float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
+            // Preserve existing velocity and add burst on top
+            Vector3 currentVel = RB.linearVelocity;
+            Vector3 planarVel = Vector3.ProjectOnPlane(currentVel, up);
             Vector3 planarDashDir = Vector3.ProjectOnPlane(dashDirection, up).normalized;
 
-            Vector3 newVel = planarDashDir * burstSpeed;
+            // Calculate the boost to add to current momentum
+            float currentSpeedInDashDir = Vector3.Dot(planarVel, planarDashDir);
+            float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
+            
+            // If we're already moving in the dash direction, add to it; otherwise set to burst speed
+            float targetSpeed = Mathf.Max(burstSpeed, currentSpeedInDashDir + burstSpeed * 0.5f);
+            Vector3 newPlanarVel = planarDashDir * targetSpeed;
 
+            // Apply the speed boost multiplier immediately
+            motor.MaxSpeedMultiplier = dashSpeedBoostMultiplier;
+
+            // Set new velocity: new planar + hop
+            Vector3 newVel = newPlanarVel;
             float upSpeed = GetJumpSpeedForHeight(dashHopHeight);
             newVel += up * upSpeed;
 
@@ -220,7 +254,11 @@ public class DashAbility : MonoBehaviour
         }
 
         if (Time.time >= dashEndTime)
+        {
             isDashing = false;
+            // Keep the speed boost active even after dash ends
+            // dashBoostEndTime already set in HandleDashInput
+        }
     }
 
     private void HandleSideDashMovement()

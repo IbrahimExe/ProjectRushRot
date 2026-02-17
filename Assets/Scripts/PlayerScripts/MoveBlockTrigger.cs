@@ -25,11 +25,11 @@ public class MoveBlockTrigger : MonoBehaviour
         {
             if (blockType == BlockType.Forward)
             {
-                movement.BlockForwardMovement();
+                //movement.BlockForwardMovement();
             }
             else if (blockType == BlockType.Backward)
             {
-                movement.BlockBackwardMovement();
+                //movement.BlockBackwardMovement();
             }
         }
     }
