@@ -124,19 +124,4 @@ public class WallJumpAbility : MonoBehaviour
             motor.ConsumeJumpBuffer();
             return;
         }
-
-
-
-        //NORMAL JUMP(ground +coyote)
-        if (motor.IsGrounded || motor.CanCoyoteJump())
-        {
-            motor.DoNormalJump();
-            //wallJumpLockUntil = Time.time + wallJumpCooldown;
-
-            motor.ConsumeJumpBuffer();
-            return;
-        }
-
-        // motor.ConsumeJumpBuffer();
-    }
 }
