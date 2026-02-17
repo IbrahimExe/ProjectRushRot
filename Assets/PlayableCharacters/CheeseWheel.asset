@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa1153e286dba1c42abc554c2dce6766, type: 3}
+  m_Name: CheeseWheel
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterData
+  modelPrefab: {fileID: 7827016180753745625, guid: c6fe650128d3a29439818897a926ff3f, type: 3}
+  modelOffset: {x: 0, y: 0, z: 0}
+  modelScale: {x: 1.4727339, y: 4.961874, z: 4.961874}
+  modelRotation: {x: 0, y: 0, z: 0}
+  startMoveSpeed: 5
+  maxMoveSpeed: 50
+  acceleration: 25
+  deceleration: 25
+  jumpForce: 125
+  wallJumpUpImpulse: 7.5
+  wallJumpAwayImpulse: 8.5
+  wallRunSpeed: 75
+  wallRunDuration: 4

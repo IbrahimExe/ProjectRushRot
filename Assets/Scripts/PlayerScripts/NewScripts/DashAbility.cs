@@ -1,3 +1,4 @@
+// DashAbility.cs
 using UnityEngine;
 
 public class DashAbility : MonoBehaviour
@@ -8,10 +9,21 @@ public class DashAbility : MonoBehaviour
 
     [Header("Dash Settings")]
     public KeyCode dashKey = KeyCode.LeftShift;
+
+    [Tooltip("Sustained dash planar speed after the initial burst.")]
     public float dashSpeed = 30f;
+
+    [Tooltip("Time the dash movement stays active (logic).")]
+    public float dashDuration = 0.25f;
+
     public float dashCooldown = 1.0f;
+
+    [Tooltip("Temporary max-speed multiplier applied to base movement after dash ends.")]
     public float dashSpeedBoostMultiplier = 1.4f;
+
     public float dashBoostDuration = 1.5f;
+
+    [Tooltip("Initial planar burst multiplier applied on dash start.")]
     public float dashInitialBurstMultiplier = 1.5f;
 
     [Header("Side Dash Settings")]
@@ -19,10 +31,23 @@ public class DashAbility : MonoBehaviour
     public float sideDashDuration = 0.5f;
     public float sideDashUpOffset = 28f;
 
-    [Header("Dash Flip / Roll Settings")]
+    [Header("Dash Hit Window")]
+    public float hitWindowAfterDash = 0.25f;
+    private float hitWindowEndTime = 0f;
+
+    [Header("Dash Kill -> XP Multiplier")]
+    public int dashKillCap = 10;                 // cap at 10 kills
+    public float secondsToKeepMultiplier = 10f;  // stays for 10s after last kill
+
+    private int dashKillCount = 0;
+    private float lastDashKillTime = -999f;
+
+    [Header("Dash Flip / Roll Settings (Visual Only)")]
     public Transform cartModel;
     public float dashFlipAngle = 360f;
     public float dashFlipDuration = 0.4f;
+
+    [Tooltip("Small hop height for forward/back dash start.")]
     public float dashHopHeight = 28f;
 
     public bool IsDashing => isDashing;
@@ -62,14 +87,34 @@ public class DashAbility : MonoBehaviour
 
         // avoid base movement fighting with dash
         motor.SuppressMoveInput = isDashing || isSideDashing;
+
+        // prevent buffered jumps while dash is controlling motion/visual
         motor.SuppressJumpBuffer = isDashing || isSideDashing || isDashFlipping;
 
-        motor.MaxSpeedMultiplier = (Time.time < dashBoostEndTime) ? dashSpeedBoostMultiplier : 1f;
+        // post-dash speed boost for base movement - smoothly decrease to 1.0
+        if (Time.time < dashBoostEndTime)
+        {
+            // Calculate how much time has passed since dash ended
+            float timeSinceDashEnd = Time.time - dashEndTime;
+            float boostDuration = dashBoostEndTime - dashEndTime;
+            
+            // Smoothly lerp from boost multiplier to 1.0
+            float t = Mathf.Clamp01(timeSinceDashEnd / boostDuration);
+            motor.MaxSpeedMultiplier = Mathf.Lerp(dashSpeedBoostMultiplier, 1f, t);
+        }
+        else
+        {
+            motor.MaxSpeedMultiplier = 1f;
+        }
+
+        UpdateDashKillMultiplier();
+
     }
 
     private void HandleDashInput()
     {
-        if (motor == null || motor.IsGrounded == false) return;
+        if (motor == null) return;
+        if (motor.IsGrounded == false) return;
         if (wallRun != null && wallRun.IsWallRunning) return;
         if (Time.time < nextDashAllowedTime) return;
         if (!Input.GetKeyDown(dashKey)) return;
@@ -87,6 +132,7 @@ public class DashAbility : MonoBehaviour
         bool d = h > 0.1f;
         bool a = h < -0.1f;
 
+        // prioritize lateral if both pressed (feels snappier for dodges)
         if (a) currentDashType = DashType.Left;
         else if (d) currentDashType = DashType.Right;
         else if (s && !w) currentDashType = DashType.Backward;
@@ -94,6 +140,7 @@ public class DashAbility : MonoBehaviour
 
         if (currentDashType == DashType.None) return;
 
+        // Lateral (side) dash: instantaneous velocity set + optional hop
         if (currentDashType == DashType.Left || currentDashType == DashType.Right)
         {
             Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
@@ -107,10 +154,19 @@ public class DashAbility : MonoBehaviour
 
             Vector3 vel = RB.linearVelocity;
 
-            Vector3 lateralCurrent = Vector3.Project(vel, sideDashDirectionWorld);
+            // Preserve forward/backward momentum, only replace lateral component
+            Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
+            Vector3 lateralCurrent = Vector3.Project(planarVel, sideDashDirectionWorld);
+            
+            // Remove only the lateral component, keep the forward/backward momentum
             vel -= lateralCurrent;
-
+            
+            // Add the new lateral velocity
             vel += sideDashDirectionWorld * lateralSpeed;
+            
+            // Add upward hop (replace vertical component for consistency)
+            Vector3 verticalVel = Vector3.Project(vel, up);
+            vel -= verticalVel;
             vel += up * upSpeed;
 
             RB.linearVelocity = vel;
@@ -118,16 +174,21 @@ public class DashAbility : MonoBehaviour
             isSideDashing = true;
             sideDashElapsed = 0f;
 
+            hitWindowEndTime = dashEndTime + hitWindowAfterDash; // for forward/back dash
+
             nextDashAllowedTime = Time.time + dashCooldown;
 
             StartDashFlipRoll(currentDashType);
 
+            // ensure forward/back dash state is off
             isDashing = false;
             dashJustStarted = false;
             return;
         }
 
+        // Forward/back dash: cached planar direction + burst, then maintained planar speed
         Vector3 upDash = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
+
         Vector3 worldDir = transform.TransformDirection(inputDir.normalized);
         dashDirection = Vector3.ProjectOnPlane(worldDir, upDash).normalized;
         if (dashDirection.sqrMagnitude < 0.01f) return;
@@ -135,8 +196,8 @@ public class DashAbility : MonoBehaviour
         isDashing = true;
         dashJustStarted = true;
 
-        dashEndTime = Time.time + dashFlipDuration;
-        dashBoostEndTime = dashEndTime + dashBoostDuration;
+        dashEndTime = Time.time + Mathf.Max(0.01f, dashDuration);
+        dashBoostEndTime = dashEndTime + Mathf.Max(0f, dashBoostDuration);
         nextDashAllowedTime = Time.time + dashCooldown;
 
         StartDashFlipRoll(currentDashType);
@@ -159,11 +220,24 @@ public class DashAbility : MonoBehaviour
         {
             dashJustStarted = false;
 
-            float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
+            // Preserve existing velocity and add burst on top
+            Vector3 currentVel = RB.linearVelocity;
+            Vector3 planarVel = Vector3.ProjectOnPlane(currentVel, up);
             Vector3 planarDashDir = Vector3.ProjectOnPlane(dashDirection, up).normalized;
 
-            Vector3 newVel = planarDashDir * burstSpeed;
+            // Calculate the boost to add to current momentum
+            float currentSpeedInDashDir = Vector3.Dot(planarVel, planarDashDir);
+            float burstSpeed = dashSpeed * dashInitialBurstMultiplier;
+            
+            // If we're already moving in the dash direction, add to it; otherwise set to burst speed
+            float targetSpeed = Mathf.Max(burstSpeed, currentSpeedInDashDir + burstSpeed * 0.5f);
+            Vector3 newPlanarVel = planarDashDir * targetSpeed;
 
+            // Apply the speed boost multiplier immediately
+            motor.MaxSpeedMultiplier = dashSpeedBoostMultiplier;
+
+            // Set new velocity: new planar + hop
+            Vector3 newVel = newPlanarVel;
             float upSpeed = GetJumpSpeedForHeight(dashHopHeight);
             newVel += up * upSpeed;
 
@@ -174,17 +248,24 @@ public class DashAbility : MonoBehaviour
             Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
             Vector3 desiredVel = Vector3.ProjectOnPlane(dashDirection, up).normalized * dashSpeed;
 
+            // Smoothly converge to desired planar speed without stomping vertical
             Vector3 velDiff = desiredVel - planarVel;
             RB.AddForce(velDiff, ForceMode.Acceleration);
         }
 
         if (Time.time >= dashEndTime)
+        {
             isDashing = false;
+            // Keep the speed boost active even after dash ends
+            // dashBoostEndTime already set in HandleDashInput
+        }
     }
 
     private void HandleSideDashMovement()
     {
         if (!isSideDashing) return;
+
+        hitWindowEndTime = Time.time + sideDashDuration + hitWindowAfterDash;
 
         sideDashElapsed += Time.fixedDeltaTime;
         if (sideDashElapsed >= sideDashDuration)
@@ -231,6 +312,7 @@ public class DashAbility : MonoBehaviour
             return;
 
         float dt = Time.deltaTime;
+
         float totalAnglePerSecond = dashFlipAngle / Mathf.Max(0.01f, dashFlipDuration);
         float angleStep = totalAnglePerSecond * dt * Mathf.Sign(dashFlipAngleRemaining);
 
@@ -248,9 +330,66 @@ public class DashAbility : MonoBehaviour
         }
     }
 
+    private void UpdateDashKillMultiplier()
+    {
+        // If timer expired, reset
+        if (dashKillCount > 0 && Time.time > lastDashKillTime + secondsToKeepMultiplier)
+        {
+            dashKillCount = 0;
+            PushDashKillMultiplierToXP();
+        }
+    }
+
+    private void PushDashKillMultiplierToXP()
+    {
+        // linear: 2x per kill => 2,4,6,...,20 (cap at 10 kills)
+        float mult = (dashKillCount <= 0) ? 1f : Mathf.Min(2f * dashKillCount, 2f * dashKillCap);
+
+        if (AltExpManager.Instance != null)
+            AltExpManager.Instance.SetDashKillMultiplier(mult);
+    }
+
+
+    private bool CanDashKill()
+    {
+        return isDashing || isSideDashing || Time.time <= hitWindowEndTime;
+    }
+
+    private void TryKillEnemy(GameObject otherGO)
+    {
+        if (!CanDashKill()) return;
+        if (!otherGO.CompareTag("Enemy")) return;
+
+        Destroy(otherGO);
+
+        // Increase combo count (cap at 10)
+        if (dashKillCount < dashKillCap)
+            dashKillCount++;
+
+        // Refresh the 10s timer on every kill
+        lastDashKillTime = Time.time;
+
+        // Push new multiplier to XP system
+        PushDashKillMultiplierToXP();
+    }
+
+
     private void OnTriggerEnter(Collider other)
     {
-        if (isDashing && other.CompareTag("Enemy"))
-            Destroy(other.gameObject);
+        TryKillEnemy(other.gameObject);
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        TryKillEnemy(collision.gameObject);
+    }
+
+
+    //private void OnTriggerEnter(Collider other)
+    //{
+    //    Debug.Log($"Dash collided with: {other.name} | isDashing: {isDashing}");
+
+    //    if (isDashing && other.CompareTag("Enemy"))
+    //        Destroy(other.gameObject);
+    //}
 }
