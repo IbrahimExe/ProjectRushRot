@@ -128,7 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 146239475}
-  - component: {fileID: 146239474}
+  - component: {fileID: 146239476}
   m_Layer: 0
   m_Name: LevelGenerator
   m_TagString: Untagged
@@ -136,25 +136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &146239474
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 146239473}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d47dd394c07ff6b4b8efa40b58583f3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator
-  config: {fileID: 11400000, guid: a65c9294209b92c41b2992c5d6ec35cb, type: 2}
-  floorPrefab: {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
-  wallPrefab: {fileID: 4123710351756878346, guid: 449e023b912b22e49a313e3cb43f54ef, type: 3}
-  obstaclePrefab: {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
-  holePrefab: {fileID: 1021981873677495912, guid: 1bb8e1e3c2826ab4d990f2b52bc796a4, type: 3}
-  bridgePrefab: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
-  playerTransform: {fileID: 883337444}
 --- !u!4 &146239475
 Transform:
   m_ObjectHideFlags: 0
@@ -170,6 +151,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &146239476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 146239473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1109a507cc1e91439270b133be3c746, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
+  config: {fileID: 11400000, guid: d4355c315ad3cd84db257d2cd136440d, type: 2}
+  seed: Runner
+  playerTransform: {fileID: 883337444}
 --- !u!1 &706359191
 GameObject:
   m_ObjectHideFlags: 0
@@ -313,6 +309,14 @@ PrefabInstance:
     - target: {fileID: 4940313654620728586, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_Name
       value: Player2.0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: baseMaxMoveSpeed
+      value: 500
+      objectReference: {fileID: 0}
+    - target: {fileID: 5694495406336896746, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: baseStartMoveSpeed
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalPosition.x

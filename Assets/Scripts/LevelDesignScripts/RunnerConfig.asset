@@ -12,17 +12,35 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: RunnerConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
+  catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
+  weightRules: {fileID: 11400000, guid: b4509f51835e4de4b9cbd079ae9052cb, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
-  bufferRows: 20
-  keepRowsBehind: 10
-  neigbhorhoodZ: 4
-  neighborhoodX: 1
-  wallChanceEdge: 0.7
-  wallCanceFalloff: 0.15
-  holeChance: 0.2
-  obstacleChanceCenter: 0.3
-  dentisyPenalty: 0.1
+  bufferRows: 100
+  keepRowsBehind: 20
+  chunkSize: 10
+  neigbhorhoodZ: 3
+  neighborhoodX: 3
+  densityBudget: 60
+  globalSpawnChance: 0.45
+  useBiomeSystem: 1
+  biomeNoiseScale: 17
+  biomeInfluence: 0.75
+  useMultiOctaveBiomes: 1
+  pathSidePenalty: 0.85
+  pathSwitchPenalty: 0.76
+  pathForwardWeight: 0.6
+  pathCenterBias: 0.1
+  useWavePath: 1
+  waveStrength: 1
+  waveAmplitudeLanes: 25
+  waveFrequency: 0.02
+  waveSmoothing: 0.72
+  maxLaneChangePerRow: 2
+  edgePadding: 2
+  restAreaMaxLength: 35
+  restAreaMinLength: 15
+  restAreaFrequency: 0.05
   allowHoles: 1
-  allowBridges: 0
+  allowBridges: 1
