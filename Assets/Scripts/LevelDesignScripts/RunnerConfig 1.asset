@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 0}
-  m_Name: RunnerConfig
+  m_Name: RunnerConfig 1
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
   catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
   weightRules: {fileID: 11400000, guid: b4509f51835e4de4b9cbd079ae9052cb, type: 2}
@@ -23,9 +23,9 @@ MonoBehaviour:
   neigbhorhoodZ: 3
   neighborhoodX: 3
   densityBudget: 60
-  globalSpawnChance: 0.45
+  globalSpawnChance: 1
   useBiomeSystem: 1
-  biomeNoiseScale: 17
+  biomeNoiseScale: 15
   biomeInfluence: 0.75
   useMultiOctaveBiomes: 1
   pathSidePenalty: 0.85
@@ -34,9 +34,9 @@ MonoBehaviour:
   pathCenterBias: 0.1
   useWavePath: 1
   waveStrength: 1
-  waveAmplitudeLanes: 25
-  waveFrequency: 0.02
-  waveSmoothing: 0.72
+  waveAmplitudeLanes: 23
+  waveFrequency: 0.0216
+  waveSmoothing: 0.713
   maxLaneChangePerRow: 2
   edgePadding: 2
   restAreaMaxLength: 35
