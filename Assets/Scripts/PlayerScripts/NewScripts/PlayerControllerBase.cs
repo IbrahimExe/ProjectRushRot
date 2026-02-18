@@ -1,3 +1,4 @@
+// PlayerControllerBase.cs
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -8,18 +9,12 @@ public class PlayerControllerBase : MonoBehaviour
     private GameObject currentModel;
 
     [Header("Movement Settings")]
-    public float baseStartMoveSpeed = 5f;
     public float baseMaxMoveSpeed = 50f;
     public float baseAcceleration = 25f;
     public float baseDeceleration = 25f;
 
-    public float currentMoveSpeed;
-    private float startMoveSpeed;
     private float maxMoveSpeed;
     private float acceleration;
-    private float deceleration;
-
-    private float currentReverseSpeed = 0f;
 
     public float manualDeceleration = 30f;
     public float backwardMaxMoveSpeed = 10f;
@@ -27,7 +22,16 @@ public class PlayerControllerBase : MonoBehaviour
     public float backwardDeceleration = 20f;
 
     public float rotationSpeed = 75f;
-    public float linearDrag = 5f;
+    public float linearDrag = 0.2f;
+
+    [Header("Drift Settings")]
+    public float baseGrip = 8f;
+    public float turnGrip = 2f;
+    public float gripLerpSpeed = 5f;
+
+    [Header("Landing Grip")]
+    public float landingGripDelay = 0.35f;
+    private float lastAirTime;
 
     [Header("Jump and Gravity Settings")]
     public float baseJumpForce = 125f;
@@ -45,7 +49,7 @@ public class PlayerControllerBase : MonoBehaviour
     public Transform feetTransform;
 
     [Header("Visual Tilt (Ground Only)")]
-    public Transform cartModel; //----------------------------------------
+    public Transform cartModel;
     public Transform rayOrigin;
     public float rayLength = 1.5f;
     public float tiltForwardAmount = 10f;
@@ -53,7 +57,20 @@ public class PlayerControllerBase : MonoBehaviour
     public float tiltSpeed = 5f;
     public float groundAlignSpeed = 8f;
 
-    // Ability references (to keep current FixedUpdate ordering)
+    [Header("Air Upright (Visual)")]
+    public float airUprightSpeed = 8f;
+    public bool keepModelUprightInAir = true;
+    public float uprightLockoutAfterWallJump = 0.15f;
+
+    [Header("Air Movement Tilt (Visual)")]
+    public bool enableAirMovementTilt = true;
+    [Tooltip("Max tilt angle when moving forward/backward in air.")]
+    public float airTiltAngle = 15f;
+    [Tooltip("How quickly the tilt responds to velocity changes.")]
+    public float airTiltSpeed = 3f;
+
+    private float lastWallJumpTime = -999f;
+
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -64,13 +81,12 @@ public class PlayerControllerBase : MonoBehaviour
     public Vector3 GroundNormal { get; private set; } = Vector3.up;
 
     // Ability-driven flags
-    public bool SuppressMoveInput { get; set; } = false;      // dash uses this
-    public bool SuppressJumpBuffer { get; set; } = false;     // dash flip uses this
-    public float MaxSpeedMultiplier { get; set; } = 1f;       // dash boost uses this
+    public bool SuppressMoveInput { get; set; } = false;   // dash uses this
+    public bool SuppressJumpBuffer { get; set; } = false;  // dash flip uses this
+    public float MaxSpeedMultiplier { get; set; } = 1f;    // dash boost uses this
 
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
-    private float lastWallJumpTime = -999f;
 
     void Start()
     {
@@ -87,8 +103,7 @@ public class PlayerControllerBase : MonoBehaviour
     {
         characterData = data;
 
-        // ---------------- STATS ----------------
-        baseStartMoveSpeed = data.startMoveSpeed;
+        //baseStartMoveSpeed = data.startMoveSpeed;
         baseMaxMoveSpeed = data.maxMoveSpeed;
         baseAcceleration = data.acceleration;
         baseDeceleration = data.deceleration;
@@ -96,7 +111,10 @@ public class PlayerControllerBase : MonoBehaviour
 
         SetBaseStats();
 
-        // ---------------- MODEL ----------------
+        // model swap
+        if (currentModel != null) Destroy(currentModel);
+
+
         if (currentModel != null)
             Destroy(currentModel);
 
@@ -110,24 +128,22 @@ public class PlayerControllerBase : MonoBehaviour
         t.localScale = data.modelScale;
 
 
+        if (dash != null) dash.cartModel = cartModel;
+        if (wallRun != null) wallRun.cartModel = cartModel;
+
     }
 
     public void SetBaseStats()
     {
-        startMoveSpeed = baseStartMoveSpeed;
         maxMoveSpeed = baseMaxMoveSpeed;
         acceleration = baseAcceleration;
-        deceleration = baseDeceleration;
 
         jumpForce = baseJumpForce;
-
     }
-
     public void NotifyWallJump()
     {
         lastWallJumpTime = Time.time;
     }
-
     void Update()
     {
         IsGrounded = CheckGrounded();
@@ -139,36 +155,49 @@ public class PlayerControllerBase : MonoBehaviour
                 lastJumpPressedTime = Time.time;
         }
 
-        // Dash input in Update 
+        // Dash input in Update
         if (dash != null) dash.TickUpdate();
     }
-
     void FixedUpdate()
     {
-        // Preserve original ordering 
+        // Preserve ordering: abilities first, then base motor, then visuals
         if (dash != null) dash.TickFixed();
         if (wallRun != null) wallRun.TickFixed();
-        if (wallJump != null) wallJump.TickFixed(); // wall jump only
+        if (wallJump != null) wallJump.TickFixed();
 
         BaseMove();
         ApplyCustomGravity();
         AlignModelToGroundAndTilt_GroundOnly();
+        UprightModelInAir();
+        ApplyAirMovementTilt();
 
-        // keep upright when airborne
+
+        // Keep upright when airborne (physics body)
         if (!IsGrounded)
         {
             Quaternion rot = RB.rotation;
             rot.eulerAngles = new Vector3(0f, rot.eulerAngles.y, 0f);
             RB.MoveRotation(rot);
         }
+
+        if (!IsGrounded)
+            lastAirTime = Time.time;
     }
 
+    // BASE MOVEMENT MOTOR
+    // Handles standard grounded/air movement when no abilities override control.
+    // - Rotation
+    // - Acceleration
+    // - Speed limiting
+    // - Drift grip
+    // - Landing traction smoothing
     private void BaseMove()
     {
-        // If wall-running, wall-run script owns movement this frame
-        if (wallRun != null && wallRun.IsWallRunning)
-            return;
+        // Don't apply base movement forces if we're doing a special movement that should override it
+        if (wallRun != null && wallRun.IsWallRunning) return;
+        if (dash != null && (dash.IsDashing || dash.IsSideDashing)) return;
 
+        // Read input
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
@@ -178,86 +207,78 @@ public class PlayerControllerBase : MonoBehaviour
             v = 0f;
         }
 
+        // Determine the up direction for movement and rotation
         Vector3 up = IsGrounded ? GroundNormal : Vector3.up;
 
-        float yawDelta = h * rotationSpeed * Time.fixedDeltaTime;
-        transform.rotation = Quaternion.AngleAxis(yawDelta, up) * transform.rotation;
+        // Rotation
+        float yaw = h * rotationSpeed * Time.fixedDeltaTime;
+        RB.MoveRotation(Quaternion.AngleAxis(yaw, up) * RB.rotation);
 
-        Vector3 forwardFlat = Vector3.ProjectOnPlane(transform.forward, up).normalized;
-        Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
-        float planarSpeed = planarVel.magnitude;
+        // Determine the forward direction for movement
+        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+        Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up); // current horizontal velocity
 
-        float motionSign = (planarVel.sqrMagnitude > 0.001f)
-            ? Mathf.Sign(Vector3.Dot(planarVel, forwardFlat))
-            : 0f;
+        // Calculate max forward speed with multiplier
+        float maxForward = maxMoveSpeed * MaxSpeedMultiplier;
 
-        if (motionSign >= 0f && currentMoveSpeed < planarSpeed)
-            currentMoveSpeed = planarSpeed;
-
-        if (motionSign < 0f && currentReverseSpeed < planarSpeed)
-            currentReverseSpeed = planarSpeed;
-
-        bool pressingForward = v > 0.01f;
-        bool pressingBackward = v < -0.01f;
-
-        if (pressingForward)
+        // Engine force (only when input is pressed)
+        if (v > 0f)
         {
-            if (currentMoveSpeed < startMoveSpeed)
-                currentMoveSpeed = startMoveSpeed;
-
-            float maxFwd = maxMoveSpeed * Mathf.Max(0.01f, MaxSpeedMultiplier);
-
-            currentMoveSpeed = Mathf.MoveTowards(
-                currentMoveSpeed,
-                maxFwd,
-                acceleration * Time.deltaTime
-            );
-            currentReverseSpeed = 0f;
+            // Forward acceleration
+            RB.AddForce(forward * acceleration * v, ForceMode.Acceleration);
         }
-        else if (pressingBackward)
+        else if (v < 0f)
         {
-            if (currentMoveSpeed > 0.001f)
-            {
-                currentMoveSpeed = Mathf.MoveTowards(
-                    currentMoveSpeed,
-                    0f,
-                    manualDeceleration * Time.deltaTime
-                );
-                currentReverseSpeed = 0f;
-            }
-            else
-            {
-                currentReverseSpeed = Mathf.MoveTowards(
-                    currentReverseSpeed,
-                    backwardMaxMoveSpeed,
-                    backwardAcceleration * Time.deltaTime
-                );
-                currentMoveSpeed = 0f;
-            }
-        }
-        else
-        {
-            currentMoveSpeed = Mathf.MoveTowards(currentMoveSpeed, 0f, deceleration * Time.deltaTime);
-            currentReverseSpeed = Mathf.MoveTowards(currentReverseSpeed, 0f, backwardDeceleration * Time.deltaTime);
+            // Backward acceleration
+            RB.AddForce(-forward * backwardAcceleration * -v, ForceMode.Acceleration);
         }
 
-        Vector3 targetVelocity;
-        if (currentMoveSpeed > 0.001f) targetVelocity = forwardFlat * currentMoveSpeed;
-        else if (currentReverseSpeed > 0.001f) targetVelocity = -forwardFlat * currentReverseSpeed;
-        else targetVelocity = Vector3.zero;
+        // SPEED LIMIT
+        Vector3 newPlanar = Vector3.ClampMagnitude(planarVel, maxForward);
 
-        Vector3 velocityChange = targetVelocity - planarVel;
-        RB.AddForce(velocityChange, ForceMode.VelocityChange);
+        RB.linearVelocity =
+            newPlanar +
+            Vector3.Project(RB.linearVelocity, up);
+
+        // Grip / Drift (only when grounded, and only sideways)
+        if (IsGrounded)
+        {
+            // sideways velocity relative to player orientation
+            Vector3 sideways = Vector3.Project(planarVel, transform.right);
+
+            // How fast palyer is moving relative to max speed
+            float speedFactor = planarVel.magnitude / maxMoveSpeed;
+            // turning harder at higher speeds = less grip
+            float turnAmount = Mathf.Abs(h) * speedFactor;
+            // interpolate between base grip and turn grip based on how much we're turning
+            float targetGrip = Mathf.Lerp(baseGrip, turnGrip, turnAmount);
+
+            // Landing grip fade
+            // prevent instant traction when landing from a jump
+            float timeSinceAir = Time.time - lastAirTime;
+            float landingGripPercent = Mathf.Clamp01(timeSinceAir / landingGripDelay);
+
+            float grip = Mathf.Lerp(0f, targetGrip, landingGripPercent);
+
+            // apply sideways force to simulate grip/drift
+            RB.AddForce(-sideways * grip, ForceMode.Acceleration);
+        }
+
     }
-
     private void ApplyCustomGravity()
     {
         // WallRunAbility will override vertical when wall-running
         if (wallRun != null && wallRun.IsWallRunning)
             return;
 
+        // Optional: if you want dash hop to feel consistent, let dash own vertical while active
+        // (Side dash sets vertical velocity directly at start, then you can still let gravity act.)
+        // Keeping gravity active during dash is usually fine.
+
+        // Apply base "heavier gravity" feel
         RB.AddForce(Physics.gravity * fallMultiplier, ForceMode.Acceleration);
 
+        // Extra gravity shaping (kept close to your original intent)
         if (RB.linearVelocity.y < 0)
             RB.AddForce(Physics.gravity * (fallMultiplier - 1f), ForceMode.Acceleration);
         else if (RB.linearVelocity.y > 0 && !Input.GetButton("Jump"))
@@ -289,11 +310,15 @@ public class PlayerControllerBase : MonoBehaviour
 
     private bool CheckGrounded()
     {
+        if (feetTransform == null)
+            return false;
+
         float rayLen = 1.0f;
 
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
         {
             RB.linearDamping = linearDrag;
+
             GroundNormal = hit.normal;
             return true;
         }
@@ -302,9 +327,15 @@ public class PlayerControllerBase : MonoBehaviour
         return false;
     }
 
+    // Visual model alignment and tilt (ground only)
     private void AlignModelToGroundAndTilt_GroundOnly()
     {
-        if (cartModel == null || rayOrigin == null) return;
+        if (cartModel == null || rayOrigin == null)
+            return;
+
+        // Avoid ground-tilt fighting the dash flip visuals
+        if (dash != null && dash.IsDashFlipping)
+            return;
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -330,6 +361,7 @@ public class PlayerControllerBase : MonoBehaviour
 
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed);
 
+            // Snap Y to match forward (no snapping issue since Y is pre-aligned in air)
             cartModel.rotation = Quaternion.Euler(
                 cartModel.rotation.eulerAngles.x,
                 RB.rotation.eulerAngles.y,
@@ -339,12 +371,93 @@ public class PlayerControllerBase : MonoBehaviour
 
         cartModel.localRotation *= Quaternion.Lerp(Quaternion.identity, moveTilt, Time.deltaTime * tiltSpeed);
     }
+    private void UprightModelInAir()
+    {
+        if (!keepModelUprightInAir) return;
+        if (cartModel == null) return;
 
-    // Upgrade helpers 
+        if (wallRun != null && wallRun.IsWallRunning) return;
+        if (dash != null && dash.IsDashFlipping) return;
+
+        if (IsGrounded) return;
+
+        //  don't upright right after a wall jump
+        if (Time.time - lastWallJumpTime < uprightLockoutAfterWallJump)
+            return;
+
+        // When air tilt is enabled, only handle Y rotation here
+        // ApplyAirMovementTilt handles X tilt
+        if (enableAirMovementTilt)
+        {
+            // Smoothly rotate Y to match forward direction
+            float currentY = cartModel.rotation.eulerAngles.y;
+            float targetY = RB.rotation.eulerAngles.y;
+            float smoothY = Mathf.LerpAngle(currentY, targetY, Time.deltaTime * airUprightSpeed);
+
+            // Preserve X and Z, only update Y
+            Vector3 currentEuler = cartModel.rotation.eulerAngles;
+            cartModel.rotation = Quaternion.Euler(currentEuler.x, smoothY, currentEuler.z);
+        }
+        else
+        {
+            // Normal upright behavior when tilt is disabled
+            Quaternion target = Quaternion.Euler(0f, RB.rotation.eulerAngles.y, 0f);
+            cartModel.rotation = Quaternion.Slerp(cartModel.rotation, target, Time.deltaTime * airUprightSpeed);
+        }
+    }
+    private void ApplyAirMovementTilt()
+    {
+        if (!enableAirMovementTilt) return;
+        if (cartModel == null) return;
+        if (IsGrounded) return;
+
+        // Don't apply air tilt during special abilities
+        if (wallRun != null && wallRun.IsWallRunning) return;
+        if (dash != null && dash.IsDashFlipping) return;
+        if (dash != null && (dash.IsDashing || dash.IsSideDashing)) return;
+
+        // Don't tilt right after a wall jump
+        if (Time.time - lastWallJumpTime < uprightLockoutAfterWallJump)
+            return;
+
+        // Calculate forward velocity relative to player orientation
+        Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, Vector3.up);
+        float forwardSpeed = Vector3.Dot(planarVel, transform.forward);
+
+        // Normalize by max speed to get a -1 to 1 range
+        float speedFactor = Mathf.Clamp(forwardSpeed / baseMaxMoveSpeed, -1f, 1f);
+
+        // Moving forward = negative tilt (lean back)
+        // Moving backward = positive tilt (lean forward)
+        float targetTiltX = -speedFactor * airTiltAngle;
+
+        // Get current rotation and smoothly lerp to target tilt
+        Vector3 currentEuler = cartModel.rotation.eulerAngles;
+        float currentY = currentEuler.y;
+
+        Quaternion targetRotation = Quaternion.Euler(targetTiltX, currentY, 0f);
+        cartModel.rotation = Quaternion.Slerp(cartModel.rotation, targetRotation, Time.deltaTime * airTiltSpeed);
+    }
+
+    // Upgrade helpers
     public void addMaxSpeed(float amount) => maxMoveSpeed += amount;
     public void addAcceleration(float amount) => acceleration += amount;
     public void addJumpForce(float amount) => jumpForce += amount;
 
-    public void BlockForwardMovement() => currentMoveSpeed = 0f;
-    public void BlockBackwardMovement() => currentReverseSpeed = 0f;
+    // After respawn logic
+    public void Respawn()
+    {
+        // Reset velocities
+        RB.linearVelocity = Vector3.zero;
+        RB.angularVelocity = Vector3.zero;
+        // Clear movement speeds
+        RB.angularVelocity = Vector3.zero;
+    }
+
+    // Character switching logic
+    public void ChangeCharacter(PlayerCharacterData newData)
+    {
+        ApplyCharacter(newData);
+    }
+
 }
