@@ -91,23 +91,46 @@ public class WallJumpAbility : MonoBehaviour
 
         wallRun.ForceStopAndCooldown();
 
-        // Clear planar velocity so kick isn't overwritten by current movement
-        Vector3 vel = RB.linearVelocity;
-        vel = Vector3.Project(vel, Vector3.up);
-        RB.linearVelocity = vel;
+            // ----------------------------------------------------------------
+            // MOMENTUM PRESERVING WALL JUMP
+            Vector3 vel = RB.linearVelocity;
 
-        // Kick direction (mostly away, a bit along wall for style)
-        Vector3 kickDir = (n * (1f - alongWallInfluence) + t * alongWallInfluence).normalized;
+            // Preserve the tangential (along-wall) velocity component
+            Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
+            Vector3 tangentialVel = Vector3.ProjectOnPlane(planarVel, n);
+            
+            // Remove only velocity going INTO the wall (negative dot product)
+            float intoWall = Vector3.Dot(vel, n);
+            if (intoWall < 0f)
+                vel -= n * intoWall;
 
-        // Up impulse happens instantly
-        RB.AddForce(Vector3.up * wallJumpUpImpulse, ForceMode.VelocityChange);
+            // Add jump impulses (these ADD to existing momentum, not replace)
+            float kickStrength = wallJumpAwayImpulse + extraAwayImpulse;
+            vel += kickDir * kickStrength;
+            vel += up * wallJumpUpImpulse;
+            
+            // Preserve the tangential momentum from wall running
+            // Re-add the tangential component to maintain forward speed
+            Vector3 newPlanar = Vector3.ProjectOnPlane(vel, up);
+            Vector3 newTangential = Vector3.ProjectOnPlane(newPlanar, n);
+            
+            // If the new tangential is less than what we had, restore the original
+            if (newTangential.magnitude < tangentialVel.magnitude)
+            {
+                vel += (tangentialVel - newTangential);
+            }
 
-        // Away impulse ramps smoothly (prevents yank)
-        pendingWallKick = kickDir * (wallJumpAwayImpulse + extraAwayImpulse);
-        wallKickEndTime = Time.time + Mathf.Max(0.01f, wallKickRampTime);
+            // Only clamp if the speed is extremely high
+            // This prevents the clamp from reducing normal wall run speeds
+            //float maxPlanar = 60f;
+            //Vector3 planar = Vector3.ProjectOnPlane(vel, up);
+            //if (planar.magnitude > maxPlanar)
+            //    vel -= (planar - planar.normalized * maxPlanar);
 
         // Prevent BaseMove from erasing kick this frame / next couple ticks
         motor.MoveLockTimer = 0.12f;
+
+            // ----------------------------------------------------------------
 
             // added this block ---------------------------------------------------------
             // Prevent immediate re-entry into wallrun

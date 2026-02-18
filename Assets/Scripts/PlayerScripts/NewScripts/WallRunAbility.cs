@@ -51,6 +51,8 @@ public class WallRunAbility : MonoBehaviour
 
     private float wallRunEntryTime = -999f;
 
+    private float wallRunEntrySpeed;
+
     Rigidbody RB => motor.RB;
 
     public void TickFixed()
@@ -79,6 +81,7 @@ public class WallRunAbility : MonoBehaviour
             StopWallRun(false);
             return;
         }
+        // -----------------------------------------------------------------
 
 
         if (!wallRunEnabled)
@@ -126,6 +129,12 @@ public class WallRunAbility : MonoBehaviour
                     wallRunTangent = t;
                     wallRunEndTime = Time.time + wallRunDuration;
                     wallRunEntryTime = Time.time;
+
+                    // capture entry momentum
+                    wallRunEntrySpeed = Vector3.Dot(planarVel, t);
+
+                    // arcade boost
+                    RB.AddForce(t * wallRunEntryBoost, ForceMode.VelocityChange);
                 }
                 else
                 {
@@ -178,23 +187,44 @@ public class WallRunAbility : MonoBehaviour
         Vector3 t = Vector3.ProjectOnPlane(wallRunTangent, up).normalized;
         Vector3 n = wallRunNormal.normalized;
 
-        float baseSpeed = Mathf.Max(motor.currentMoveSpeed, 0.01f);
-        float targetAlong = baseSpeed * wallRunSpeedMultiplier * v;
+        //float baseSpeed = Mathf.Max(motor.currentMoveSpeed, 0.01f);
+        //float targetAlong = baseSpeed * wallRunSpeedMultiplier * v;
 
-        if (Time.time - wallRunEntryTime <= 0.10f && v > 0f)
-            targetAlong += wallRunEntryBoost;
+        //if (Time.time - wallRunEntryTime <= 0.10f && v > 0f)
+        //    targetAlong += wallRunEntryBoost;
 
+        //Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
+
+        //float currentAlong = Vector3.Dot(planarVel, t);
+        //float deltaAlong = targetAlong - currentAlong;
+
+        //float maxDelta = wallRunTangentAccel * Time.fixedDeltaTime;
+        //deltaAlong = Mathf.Clamp(deltaAlong, -maxDelta, maxDelta);
+
+        //RB.AddForce(t * deltaAlong, ForceMode.VelocityChange);
+
+        //// stick to wall
+        //RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
+
+        // ---------------------------------------------------------------------
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
         float currentAlong = Vector3.Dot(planarVel, t);
-        float deltaAlong = targetAlong - currentAlong;
 
-        float maxDelta = wallRunTangentAccel * Time.fixedDeltaTime;
-        deltaAlong = Mathf.Clamp(deltaAlong, -maxDelta, maxDelta);
+        // preserve entry momentum
+        float targetAlong = wallRunEntrySpeed;
 
-        RB.AddForce(t * deltaAlong, ForceMode.VelocityChange);
+        // accelerate if pressing forward
+        if (v > 0f)
+            targetAlong += wallRunTangentAccel * v;
+
+        float delta = targetAlong - currentAlong;
+
+        // smooth acceleration instead of snap
+        RB.AddForce(t * delta, ForceMode.Acceleration);
 
         RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
+        // ---------------------------------------------------------------------
     }
 
     private void ApplyWallRunVertical()

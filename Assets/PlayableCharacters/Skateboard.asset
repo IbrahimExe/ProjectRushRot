@@ -20,7 +20,7 @@ MonoBehaviour:
   maxMoveSpeed: 50
   acceleration: 25
   deceleration: 25
-  jumpForce: 125
+  jumpForce: 200
   wallJumpUpImpulse: 7.5
   wallJumpAwayImpulse: 8.5
   wallRunSpeed: 75
