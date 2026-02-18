@@ -9,18 +9,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: RunnerConfig
+  m_Script: {fileID: 11500000, guid: 682566fe71566a64182f00a5bf3e109e, type: 3}
+  m_Name: ForestConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
-  catalog: {fileID: 11400000, guid: 85024f8d42cc11e45a6578af8b152db8, type: 2}
-  weightRules: {fileID: 11400000, guid: 10457bcc88ea4f846bccd56818e51743, type: 2}
+  catalog: {fileID: 11400000, guid: 9a0ebdb4554dede4c9bd197f4610ebb1, type: 2}
+  weightRules: {fileID: 11400000, guid: 9424e3ee151887547ab3d2d13cbeb86a, type: 2}
   laneCount: 30
   laneWidth: 10
   cellLength: 10
   bufferRows: 30
   keepRowsBehind: 20
   chunkSize: 10
-  contextRows: 1
+  contextRows: 2
   neigbhorhoodZ: 3
   neighborhoodX: 3
   densityBudget: 60
@@ -29,16 +29,16 @@ MonoBehaviour:
   biomeNoiseScale: 18
   biomeInfluence: 1
   useMultiOctaveBiomes: 1
-  biomeOctaves: 8
+  biomeOctaves: 3
   biomeLacunarity: 1.2
   biomeGain: 0.2
   biomeWarpStrength: 1
   biomeWarpScale: 0.5
-  biomeBlur: 0.5
-  temperature: 0
+  biomeBlur: 0
+  temperature: 0.2
   floor: 0
-  biomeCollapseBias: 8
-  biomeMinAffinity: 0.12
+  biomeCollapseBias: 3
+  biomeMinAffinity: 0.281
   useWavePath: 1
   waveStrength: 1
   waveAmplitudeLanes: 23

@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
   biomeConfigs:
-  - {fileID: 11400000, guid: 68fde778a61b0a14b8ca2869ab4988de, type: 2}
+  - {fileID: 11400000, guid: a0c7f2d01a52e9e4c896bcfe666b0da9, type: 2}
   startBiomeIndex: 0
   biomeBias: 0.25
   seed: Runner
@@ -183,12 +183,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGeneratorDiagnostics
   showGoldenPath: 0
-  showBiomes: 0
+  showBiomes: 1
   showSurfaceTypes: 0
   showWFCState: 0
   showOccupants: 0
   showEdgeLanes: 0
-  showEdgeWallSegments: 1
+  showEdgeWallSegments: 0
   logChunkGeneration: 0
   logWFCSteps: 0
   logConstraintViolations: 0

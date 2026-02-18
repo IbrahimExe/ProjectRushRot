@@ -11,120 +11,11 @@ using UnityEngine;
 using LevelGenerator.Data;
 using System.Linq;
 
-[CreateAssetMenu(fileName = "RunnerConfig", menuName = "Runner/GeneratorConfig")]
-public sealed class RunnerGenConfig : ScriptableObject
-{
-    [Header("Catalog Reference")]
-    public PrefabCatalog catalog;
-    public NeighborRulesConfig weightRules; // Kept name as requested, now NeighborRulesConfig type
-
-    [Header("Lane Setup")]
-    public int laneCount = 3;
-    public float laneWidth = 2f;
-    public float cellLength = 10f;
-
-    [Header("Generation Settings")]
-    public int bufferRows = 20; // extra rows to keep loaded beyond player view
-    public int keepRowsBehind = 5; // rows behind player to keep loaded
-    public int chunkSize = 10; // number of rows to generate together as a chunk
-    [Tooltip("Number of rows of existing context to keep, VERY HEAVY.")]
-    public int contextRows = 1;
-    public int neigbhorhoodZ = 4;
-    public int neighborhoodX = 1;
-
-    [Header("Spawn Chances")]
-    [Tooltip("Maximum 'Cost' of occupants per chunk.")]
-    public int densityBudget = 50;
-
-    [Tooltip("Chance to spawn a cell (0-1).")]
-    [Range(0f, 1f)] public float globalSpawnChance = 0.15f; // Replaces legacy density/hole logic
-                                                            // [Range(0f, 1f)] public float holeChance = 0.2f; REMOVED
-                                                            // [Range(0f, 1f)] public float densityPenalty = 0.1f; REMOVED
-
-    [Header("Biome Clustering")]
-    [Tooltip("Turns biome regions on/off. When OFF, tiles ignore biome affinities and only neighbor rules affect surfaces.")]
-    [SerializeField] public bool useBiomeSystem = true;
-
-    [Tooltip("Controls the SIZE of biome regions in grid cells. Higher = larger, smoother zones. Lower = smaller, noisier patches.")]
-    [Range(5f, 50f)] public float biomeNoiseScale = 15f;
-
-    [Tooltip("How strongly the chosen biome influences tile selection. 0 = biome has no effect, 1 = biome fully applies tile affinities.")]
-    [Range(0f, 1f)] public float biomeInfluence = 0.75f;
-
-    [Tooltip("When ON, combines multiple layers of noise (octaves) for more natural, less 'blocky' biome shapes.")]
-    public bool useMultiOctaveBiomes = true;
-
-    [Header("Biome Noise Quality")]
-    [Tooltip("Number of noise layers combined. More = richer detail, but too high can add speckle. Typical: 3 5.")]
-    [Range(1, 8)] public int biomeOctaves = 4;
-
-    [Tooltip("Frequency multiplier per octave. Higher = more detail each octave. Typical: ~2.0. Too high can cause busy patterns.")]
-    [Range(1.2f, 3.5f)] public float biomeLacunarity = 2.0f;
-
-    [Tooltip("Amplitude multiplier per octave. Lower = smoother (less high-frequency influence). Higher = more detail/speckle. Typical: 0.45--0.6.")]
-    [Range(0.2f, 0.8f)] public float biomeGain = 0.5f;
-
-    [Tooltip("How much we 'warp' the noise coordinates to create rounder, more organic regions. 0 = no warp. Too high = swirly/distorted.")]
-    [Range(0f, 3f)] public float biomeWarpStrength = 0.9f;
-
-    [Tooltip("Scale of the warp field. Lower = broad bends. Higher = tighter twisting. Typical: 1.5--3.0.")]
-    [Range(0.5f, 6f)] public float biomeWarpScale = 2.0f;
-
-    [Tooltip("Extra smoothing by averaging nearby noise samples. 0 = none. Higher = softer boundaries, fewer tiny islands. Too high = muddy transitions.")]
-    [Range(0f, 1f)] public float biomeBlur = 0.35f;
-
-    [Tooltip("temperature > 1 flattens differences -> more variety.")]
-    [SerializeField] public float temperature = 1.9f; // try 1.4--2.6 (higher = more variety)
-
-    [Tooltip("floor prevents any biome from becoming impossible")]
-    [SerializeField] public float floor = 0.04f;      // try 0.02--0.10 (higher = rarer biomes show up more)
-
-    [Header("Biome - WFC Coupling")]
-    [Tooltip("Extra biome bias when WFC collapses a cell. 1 = no extra. Higher = biomes win more often.")]
-    [Range(1f, 8f)] public float biomeCollapseBias = 2.5f;
-
-    [Tooltip("Optional: remove candidates that are very off-biome. 0 keeps all. 0.1--0.25 makes biomes much more consistent.")]
-    [Range(0f, 0.6f)] public float biomeMinAffinity = 0.12f;
-
-    [Header("Golden Path Wave")]
-    public bool useWavePath = true;
-
-    [Range(0f, 1f)] public float waveStrength = 0.35f;
-    // 0 = straight center, 1 = uses full amplitude
-
-    [Tooltip("Max drift from center in lanes (before clamping).")]
-    [Range(0f, 150f)] public float waveAmplitudeLanes = 10f;
-
-    [Tooltip("How fast the wave changes per row. Smaller = longer turns.")]
-    [Range(0.001f, 0.05f)] public float waveFrequency = 0.02f;
-    // 0.02 = ~50 rows per cycle
-
-    [Tooltip("How quickly we chase the target (0..1).")]
-    [Range(0.01f, 1f)] public float waveSmoothing = 0.12f;
-
-    [Tooltip("Hard limit: max lanes we can shift per row (turn rate).")]
-    [Range(0.05f, 2f)] public float maxLaneChangePerRow = 0.35f;
-    // 0.2-0.5 feels like smooth steering
-
-    [Tooltip("Keep path away from edges.")]
-    [Range(0, 10)] public int edgePadding = 2;
-
-    [Header("Golden Path Rest Straights")]
-    [Tooltip("Max number of rows in a straight rest segment.")]
-    [Range(2, 300)] public int restAreaMaxLength = 35;
-
-    [Tooltip("Min number of rows in a straight rest segment.")]
-    [Range(2, 300)] public int restAreaMinLength = 15;
-
-    [Tooltip("Chance per row to START a rest (0..1). Example: 0.02 ~ roughly once every ~50 rows).")]
-    [Range(0f, 1f)] public float restAreaFrequency = 0.02f;
-
-}
-
-
 //main class
 public class RunnerLevelGenerator : MonoBehaviour
 {
+
+
     [Header("Biome Configs")]
     [Tooltip("List of biome generator configs. Each can point to a different PrefabCatalog + NeighborRulesConfig.")]
     [SerializeField] private List<RunnerGenConfig> biomeConfigs = new List<RunnerGenConfig>();
@@ -138,8 +29,6 @@ public class RunnerLevelGenerator : MonoBehaviour
     // Active config (selected from biomeConfigs). All generation reads from this.
     private RunnerGenConfig config;
     private int currentBiomeIndex = -1;
-
-
     // CONSTANTS - Centralized configuration values
 
     // Path generation
@@ -216,7 +105,6 @@ public class RunnerLevelGenerator : MonoBehaviour
     private Dictionary<(int z, int lane), BiomeType> biomeMap = new Dictionary<(int, int), BiomeType>();
     private float biomeNoiseOffsetX;
     private float biomeNoiseOffsetZ;
-
 
 
 
@@ -579,59 +467,6 @@ public class RunnerLevelGenerator : MonoBehaviour
         return false;
     }
 
-    //Connectivity Check (A*) now useless 
-    //// Checks if there is a valid path from the start of the current context window to the target z
-    //private bool IsConnectedToStart(int targetZ)
-    //{
-    //    // 1. Identify start point: The player's current row or the beginning of the buffer?
-    //    // For a continuous generator, we just need to ensure the NEW row connections to the EXISTING valid geometry.
-    //    // We look back 'neighborhoodZ' rows. If we can path from (z - neighborhood) to (z), we are good.
-
-    //    int startZ = Mathf.Max(0, targetZ - config.neigbhorhoodZ);
-    //    if (startZ == targetZ) return true; // First row is always valid
-
-    //    // Find a walkable start node in startZ
-    //    (int z, int lane) startNode = (-1, -1);
-    //    for(int l=0; l<config.laneCount; l++) {
-    //        if (IsWalkable(startZ, l)) {
-    //            startNode = (startZ, l);
-    //            break; 
-    //        }
-    //    }
-    //    if (startNode.z == -1) return false; // Previous area was fully blocked? Should not happen if we maintain invariant.
-
-    //    // Find a walkable end node in targetZ
-    //    (int z, int lane) endNode = (-1, -1);
-    //    for(int l=0; l<config.laneCount; l++) {
-    //        if (IsWalkable(targetZ, l)) {
-    //            endNode = (targetZ, l);
-    //            break;
-    //        }
-    //    }
-    //    if (endNode.z == -1) return false; // Target row is fully blocked
-
-    //    // Check path WIRE VALUES HERE
-    //    var path = PathfindingHelper.FindPath(
-    //      startNode,
-    //      endNode,
-    //      0, config.laneCount - 1,
-    //      IsWalkable,
-    //      turnCost: config.aStarTurnCost
-    //  );
-
-
-    //    return path != null && path.Count > 0;
-    //}
-
-    //Neighbors check - REMOVED (Legacy Density/Count methods)
-
-
-    //Scoring
-
-    // --- WFC & Generation Logic ---
-
-    // Removed ScoreWall, ScoreObstacle, ScoreHole (Obsolete)
-
     private bool WouldBreakRowIfPlaced(int z, int lane, CellState newState)
     {
         CellState old = getCell(z, lane);
@@ -751,38 +586,29 @@ public class RunnerLevelGenerator : MonoBehaviour
             {
                 CellState cell = getCell(z, lane);
 
-                // Find safe path tile or specific debug tile
-                PrefabDef safePathDef = config.catalog.debugSafePath != null ?
-                    config.catalog.Definitions.FirstOrDefault(d => d.Prefabs.Contains(config.catalog.debugSafePath)) : null;
+                // FIX: Look up by SurfaceType.SafePath FIRST -- that is the canonical source of truth.
+                // debugSafePath is a spawn-time fallback prefab only; it should NOT be used here
+                // to identify which PrefabDef to collapse to (the Prefabs.Contains lookup was fragile
+                // and only worked if debugSafePath happened to be in a def's Prefabs list).
+                PrefabDef safePathDef = cell.surfaceCandidates.FirstOrDefault(d => d.SurfaceType == SurfaceType.SafePath);
 
-                // Fallback: Filter for SafePath type
+                // Secondary: find any def in the full catalog with SafePath type (in case it was pruned from candidates)
                 if (safePathDef == null)
-                    safePathDef = cell.surfaceCandidates.FirstOrDefault(d => d.SurfaceType == SurfaceType.SafePath);
+                    safePathDef = config.catalog.Definitions.FirstOrDefault(d => d != null && d.Layer == ObjectLayer.Surface && d.SurfaceType == SurfaceType.SafePath);
 
-                if (safePathDef != null)
+                if (safePathDef == null)
+                {
+                    Debug.LogWarning($"[GoldenPath] No SafePath surface def found in catalog for ({z},{lane}). " +
+                        "Add a Surface PrefabDef with SurfaceType=SafePath to your catalog. " +
+                        "debugSafePath on the catalog is only used as a spawn-time prefab fallback.", this);
+                }
+                else
                 {
                     CollapseCell(z, lane, safePathDef);
                 }
             }
         }
     }
-
-    //private void SeedSurfaceVariety(int z)
-    //{
-    //    if (config.varietySeedOptions == null || config.varietySeedOptions.Count == 0) return;
-
-    //    for (int lane = 0; lane < config.laneCount; lane++)
-    //    {
-    //        if (goldenPathSet.Contains((z, lane))) continue;
-
-    //        // Randomly seed
-    //        if (Rand() < config.surfaceVarietySeedChance)
-    //        {
-    //             PrefabDef seedDef = config.varietySeedOptions[rng.Next(config.varietySeedOptions.Count)];
-    //             CollapseCell(z, lane, seedDef);
-    //        }
-    //    }
-    //}
 
     private void CollapseCell(int z, int lane, PrefabDef forcedDef)
     {
@@ -812,8 +638,23 @@ public class RunnerLevelGenerator : MonoBehaviour
         queuedCells.Clear();
 
         // Re-seed propagation from any pre-collapsed cells (Safe Path, etc.)
-        // PLUS: include 1 row of context behind the chunk to avoid seams.
+        // PLUS: include context rows behind the chunk so prior chunk constraints carry over.
+        // FIX: Warn if context rows have already been cleaned up -- this silently breaks seam
+        // constraints. Ensure keepRowsBehind >= chunkSize + contextRows in your config.
         int seedStartZ = Mathf.Max(0, startZ - config.contextRows);
+
+        if (startZ > 0 && config.contextRows > 0)
+        {
+            int contextBoundary = startZ - config.contextRows;
+            // Check if ANY context lane has been cleaned up
+            bool contextMissing = false;
+            for (int cl = 1; cl < TotalLaneCount - 1 && !contextMissing; cl++)
+                if (!grid.ContainsKey((contextBoundary, cl))) contextMissing = true;
+
+            if (contextMissing)
+                Debug.LogWarning($"[WFC] Context row z={contextBoundary} has been cleaned up before chunk z={startZ} could use it for seam constraints. " +
+                    $"Increase keepRowsBehind (currently {config.keepRowsBehind}) to at least chunkSize+contextRows={config.chunkSize + config.contextRows}.", this);
+        }
 
         for (int z = seedStartZ; z < endZ; z++)
         {
@@ -995,16 +836,24 @@ public class RunnerLevelGenerator : MonoBehaviour
     private void PerformWeightedCollapse(int z, int lane)
     {
         CellState cell = getCell(z, lane);
-        if (cell.surfaceCandidates == null || cell.surfaceCandidates.Count == 0)
-        {
-            // Contradiction: Fallback to Debug Surface
-            Debug.LogWarning($"[WFC] Contradiction at ({z}, {lane}): No valid candidates remaining. " + $"Check that neighbor rules allow at least one tile combination. Using fallback.", this);
-            var debugDef = config.catalog.Definitions.FirstOrDefault(d => d.Prefabs.Contains(config.catalog.debugSurface));
-            if (debugDef == null) debugDef = config.catalog.Definitions.FirstOrDefault(d => d.Layer == ObjectLayer.Surface);
 
-            CollapseCell(z, lane, debugDef);
+        if (cell.isCollapsed) return;
+
+        if (cell.surfaceCandidates == null)
+        {
+            HandleSurfaceContradiction(z, lane, "surfaceCandidates was NULL");
             return;
         }
+
+        if (cell.surfaceCandidates.Count == 0)
+        {
+            HandleSurfaceContradiction(z, lane, "No candidates before weighted collapse");
+            return;
+        }
+
+
+        if (CollapseIfSingleCandidate(z, lane, ref cell, "PerformWeightedCollapse-entry"))
+            return;
 
         float totalWeight = 0f;
 
@@ -1099,26 +948,27 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     private void CheckNeighbor(int sz, int sl, int tz, int tl, Direction dir, PrefabDef sourceDef, int minZ, int maxZ)
     {
-        // Bounds check -- use TotalLaneCount so edge lanes are included in the grid
-        if (tz >= maxZ || tl < 0 || tl >= TotalLaneCount) return;
-
-        // If target is before chunk start, only propagate if cell exists (previous chunk already generated)
-        if (tz < minZ)
-        {
-            if (!grid.ContainsKey((tz, tl))) return; // Cell doesn't exist yet
-        }
+        if (tz >= maxZ || tz < 0 || tl < 0 || tl >= TotalLaneCount) return;
+        // Allow propagation into context rows (tz < minZ) only if they already exist in the grid.
+        // Context rows are already collapsed so they will immediately return; this guard prevents
+        // attempting to write phantom cells at z<0 or rows already cleaned up.
+        if (tz < minZ && !grid.ContainsKey((tz, tl))) return;
 
         CellState target = getCell(tz, tl);
         if (target.isCollapsed) return;
 
-        // Get allowed neighbors from config (RETURNS RELATIVE WEIGHTS)
+        // Snapshot candidates BEFORE pruning (for logging if we hit 0)
+        var beforeCandidates = (target.surfaceCandidates != null)
+            ? new List<PrefabDef>(target.surfaceCandidates)
+            : null;
+
         var allSurfaces = config.catalog.Definitions.Where(d => d.Layer == ObjectLayer.Surface).ToList();
         List<float> relativeWeights;
         List<PrefabDef> allowedBySource = config.weightRules.GetAllowedNeighbors(sourceDef, dir, allSurfaces, out relativeWeights);
 
-        // Map weights for O(1)
-        Dictionary<PrefabDef, float> incomingWeights = new Dictionary<PrefabDef, float>();
-        for (int i = 0; i < allowedBySource.Count; i++) incomingWeights[allowedBySource[i]] = relativeWeights[i];
+        var incomingWeights = new Dictionary<PrefabDef, float>();
+        for (int i = 0; i < allowedBySource.Count; i++)
+            incomingWeights[allowedBySource[i]] = relativeWeights[i];
 
         bool changed = false;
 
@@ -1128,46 +978,56 @@ public class RunnerLevelGenerator : MonoBehaviour
 
             if (!incomingWeights.TryGetValue(cand, out float w))
             {
-                // Not allowed by neighbor -> Remove
                 target.surfaceCandidates.RemoveAt(i);
                 if (target.candidateWeights.ContainsKey(cand)) target.candidateWeights.Remove(cand);
                 changed = true;
             }
             else
             {
-                if (!target.candidateWeights.ContainsKey(cand)) target.candidateWeights[cand] = 1.0f;
+                if (!target.candidateWeights.ContainsKey(cand))
+                    target.candidateWeights[cand] = 1.0f;
 
                 float oldW = target.candidateWeights[cand];
 
-                // Apply biome affinity during propagation
-                BiomeType targetBiome = GetBiomeForCell(tz, tl);
-                float biomeAffinity = GetBiomeAffinityWeight(cand, targetBiome);
-                target.candidateWeights[cand] = oldW * w;
+                // FIX: Do NOT multiply weights cumulatively across propagation passes.
+                // Accumulating (oldW * w * w * ...) exponentially distorts the distribution
+                // and breaks neighbor rules especially at chunk seams.
+                // Instead use min: the most restrictive constraint from any neighbor wins.
+                float newW = Mathf.Min(oldW, w);
+                target.candidateWeights[cand] = newW;
 
-                if (Mathf.Abs(oldW - target.candidateWeights[cand]) > WEIGHT_EPSILON) changed = true;
+                if (Mathf.Abs(oldW - newW) > WEIGHT_EPSILON) changed = true;
             }
         }
 
-        if (changed)
+        if (!changed) return;
+
+        // If we hit 0, this is a real contradiction log it properly.
+        if (target.surfaceCandidates.Count == 0)
         {
-            if (target.surfaceCandidates.Count == 0)
-            {
-                // Contradiction
-                Debug.Log($"Contradiction found at {tz},{tl} from {sz},{sl} ({dir})");
-            }
-
-            target.entropy = CalculateEntropy(target); // Re-calc entropy
-            SetCell(tz, tl, target);
-
-            if (queuedCells.Add((tz, tl))) // Returns false if already present
-            {
-                propagationQueue.Enqueue((tz, tl));
-            }
-
-            if (!propagationQueue.Contains((tz, tl)))
-                propagationQueue.Enqueue((tz, tl));
+            LogPropagationContradiction(sz, sl, tz, tl, dir, sourceDef, beforeCandidates, allowedBySource);
+            HandleSurfaceContradiction(tz, tl, "Propagation eliminated all candidates",
+                $"Triggered by source '{sourceDef?.ID}' dir={dir}");
+            return;
         }
+
+        target.entropy = CalculateEntropy(target);
+        SetCell(tz, tl, target);
+
+        // If pruning leaves exactly 1, collapse immediately (forced)
+        if (target.surfaceCandidates.Count == 1)
+        {
+            var only = target.surfaceCandidates[0];
+            Debug.Log($"[WFC] Forced by propagation at ({tz},{tl}) -> {only.ID} (from {sourceDef.ID} dir={dir})", this);
+            CollapseCell(tz, tl, only);
+            return;
+        }
+
+        // Otherwise enqueue for further propagation
+        if (queuedCells.Add((tz, tl)))
+            propagationQueue.Enqueue((tz, tl));
     }
+
 
 
     // --- Occupant Generation ---
@@ -1672,6 +1532,92 @@ public class RunnerLevelGenerator : MonoBehaviour
         // If the chosen config is invalid, just keep current.
         TryApplyBiomeConfig(newIndex);
     }
+
+    private PrefabDef GetDebugSurfaceDefOrFallback()
+    {
+        if (config == null || config.catalog == null) return null;
+
+        var defs = config.catalog.Definitions;
+        if (defs == null) return null;
+
+        // Try: find a Surface PrefabDef that actually contains the debug prefab.
+        if (config.catalog.debugSurface != null)
+        {
+            var match = defs.FirstOrDefault(d =>
+                d != null &&
+                d.Layer == ObjectLayer.Surface &&
+                d.Prefabs != null &&
+                d.Prefabs.Contains(config.catalog.debugSurface)
+            );
+
+            if (match != null) return match;
+        }
+
+        // Fallback: any surface def
+        return defs.FirstOrDefault(d => d != null && d.Layer == ObjectLayer.Surface);
+    }
+
+    private bool CollapseIfSingleCandidate(int z, int lane, ref CellState cell, string reason)
+    {
+        if (cell.isCollapsed) return true;
+        if (cell.surfaceCandidates == null) return false;
+
+        if (cell.surfaceCandidates.Count == 1)
+        {
+            var only = cell.surfaceCandidates[0];
+            if (only == null)
+            {
+                Debug.LogError($"[WFC] Single candidate is NULL at ({z},{lane}) during {reason}", this);
+                return false;
+            }
+
+            Debug.Log($"[WFC] Forced collapse at ({z},{lane}) -> {only.ID} ({reason})", this);
+            CollapseCell(z, lane, only);
+            cell = getCell(z, lane); // refresh local copy after collapse
+            return true;
+        }
+
+        return false;
+    }
+
+    private void HandleSurfaceContradiction(int z, int lane, string reason, string extra = null)
+    {
+        Debug.LogError($"\n[WFC] CONTRADICTION at ({z},{lane}) {reason}\n{extra}", this);
+
+        var debugDef = GetDebugSurfaceDefOrFallback();
+        if (debugDef == null)
+        {
+            Debug.LogError("[WFC] No debug surface fallback available (catalog missing surface defs).", this);
+            return;
+        }
+
+        Debug.LogWarning($"[WFC] Falling back to '{debugDef.ID}' at ({z},{lane})", this);
+        CollapseCell(z, lane, debugDef);
+    }
+
+    private void LogPropagationContradiction(
+    int sz, int sl,
+    int tz, int tl,
+    Direction dir,
+    PrefabDef sourceDef,
+    List<PrefabDef> beforeCandidates,
+    List<PrefabDef> allowedBySource)
+    {
+        string before = beforeCandidates != null ? string.Join(", ", beforeCandidates.Select(c => c?.ID ?? "null")) : "null";
+        string allowed = allowedBySource != null ? string.Join(", ", allowedBySource.Select(a => a?.ID ?? "null")) : "null";
+
+        Debug.LogError(
+            $"[WFC] Propagation wiped candidates!\n" +
+            $"  Source ({sz},{sl}) = {(sourceDef != null ? sourceDef.ID : "null")}\n" +
+            $"  Target ({tz},{tl}) dir={dir}\n" +
+            $"  Target candidates BEFORE: [{before}]\n" +
+            $"  AllowedBySource computed: [{allowed}]\n" +
+            $"  NOTE: If AllowedBySource is empty unexpectedly, check: rules entry missing, direction mask mismatch, or cache mismatch.",
+            this
+        );
+    }
+
+
 
 
 }

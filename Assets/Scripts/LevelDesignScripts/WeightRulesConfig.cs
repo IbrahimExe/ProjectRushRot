@@ -66,6 +66,8 @@ public class NeighborRulesConfig : ScriptableObject
         _initialized = false;
     }
 
+    private static string Norm(string id) => string.IsNullOrEmpty(id) ? id : id.Trim();
+
     public void BuildCache()
     {
         _occupantCache = new Dictionary<string, NeighborEntry>();
@@ -73,16 +75,30 @@ public class NeighborRulesConfig : ScriptableObject
 
         foreach (var e in surfaceRules)
         {
-            if (!string.IsNullOrEmpty(e.selfID)) _surfaceCache[e.selfID] = e;
+            var key = Norm(e.selfID);
+            if (string.IsNullOrEmpty(key)) continue;
+
+            if (_surfaceCache.ContainsKey(key))
+                Debug.LogWarning($"NeighborRulesConfig: DUPLICATE surfaceRules entry for selfID '{key}'. Cache will use the LAST one.");
+
+            e.selfID = key; // optional: normalize stored value too
+            _surfaceCache[key] = e;
         }
+
         foreach (var e in occupantRules)
         {
-            if (!string.IsNullOrEmpty(e.selfID)) _occupantCache[e.selfID] = e;
+            var key = Norm(e.selfID);
+            if (string.IsNullOrEmpty(key)) continue;
+
+            if (_occupantCache.ContainsKey(key))
+                Debug.LogWarning($"NeighborRulesConfig: DUPLICATE occupantRules entry for selfID '{key}'. Cache will use the LAST one.");
+
+            e.selfID = key;
+            _occupantCache[key] = e;
         }
 
         _initialized = true;
     }
-
 
     /// Returns a list of Allowed Neighbors for a specific direction.
     /// If NO rules exist for that direction, it returns ALL candidates (implicit allow).
@@ -171,25 +187,23 @@ public class NeighborRulesConfig : ScriptableObject
     {
         if (!_initialized) BuildCache();
 
-        if (self == null || string.IsNullOrEmpty(self.ID)) return true; // No rules = valid
-        if (neighbor == null || string.IsNullOrEmpty(neighbor.ID)) return true; // Empty neighbor = valid
+        string selfId = Norm(self?.ID);
+        string neiId = Norm(neighbor?.ID);
 
-        Dictionary<string, NeighborEntry> cache = (self.Layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        if (string.IsNullOrEmpty(selfId)) return true;
+        if (string.IsNullOrEmpty(neiId)) return true;
 
-        if (!cache.TryGetValue(self.ID, out NeighborEntry entry)) return true; // No entry = valid
+        var cache = (self.Layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        if (!cache.TryGetValue(selfId, out NeighborEntry entry)) return true;
 
         DirectionMask queryMask = DirectionToMask(direction);
 
-        // Check Denied First
         foreach (var denial in entry.denied)
         {
-            if (denial.neighborID == neighbor.ID && (denial.directions & queryMask) != 0)
-            {
-                return false; // Explicitly Denied
-            }
+            if (Norm(denial.neighborID) == neiId && (denial.directions & queryMask) != 0)
+                return false;
         }
 
-        // Check Allowed
         bool hasExplicitAllow = false;
         bool isExplicitlyAllowed = false;
 
@@ -198,7 +212,7 @@ public class NeighborRulesConfig : ScriptableObject
             if ((constraint.directions & queryMask) != 0)
             {
                 hasExplicitAllow = true;
-                if (constraint.neighborID == neighbor.ID)
+                if (Norm(constraint.neighborID) == neiId)
                 {
                     isExplicitlyAllowed = true;
                     break;
@@ -206,14 +220,14 @@ public class NeighborRulesConfig : ScriptableObject
             }
         }
 
-        if (hasExplicitAllow)
-        {
-            return isExplicitlyAllowed;
-        }
-        else
-        {
-            return true; // Implicitly Allowed
-        }
+        return hasExplicitAllow ? isExplicitlyAllowed : true;
+    }
+
+    public bool TryGetEntry(string selfId, ObjectLayer layer, out NeighborEntry entry)
+    {
+        if (!_initialized) BuildCache();
+        var cache = (layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        return cache.TryGetValue(Norm(selfId), out entry);
     }
 
     private DirectionMask DirectionToMask(Direction d)

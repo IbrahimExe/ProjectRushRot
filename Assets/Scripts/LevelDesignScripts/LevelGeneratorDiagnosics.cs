@@ -39,7 +39,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     private int totalChunksGenerated = 0;
     private int totalCellsCollapsed = 0;
     private int totalWFCIterations = 0;
-    private int totalConstraintViolations = 0;
 
     [ContextMenu("Debug Specific Violation")]
     public void DebugSpecificViolation()
@@ -98,7 +97,18 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
 
                         // Check rules
                         Debug.LogError($"\nChecking rules for {cell.surfaceDef.ID}:");
-                        var rules = config.weightRules.surfaceRules.FirstOrDefault(r => r.selfID == cell.surfaceDef.ID);
+                        NeighborRulesConfig.NeighborEntry rules;
+                        bool found = config.weightRules.TryGetEntry(cell.surfaceDef.ID, cell.surfaceDef.Layer, out rules);
+
+                        if (found && rules != null)
+                        {
+                            Debug.LogError($"  Using CACHED rules for '{cell.surfaceDef.ID}' (allowed: {rules.allowed.Count}, denied: {rules.denied.Count})");
+}
+                        else
+                        {
+                            Debug.LogError($"  NO CACHED RULES FOUND for '{cell.surfaceDef.ID}' (check ID mismatch / duplicates).");
+                        }
+
                         if (rules != null)
                         {
                             Debug.LogError($"  Allowed rules ({rules.allowed.Count}):");
@@ -131,11 +141,11 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     {
         biomeColors = new Dictionary<BiomeType, Color>
         {
-            { BiomeType.Default, Color.gray },
+            { BiomeType.Default, Color.pink },
             { BiomeType.Grassy, Color.green },
-            { BiomeType.Rocky, new Color(0.5f, 0.5f, 0.5f) },
-            { BiomeType.Sandy, new Color(0.96f, 0.87f, 0.7f) },
-            { BiomeType.Crystalline, new Color(0.5f, 0.9f, 1f) },
+            { BiomeType.Rocky, Color.firebrick },
+            { BiomeType.Sandy, Color.lightYellow },
+            { BiomeType.Crystalline, Color.purple },
             { BiomeType.Swampy, new Color(0.2f, 0.4f, 0.3f) },
             { BiomeType.Volcanic, new Color(1f, 0.3f, 0f) }
         };
@@ -219,8 +229,8 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             {
                 if (biomeColors.TryGetValue(biome, out Color biomeColor))
                 {
-                    Gizmos.color = new Color(biomeColor.r, biomeColor.g, biomeColor.b, 0.9f);
-                    Gizmos.DrawCube(pos + Vector3.down * 0.05f, new Vector3(laneWidth * 0.8f, 0.05f, cellLength * 0.8f));
+                    Gizmos.color = new Color(biomeColor.r, biomeColor.g, biomeColor.b, 1.0f);
+                    Gizmos.DrawCube(pos + Vector3.down * 0.05f, new Vector3(laneWidth * 0.5f, 0.05f, cellLength * 0.5f));
                 }
             }
 

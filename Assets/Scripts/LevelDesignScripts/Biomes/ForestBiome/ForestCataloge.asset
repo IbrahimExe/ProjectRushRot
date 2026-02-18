@@ -1,0 +1,165 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
+  m_Name: ForestCataloge
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  Definitions:
+  - ID: SAFEPATH
+    Name: safe
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 0
+      weight: 0
+  - ID: GRASS_SUR
+    Name: grass
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 2
+      weight: 2
+    - biome: 3
+      weight: 0
+    - biome: 1
+      weight: 1.2
+  - ID: Sand_SUR
+    Name: Sand
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 839e85ab62d2ada4eae9c1ebb3848dce, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 2
+    - biome: 2
+      weight: 1
+    - biome: 1
+      weight: 0
+  - ID: Forest_SUR
+    Name: grass
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 1
+      weight: 2
+  - ID: Water_SUR
+    Name: water
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 2926c78776f3d024d95ef91ea6b5290d, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 3
+    - biome: 1
+      weight: 0
+    - biome: 2
+      weight: 0
+  - ID: WALL_SUR
+    Name: WALL
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    Layer: 0
+    SurfaceType: 4
+    OccupantType: 1
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 3
+    - biome: 1
+      weight: 0
+    - biome: 2
+      weight: 0
+  - ID: WALL_occ
+    Name: WALL
+    Prefabs:
+    - {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
+    Layer: 1
+    SurfaceType: 4
+    OccupantType: 5
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 2
+    SizeZ: 2
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    biomeAffinities:
+    - biome: 3
+      weight: 3
+    - biome: 1
+      weight: 0
+    - biome: 2
+      weight: 0
+  debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugOccupant: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
+  debugEdgeWall: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
