@@ -21,19 +21,28 @@ public class DestructableWall : MonoBehaviour
     // Called for non-trigger colliders
     private void OnCollisionEnter(Collision collision)
     {
+        Debug.Log($"DestructableWall: OnCollisionEnter with '{collision.collider.gameObject.name}' (Layer: {LayerMask.LayerToName(collision.collider.gameObject.layer)}, Tag: {collision.collider.gameObject.tag})");
         TryHandleHit(collision.collider);
     }
 
     // Called for trigger colliders
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"DestructableWall: OnTriggerEnter with '{other.gameObject.name}' (Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.gameObject.tag})");
         TryHandleHit(other);
     }
 
     private void TryHandleHit(Collider col)
     {
-        if (col == null) return;
-
+        if (col == null)
+        {
+            Debug.LogWarning("DestructableWall: Collider is null on hit.");
+            return;
+        }
+        else
+        {
+            Debug.Log($"DestructableWall: Hit by '{col.gameObject.name}' (Layer: {LayerMask.LayerToName(col.gameObject.layer)}, Tag: {col.gameObject.tag})");
+        }
         // Determine the actor root (prefer the object with the Rigidbody)
         var root = col.attachedRigidbody != null
             ? col.attachedRigidbody.gameObject
