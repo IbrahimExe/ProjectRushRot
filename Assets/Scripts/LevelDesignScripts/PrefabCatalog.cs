@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 namespace LevelGenerator.Data
 {
@@ -13,41 +12,44 @@ namespace LevelGenerator.Data
         [Header("Debug / Fallbacks")]
         [Tooltip("Used for the Golden Path/Safe Path if no specific tile is defined.")]
         public GameObject debugSafePath;
-        [Tooltip("Used for generic solid surface if random selection fails.")]
-        public GameObject debugSurface;
+
+        [Tooltip("Used for generic solid surface if WFC hits a contradiction. Assign a real Surface PrefabDef from your catalog.")]
+        public PrefabDef debugSurfaceDef;
+
         [Tooltip("Used if an occupant is required but no candidate found.")]
         public GameObject debugOccupant;
+
         [Tooltip("Used for edge lane walls if no EdgeWall PrefabDef is defined in the catalog.")]
         public GameObject debugEdgeWall;
 
-        // cache dictionaries for fast lookup by type or id
+        // Fast lookup caches
         private Dictionary<OccupantType, List<PrefabDef>> _occupantCache;
         private Dictionary<SurfaceType, List<PrefabDef>> _surfaceCache;
         private Dictionary<string, PrefabDef> _idIndex;
-        private bool _initialized = false;
+        private bool _initialized;
 
         private void OnEnable() => RebuildCache();
 
-        // ensures cache is rebuilt in the editor if values change
         private void OnValidate()
         {
-            // generate ids if missing
+            // Ensure stable IDs + validate occupant AllowedSurfaceIDs references
             if (Definitions != null)
             {
-                // Build a set of all surface IDs for validation
-                HashSet<string> validSurfaceIDs = new HashSet<string>();
+                var validSurfaceIDs = new HashSet<string>();
+
+                // First pass: generate IDs (if needed) + gather surface IDs
                 foreach (var def in Definitions)
                 {
                     if (def == null) continue;
-                    if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
-                        def.ID = def.Name.ToUpper().Replace(" ", "_");
 
-                    // Collect surface IDs
+                    if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
+                        def.ID = def.Name.ToUpperInvariant().Replace(" ", "_");
+
                     if (def.Layer == ObjectLayer.Surface && !string.IsNullOrEmpty(def.ID))
                         validSurfaceIDs.Add(def.ID);
                 }
 
-                // Validate AllowedSurfaceIDs for occupants
+                // Second pass: validate occupant allowed surfaces
                 foreach (var def in Definitions)
                 {
                     if (def == null) continue;
@@ -57,133 +59,98 @@ namespace LevelGenerator.Data
                     for (int i = def.AllowedSurfaceIDs.Count - 1; i >= 0; i--)
                     {
                         string surfaceID = def.AllowedSurfaceIDs[i];
+
+                        // Strip empty entries
                         if (string.IsNullOrEmpty(surfaceID))
                         {
                             def.AllowedSurfaceIDs.RemoveAt(i);
                             continue;
                         }
 
+                        // Warn on unknown IDs (don’t auto-remove: you may be mid-edit)
                         if (!validSurfaceIDs.Contains(surfaceID))
                         {
-                            Debug.LogWarning($"[PrefabCatalog] Occupant '{def.Name}' references unknown surface ID '{surfaceID}'. " +
-                                           $"Valid surface IDs: {string.Join(", ", validSurfaceIDs)}");
+                            Debug.LogWarning(
+                                $"[PrefabCatalog] Occupant '{def.Name}' references unknown surface ID '{surfaceID}'.",
+                                this
+                            );
                         }
                     }
                 }
             }
+
             _initialized = false;
         }
 
-        // rebuilds the lookup dictionaries
+        // Rebuilds lookup dictionaries
         public void RebuildCache()
         {
             _occupantCache = new Dictionary<OccupantType, List<PrefabDef>>();
             _surfaceCache = new Dictionary<SurfaceType, List<PrefabDef>>();
             _idIndex = new Dictionary<string, PrefabDef>();
+            _initialized = false;
 
-            // initialize lists for each enum type
+            // Initialize enum buckets so GetCandidates never needs allocations for known types
             foreach (OccupantType t in System.Enum.GetValues(typeof(OccupantType)))
                 _occupantCache[t] = new List<PrefabDef>();
 
             foreach (SurfaceType t in System.Enum.GetValues(typeof(SurfaceType)))
                 _surfaceCache[t] = new List<PrefabDef>();
 
-            if (Definitions == null) return;
+            if (Definitions == null)
+            {
+                _initialized = true;
+                return;
+            }
 
             foreach (var def in Definitions)
             {
+                if (def == null) continue;
                 if (string.IsNullOrEmpty(def.ID)) continue;
 
-                // index by id
-                if (!_idIndex.ContainsKey(def.ID)) _idIndex[def.ID] = def;
+                // Index by ID (first wins to avoid silent overwrites)
+                if (!_idIndex.ContainsKey(def.ID))
+                    _idIndex[def.ID] = def;
 
-                // index by type based on layer
+                // Bucket by layer/type
                 if (def.Layer == ObjectLayer.Surface)
                 {
-                    if (!_surfaceCache.ContainsKey(def.SurfaceType))
-                        _surfaceCache[def.SurfaceType] = new List<PrefabDef>();
                     _surfaceCache[def.SurfaceType].Add(def);
                 }
                 else if (def.Layer == ObjectLayer.Occupant)
                 {
-                    if (!_occupantCache.ContainsKey(def.OccupantType))
-                        _occupantCache[def.OccupantType] = new List<PrefabDef>();
                     _occupantCache[def.OccupantType].Add(def);
                 }
             }
+
             _initialized = true;
         }
 
-        private void ValidateCache()
+        private void EnsureCache()
         {
-            if (!_initialized || _occupantCache == null) RebuildCache();
+            if (!_initialized || _occupantCache == null || _surfaceCache == null || _idIndex == null)
+                RebuildCache();
         }
 
-        // --- Retrieval Methods ---
+        // --- Retrieval Methods (used by RunnerLevelGenerator) ---
 
-        // get a definition by its unique id
         public PrefabDef GetByID(string id)
         {
-            ValidateCache();
-            return _idIndex.TryGetValue(id, out var def) ? def : null;
+            EnsureCache();
+            return (!string.IsNullOrEmpty(id) && _idIndex.TryGetValue(id, out var def)) ? def : null;
         }
 
-        // get all candidates for a specific occupant type
         // Use OccupantType.EdgeWall to get edge wall variants
         public List<PrefabDef> GetCandidates(OccupantType type)
         {
-            ValidateCache();
-            if (_occupantCache.TryGetValue(type, out var list)) return list;
-            return new List<PrefabDef>();
+            EnsureCache();
+            return _occupantCache.TryGetValue(type, out var list) ? list : new List<PrefabDef>();
         }
 
-        // get all candidates for a specific surface type
         public List<PrefabDef> GetCandidates(SurfaceType type)
         {
-            ValidateCache();
-            if (_surfaceCache.TryGetValue(type, out var list)) return list;
-            return new List<PrefabDef>();
+            EnsureCache();
+            return _surfaceCache.TryGetValue(type, out var list) ? list : new List<PrefabDef>();
         }
-
-
-        // --- Weighted Selection ---
-
-        // picks an item from the list based on weight, with an optional modifier function
-        public PrefabDef GetWeightedRandom(List<PrefabDef> candidates, System.Random rng, System.Func<PrefabDef, float> weightModifier = null)
-        {
-            if (candidates == null || candidates.Count == 0) return null;
-
-            float totalWeight = 0f;
-            float[] effectiveWeights = new float[candidates.Count];
-
-            // calculate effective weights
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                float w = candidates[i].OccupantWeight;
-                if (weightModifier != null)
-                {
-                    // apply external weight adjustments like density penalties
-                    w *= Mathf.Max(0f, weightModifier(candidates[i]));
-                }
-                effectiveWeights[i] = w;
-                totalWeight += w;
-            }
-
-            if (totalWeight <= 0f) return null;
-
-            // random pick
-            float r = (float)rng.NextDouble() * totalWeight;
-            float current = 0f;
-
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                current += effectiveWeights[i];
-                if (r <= current) return candidates[i];
-            }
-
-            return candidates[candidates.Count - 1]; // fallback
-        }
-
-
     }
 }

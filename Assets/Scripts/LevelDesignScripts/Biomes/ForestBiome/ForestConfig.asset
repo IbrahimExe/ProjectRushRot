@@ -17,28 +17,20 @@ MonoBehaviour:
   laneCount: 30
   laneWidth: 10
   cellLength: 10
-  bufferRows: 30
+  bufferRows: 100
   keepRowsBehind: 20
   chunkSize: 10
-  contextRows: 2
-  neigbhorhoodZ: 3
-  neighborhoodX: 3
+  contextRows: 5
   densityBudget: 60
   globalSpawnChance: 0.5
   useBiomeSystem: 1
   biomeNoiseScale: 18
-  biomeInfluence: 1
-  useMultiOctaveBiomes: 1
   biomeOctaves: 3
-  biomeLacunarity: 1.2
+  biomeLacunarity: 2
   biomeGain: 0.2
   biomeWarpStrength: 1
   biomeWarpScale: 0.5
   biomeBlur: 0
-  temperature: 0.2
-  floor: 0
-  biomeCollapseBias: 3
-  biomeMinAffinity: 0.281
   useWavePath: 1
   waveStrength: 1
   waveAmplitudeLanes: 23

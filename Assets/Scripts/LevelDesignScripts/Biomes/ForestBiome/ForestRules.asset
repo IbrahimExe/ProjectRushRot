@@ -54,15 +54,16 @@ MonoBehaviour:
       weight: 15
     - neighborID: Water_SUR
       directions: 31
-      weight: 45
+      weight: 75
     - neighborID: Sand_SUR
-      directions: 3
-      weight: 40
+      directions: -1
+      weight: 10
+    - neighborID: Forest_SUR
+      directions: 31
+      weight: 0
     denied:
     - neighborID: SAFEPATH
       directions: -1
-    - neighborID: Forest_SUR
-      directions: 31
   - selfID: Forest_SUR
     allowed:
     - neighborID: SAFEPATH
@@ -74,11 +75,14 @@ MonoBehaviour:
     - neighborID: Forest_SUR
       directions: -1
       weight: 65
+    - neighborID: Sand_SUR
+      directions: -1
+      weight: 0
     denied:
     - neighborID: Water_SUR
       directions: -1
     - neighborID: Sand_SUR
-      directions: -1
+      directions: 31
   - selfID: Water_SUR
     allowed:
     - neighborID: Water_SUR
@@ -87,6 +91,33 @@ MonoBehaviour:
     - neighborID: Sand_SUR
       directions: -1
       weight: 15
+    denied:
+    - neighborID: SAFEPATH
+      directions: -1
+    - neighborID: GRASS_SUR
+      directions: 31
+    - neighborID: Forest_SUR
+      directions: -1
+  - selfID: WALL_SUR
+    allowed:
+    - neighborID: Water_SUR
+      directions: -1
+      weight: 0
+    - neighborID: Sand_SUR
+      directions: -1
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: 1
+      weight: 0
+    - neighborID: Forest_SUR
+      directions: 1
+      weight: 0
+    - neighborID: SAFEPATH
+      directions: 1
+      weight: 0
+    - neighborID: WALL_SUR
+      directions: 1
+      weight: 0
     denied:
     - neighborID: SAFEPATH
       directions: -1

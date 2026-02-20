@@ -183,7 +183,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGeneratorDiagnostics
   showGoldenPath: 0
-  showBiomes: 1
+  showNoiseWeights: 0
+  showTerrainZones: 1
   showSurfaceTypes: 0
   showWFCState: 0
   showOccupants: 0

@@ -195,6 +195,11 @@ namespace LevelGenerator.Data
         [Tooltip("Can the player walk through this object?")]
         public bool IsWalkable = false;
 
+        [Tooltip("If true, Wave Function Collapse / procedural selection may use this entry. " +
+                 "When false, the tile still participates in neighbor rules (so adjacencies are legal) " +
+                 "but WFC will never choose it as a collapse result.")]
+        public bool AllowWFC = true;
+
         [Header("Biome System")]
         [Tooltip("How strongly this tile prefers each biome. Higher = more likely. Leave empty for neutral (1.0).")]
         public Dictionary<BiomeType, float> BiomeAffinities = new Dictionary<BiomeType, float>();

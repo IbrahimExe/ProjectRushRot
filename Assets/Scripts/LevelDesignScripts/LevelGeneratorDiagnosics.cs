@@ -4,17 +4,21 @@
 // that your level generator is working correctly
 // ============================================================
 
-using UnityEngine;
+using LevelGenerator.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using LevelGenerator.Data;
+using System.Reflection;
+using System.Text;
+using UnityEngine;
 
 [RequireComponent(typeof(RunnerLevelGenerator))]
 public class LevelGeneratorDiagnostics : MonoBehaviour
 {
     [Header("Visualization")]
     [SerializeField] private bool showGoldenPath = true;
-    [SerializeField] private bool showBiomes = true;
+    [SerializeField] private bool showNoiseWeights = true;   // Replaces showBiomes — shows raw noise value as a heat map
+    [SerializeField] private bool showTerrainZones = true;   // Zone-first biome system overlay (Forest/Grass/Sandy/Water)
     [SerializeField] private bool showSurfaceTypes = true;
     [SerializeField] private bool showWFCState = false;
     [SerializeField] private bool showOccupants = true;
@@ -32,124 +36,228 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     [SerializeField] private int maxFrameTimeMs = 16; // 60fps target
 
     private RunnerLevelGenerator generator;
-    private Dictionary<BiomeType, Color> biomeColors;
     private Queue<float> frameTimeHistory = new Queue<float>();
+
+    // Cached reflection handles — computed once in Awake to avoid per-frame overhead
+    private FieldInfo gridField;
+    private FieldInfo goldenPathField;
+    private FieldInfo configField;
+    private MethodInfo sampleBiomeNoiseMethod;
+
+    // New generator fields (multi-biome configs + zone-first biome system)
+    private FieldInfo biomeConfigsField;
+    private FieldInfo currentBiomeIndexField;
+
+    // Static zone configuration on RunnerLevelGenerator (private nested enum + static readonly fields)
+    private FieldInfo zoneThresholdsField;
+    private FieldInfo zoneOrderField;
+    private FieldInfo zoneDominantIdField;
+    private FieldInfo zoneDepthCheckField;
 
     // Stats tracking
     private int totalChunksGenerated = 0;
     private int totalCellsCollapsed = 0;
     private int totalWFCIterations = 0;
 
-    [ContextMenu("Debug Specific Violation")]
-    public void DebugSpecificViolation()
-    {
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
-
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (grid == null || config == null) return;
-
-        Debug.Log("=== DETAILED CONSTRAINT ANALYSIS ===");
-
-        // Find first violation
-        foreach (var kvp in grid.OrderBy(k => k.Key.z).ThenBy(k => k.Key.lane))
-        {
-            (int z, int lane) = kvp.Key;
-            CellState cell = kvp.Value;
-
-            if (cell.surfaceDef == null || cell.isEdgeLane) continue;
-
-            // Check forward
-            if (grid.TryGetValue((z + 1, lane), out CellState forward))
-            {
-                if (forward.surfaceDef != null && !forward.isEdgeLane)
-                {
-                    bool allowed = config.weightRules.IsNeighborAllowed(
-                        cell.surfaceDef, forward.surfaceDef, Direction.Forward);
-
-                    if (!allowed)
-                    {
-                        Debug.LogError($"\n=== VIOLATION FOUND ===");
-                        Debug.LogError($"Position: ({z}, {lane}) → ({z + 1}, {lane})");
-                        Debug.LogError($"Tiles: {cell.surfaceDef.ID} → {forward.surfaceDef.ID}");
-                        Debug.LogError($"Direction: Forward");
-
-                        // Check if reverse is allowed
-                        bool reverseAllowed = config.weightRules.IsNeighborAllowed(
-                            forward.surfaceDef, cell.surfaceDef, Direction.Backward);
-                        Debug.LogError($"Reverse check ({forward.surfaceDef.ID} ← {cell.surfaceDef.ID} Backward): {reverseAllowed}");
-
-                        // Check what IS allowed from source
-                        var allSurfaces = config.catalog.Definitions.Where(d => d.Layer == ObjectLayer.Surface).ToList();
-                        List<float> weights;
-                        var allowedForward = config.weightRules.GetAllowedNeighbors(
-                            cell.surfaceDef, Direction.Forward, allSurfaces, out weights);
-
-                        Debug.LogError($"{cell.surfaceDef.ID} CAN have these Forward neighbors:");
-                        foreach (var def in allowedForward)
-                        {
-                            Debug.LogError($"  - {def.ID}");
-                        }
-
-                        // Check rules
-                        Debug.LogError($"\nChecking rules for {cell.surfaceDef.ID}:");
-                        NeighborRulesConfig.NeighborEntry rules;
-                        bool found = config.weightRules.TryGetEntry(cell.surfaceDef.ID, cell.surfaceDef.Layer, out rules);
-
-                        if (found && rules != null)
-                        {
-                            Debug.LogError($"  Using CACHED rules for '{cell.surfaceDef.ID}' (allowed: {rules.allowed.Count}, denied: {rules.denied.Count})");
-}
-                        else
-                        {
-                            Debug.LogError($"  NO CACHED RULES FOUND for '{cell.surfaceDef.ID}' (check ID mismatch / duplicates).");
-                        }
-
-                        if (rules != null)
-                        {
-                            Debug.LogError($"  Allowed rules ({rules.allowed.Count}):");
-                            foreach (var a in rules.allowed)
-                            {
-                                Debug.LogError($"    → {a.neighborID} (directions: {a.directions})");
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogError($"  NO RULES DEFINED for {cell.surfaceDef.ID}!");
-                        }
-
-                        return; // Stop at first violation for detailed analysis
-                    }
-                }
-            }
-        }
-
-        Debug.Log("No violations found!");
-    }
-
     void Awake()
     {
         generator = GetComponent<RunnerLevelGenerator>();
-        InitializeBiomeColors();
+
+        // Cache all reflection handles up front
+        var flags = BindingFlags.NonPublic | BindingFlags.Instance;
+        gridField = typeof(RunnerLevelGenerator).GetField("grid", flags);
+        goldenPathField = typeof(RunnerLevelGenerator).GetField("goldenPathSet", flags);
+        configField = typeof(RunnerLevelGenerator).GetField("config", flags);
+        sampleBiomeNoiseMethod = typeof(RunnerLevelGenerator).GetMethod("SampleBiomeNoise", flags);
+
+        biomeConfigsField = typeof(RunnerLevelGenerator).GetField("biomeConfigs", flags);
+        currentBiomeIndexField = typeof(RunnerLevelGenerator).GetField("currentBiomeIndex", flags);
+
+        // Zone system lives on the generator as private static fields.
+        // We reflect them so diagnostics stays aligned even if you tweak thresholds / IDs.
+        var sFlags = BindingFlags.NonPublic | BindingFlags.Static;
+        zoneThresholdsField = typeof(RunnerLevelGenerator).GetField("ZoneThresholds", sFlags);
+        zoneOrderField = typeof(RunnerLevelGenerator).GetField("ZoneOrder", sFlags);
+        zoneDominantIdField = typeof(RunnerLevelGenerator).GetField("ZoneDominantID", sFlags);
+        zoneDepthCheckField = typeof(RunnerLevelGenerator).GetField("ZONE_DEPTH_CHECK", sFlags);
     }
 
-    void InitializeBiomeColors()
+    // ============================================================
+    // Helpers — typed accessors over the cached reflection handles
+    // ============================================================
+
+    private Dictionary<(int z, int lane), CellState> GetGrid() =>
+        gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
+
+    private HashSet<(int z, int lane)> GetGoldenPath() =>
+        goldenPathField?.GetValue(generator) as HashSet<(int z, int lane)>;
+
+    private RunnerGenConfig GetConfig() =>
+        configField?.GetValue(generator) as RunnerGenConfig;
+
+    // Safe optional reads from RunnerGenConfig so diagnostics doesn't break when configs evolve.
+    private bool TryGetConfigValue<T>(string memberName, out T value)
     {
-        biomeColors = new Dictionary<BiomeType, Color>
+        value = default;
+        var cfg = GetConfig();
+        if (cfg == null) return false;
+
+        var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        try
         {
-            { BiomeType.Default, Color.pink },
-            { BiomeType.Grassy, Color.green },
-            { BiomeType.Rocky, Color.firebrick },
-            { BiomeType.Sandy, Color.lightYellow },
-            { BiomeType.Crystalline, Color.purple },
-            { BiomeType.Swampy, new Color(0.2f, 0.4f, 0.3f) },
-            { BiomeType.Volcanic, new Color(1f, 0.3f, 0f) }
+            var f = typeof(RunnerGenConfig).GetField(memberName, flags);
+            if (f != null && f.GetValue(cfg) is T fv) { value = fv; return true; }
+
+            var p = typeof(RunnerGenConfig).GetProperty(memberName, flags);
+            if (p != null && p.GetValue(cfg) is T pv) { value = pv; return true; }
+        }
+        catch { }
+
+        return false;
+    }
+
+    private int GetCurrentBiomeIndex()
+    {
+        if (currentBiomeIndexField == null) return -1;
+        try { return (int)currentBiomeIndexField.GetValue(generator); }
+        catch { return -1; }
+    }
+
+    private List<RunnerGenConfig> GetBiomeConfigs()
+    {
+        if (biomeConfigsField == null) return null;
+        try { return biomeConfigsField.GetValue(generator) as List<RunnerGenConfig>; }
+        catch { return null; }
+    }
+
+    // Returns the raw 0..1 noise value for a cell, or -1 if unavailable.
+    private float SampleNoise(int z, int lane)
+    {
+        if (sampleBiomeNoiseMethod == null) return -1f;
+        try { return (float)sampleBiomeNoiseMethod.Invoke(generator, new object[] { z, lane }); }
+        catch { return -1f; }
+    }
+
+    // ============================================================
+    // Zone-first biome system helpers (mirrors RunnerLevelGenerator)
+    // ============================================================
+
+    private float[] GetZoneThresholds()
+    {
+        try { return zoneThresholdsField?.GetValue(null) as float[]; }
+        catch { return null; }
+    }
+
+    private object[] GetZoneOrder()
+    {
+        // Array of the generator's private nested enum values.
+        try
+        {
+            var arr = zoneOrderField?.GetValue(null) as Array;
+            if (arr == null) return null;
+            var outArr = new object[arr.Length];
+            for (int i = 0; i < arr.Length; i++) outArr[i] = arr.GetValue(i);
+            return outArr;
+        }
+        catch { return null; }
+    }
+
+    private int GetZoneDepthCheck()
+    {
+        // const int compiles to a literal static field, reflection still works in editor.
+        try
+        {
+            if (zoneDepthCheckField == null) return 2;
+            return (int)zoneDepthCheckField.GetValue(null);
+        }
+        catch { return 2; }
+    }
+
+    private System.Collections.IDictionary GetZoneDominantIdMap()
+    {
+        // Dictionary<TerrainZone, string>
+        try { return zoneDominantIdField?.GetValue(null) as System.Collections.IDictionary; }
+        catch { return null; }
+    }
+
+    private object GetZoneFromNoise(float noise01)
+    {
+        var thresholds = GetZoneThresholds();
+        var order = GetZoneOrder();
+        if (thresholds == null || order == null || thresholds.Length == 0 || order.Length == 0)
+        {
+            // Fallback to the current generator defaults (Forest/Grass/Sandy/Water @ 0.25 steps)
+            float[] t = { 0.25f, 0.50f, 0.75f, 1.0f };
+            string[] z = { "Forest", "Grass", "Sandy", "Water" };
+            for (int i = 0; i < t.Length; i++)
+                if (noise01 < t[i]) return z[i];
+            return z[z.Length - 1];
+        }
+
+        for (int i = 0; i < thresholds.Length && i < order.Length; i++)
+            if (noise01 < thresholds[i]) return order[i];
+        return order[order.Length - 1];
+    }
+
+    private bool IsDeeplyInsideZone(int z, int lane, object zone)
+    {
+        // Mirrors RunnerLevelGenerator.IsDeeplyInsideZone:
+        //  - samples noise only
+        //  - ignores edge lanes
+        var config = GetConfig();
+        if (config == null) return false;
+
+        int depth = Mathf.Max(1, GetZoneDepthCheck());
+        int totalLanes = config.laneCount + 2;
+        for (int dz = -depth; dz <= depth; dz++)
+        {
+            for (int dl = -depth; dl <= depth; dl++)
+            {
+                if (dz == 0 && dl == 0) continue;
+                int nl = lane + dl;
+                if (nl <= 0 || nl >= totalLanes - 1) continue; // ignore edge lanes
+                float n = SampleNoise(z + dz, nl);
+                if (n < 0f) return false;
+                object otherZone = GetZoneFromNoise(n);
+                if (!Equals(zone, otherZone)) return false;
+            }
+        }
+        return true;
+    }
+
+    private string GetDominantSurfaceIdForZone(object zone)
+    {
+        var map = GetZoneDominantIdMap();
+        if (map == null || zone == null) return null;
+        try
+        {
+            // IDictionary uses object keys; the zone object must be the same enum type.
+            if (map.Contains(zone)) return map[zone] as string;
+        }
+        catch { }
+
+        // If we couldn't read the map (or we're in fallback string-zone mode)
+        // use the generator's current defaults.
+        string zn = zone.ToString();
+        return zn switch
+        {
+            "Forest" => "Forest_SUR",
+            "Grass" => "GRASS_SUR",
+            "Sandy" => "Sand_SUR",
+            "Water" => "Water_SUR",
+            _ => null
         };
     }
+
+    private float LaneToWorldX(int lane, int totalLanes, float laneWidth)
+    {
+        float centerLane = (totalLanes - 1) * 0.5f;
+        return (lane - centerLane) * laneWidth;
+    }
+
+    // ============================================================
+    // Gizmo Rendering
+    // ============================================================
 
     void Update()
     {
@@ -160,44 +268,23 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             if (frameTimeHistory.Count > 60) frameTimeHistory.Dequeue();
 
             if (frameTime > maxFrameTimeMs)
-            {
                 Debug.LogWarning($"[Performance] Frame time spike: {frameTime:F1}ms (target: {maxFrameTimeMs}ms)");
-            }
         }
     }
 
     void OnDrawGizmos()
     {
-        if (generator == null) return;
-        if (!Application.isPlaying) return;
+        if (generator == null || !Application.isPlaying) return;
 
-        // Access private grid via reflection (for diagnostic purposes)
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var grid = GetGrid();
+        var goldenPath = GetGoldenPath();
+        var config = GetConfig();
 
-        if (gridField == null) return;
-
-        var grid = gridField.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
-        if (grid == null) return;
-
-        var goldenPathField = typeof(RunnerLevelGenerator).GetField("goldenPathSet",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var goldenPath = goldenPathField?.GetValue(generator) as HashSet<(int z, int lane)>;
-
-        var biomeMapField = typeof(RunnerLevelGenerator).GetField("biomeMap",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var biomeMap = biomeMapField?.GetValue(generator) as Dictionary<(int z, int lane), BiomeType>;
-
-        // Get config for dimensions
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (config == null) return;
+        if (grid == null || config == null) return;
 
         float laneWidth = config.laneWidth;
         float cellLength = config.cellLength;
-        int totalLanes = config.laneCount + 2; // Include edge lanes
+        int totalLanes = config.laneCount + 2;
 
         foreach (var kvp in grid)
         {
@@ -214,7 +301,8 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             if (showGoldenPath && goldenPath != null && goldenPath.Contains((z, lane)))
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawWireCube(pos + Vector3.up * 0.5f, new Vector3(laneWidth * 0.9f, 1f, cellLength * 0.9f));
+                Gizmos.DrawWireCube(pos + Vector3.up * 0.5f,
+                    new Vector3(laneWidth * 0.9f, 1f, cellLength * 0.9f));
             }
 
             // Edge Lanes
@@ -224,34 +312,64 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
                 Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.95f, 0.1f, cellLength * 0.95f));
             }
 
-            // Biomes
-            if (showBiomes && biomeMap != null && biomeMap.TryGetValue((z, lane), out BiomeType biome))
+            // Noise heat map — replaces old per-cell biome colour.
+            // Blue (0) → Red (1) showing raw DomainWarpedFbm01 value.
+            // Smooth spatial gradients confirm the noise is working correctly.
+            // Zone bands (default): 0-0.25=Forest, 0.25-0.5=Grass, 0.5-0.75=Sandy, 0.75-1=Water
+            if (showNoiseWeights && !cell.isEdgeLane && config.useBiomeSystem)
             {
-                if (biomeColors.TryGetValue(biome, out Color biomeColor))
+                float noise = SampleNoise(z, lane);
+                if (noise >= 0f)
                 {
-                    Gizmos.color = new Color(biomeColor.r, biomeColor.g, biomeColor.b, 1.0f);
-                    Gizmos.DrawCube(pos + Vector3.down * 0.05f, new Vector3(laneWidth * 0.5f, 0.05f, cellLength * 0.5f));
+                    // Heat map: blue→cyan→green→yellow→red
+                    Color heatColor = Color.HSVToRGB((1f - noise) * 0.66f, 1f, 1f);
+                    Gizmos.color = new Color(heatColor.r, heatColor.g, heatColor.b, 0.8f);
+                    Gizmos.DrawCube(pos + Vector3.down * 0.05f,
+                        new Vector3(laneWidth * 0.5f, 0.05f, cellLength * 0.5f));
+                }
+            }
+
+            // Terrain Zones overlay — shows the discrete zone assignment derived from noise.
+            if (showTerrainZones && !cell.isEdgeLane && config.useBiomeSystem)
+            {
+                float noise = SampleNoise(z, lane);
+                if (noise >= 0f)
+                {
+                    object zone = GetZoneFromNoise(noise);
+                    // Colours are intentionally distinct and semi-transparent
+                    Color zoneColor = zone.ToString() switch
+                    {
+                        "Forest" => new Color(0.10f, 0.35f, 0.10f, 0.25f),
+                        "Grass" => new Color(0.20f, 0.70f, 0.20f, 0.25f),
+                        "Sandy" => new Color(0.90f, 0.85f, 0.35f, 0.25f),
+                        "Water" => new Color(0.20f, 0.50f, 0.90f, 0.25f),
+                        _ => new Color(0.70f, 0.70f, 0.70f, 0.25f)
+                    };
+
+                    Gizmos.color = zoneColor;
+                    Gizmos.DrawCube(pos + Vector3.up * 0.02f,
+                        new Vector3(laneWidth * 0.92f, 0.02f, cellLength * 0.92f));
                 }
             }
 
             // Surface Types
             if (showSurfaceTypes)
             {
-                Color surfaceColor = Color.white;
-                switch (cell.surface)
+                Color surfaceColor = cell.surface switch
                 {
-                    case SurfaceType.Solid: surfaceColor = Color.white; break;
-                    case SurfaceType.Hole: surfaceColor = Color.black; break;
-                    case SurfaceType.Bridge: surfaceColor = Color.cyan; break;
-                    case SurfaceType.SafePath: surfaceColor = Color.green; break;
-                    case SurfaceType.Edge: surfaceColor = Color.red; break;
-                }
+                    SurfaceType.Solid => Color.white,
+                    SurfaceType.Hole => Color.black,
+                    SurfaceType.Bridge => Color.cyan,
+                    SurfaceType.SafePath => Color.green,
+                    SurfaceType.Edge => Color.red,
+                    _ => Color.white
+                };
 
                 Gizmos.color = new Color(surfaceColor.r, surfaceColor.g, surfaceColor.b, 0.5f);
                 Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.7f, 0.05f, cellLength * 0.7f));
             }
 
-            // WFC State
+            // WFC State — uncollapsed cells shown as magenta spheres
             if (showWFCState && !cell.isCollapsed)
             {
                 Gizmos.color = Color.magenta;
@@ -261,66 +379,51 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             // Occupants
             if (showOccupants && cell.occupant != OccupantType.None)
             {
-                Color occupantColor = Color.white;
-                switch (cell.occupant)
+                Color occupantColor = cell.occupant switch
                 {
-                    case OccupantType.Wall: occupantColor = Color.red; break;
-                    case OccupantType.Obstacle: occupantColor = new Color(1f, 0.5f, 0f); break;
-                    case OccupantType.Collectible: occupantColor = Color.yellow; break;
-                    case OccupantType.Enemy: occupantColor = Color.magenta; break;
-                    case OccupantType.EdgeWall: occupantColor = new Color(0.5f, 0f, 0.5f); break; // Purple
-                }
+                    OccupantType.Wall => Color.red,
+                    OccupantType.Obstacle => new Color(1f, 0.5f, 0f),
+                    OccupantType.Collectible => Color.yellow,
+                    OccupantType.Enemy => Color.magenta,
+                    OccupantType.EdgeWall => new Color(0.5f, 0f, 0.5f),
+                    _ => Color.white
+                };
 
                 Gizmos.color = occupantColor;
                 Gizmos.DrawSphere(pos + Vector3.up * 0.5f, 0.3f);
             }
 
-            // Edge Wall Segments (show multi-row walls as connected boxes)
+            // Edge Wall Segments — draw entire multi-row extents from origin cell only
             if (showEdgeWallSegments && cell.occupant == OccupantType.EdgeWall && cell.occupantDef != null)
             {
-                // Check if this is the origin cell (first cell of multi-row wall)
                 bool isOrigin = true;
-                if (z > 0 && grid.TryGetValue((z - 1, lane), out CellState prevCell))
+                if (grid.TryGetValue((z - 1, lane), out CellState prevCell))
                 {
-                    if (prevCell.occupant == OccupantType.EdgeWall && prevCell.occupantDef == cell.occupantDef)
-                    {
-                        isOrigin = false; // Previous cell has same wall, so this isn't the origin
-                    }
+                    if (prevCell.occupant == OccupantType.EdgeWall &&
+                        prevCell.occupantDef == cell.occupantDef)
+                        isOrigin = false;
                 }
 
-                // Only draw segment visualization from origin cell
                 if (isOrigin)
                 {
                     int sizeZ = cell.occupantDef.SizeZ;
                     float segmentLength = cellLength * sizeZ;
                     Vector3 segmentCenter = pos + Vector3.forward * (segmentLength - cellLength) * 0.5f;
 
-                    // Draw wireframe box showing entire wall segment
-                    Gizmos.color = new Color(0.8f, 0f, 0.8f, 0.8f); // Bright purple
-                    Gizmos.DrawWireCube(
-                        segmentCenter + Vector3.up * 0.5f,
-                        new Vector3(laneWidth * 0.9f, 1f, segmentLength * 0.95f)
-                    );
+                    Gizmos.color = new Color(0.8f, 0f, 0.8f, 0.8f);
+                    Gizmos.DrawWireCube(segmentCenter + Vector3.up * 0.5f,
+                        new Vector3(laneWidth * 0.9f, 1f, segmentLength * 0.95f));
 
-                    // Draw filled box at base
-                    Gizmos.color = new Color(0.5f, 0f, 0.5f, 0.3f); // Translucent purple
-                    Gizmos.DrawCube(
-                        segmentCenter,
-                        new Vector3(laneWidth * 0.8f, 0.1f, segmentLength * 0.9f)
-                    );
+                    Gizmos.color = new Color(0.5f, 0f, 0.5f, 0.3f);
+                    Gizmos.DrawCube(segmentCenter,
+                        new Vector3(laneWidth * 0.8f, 0.1f, segmentLength * 0.9f));
                 }
             }
         }
     }
 
-    private float LaneToWorldX(int lane, int totalLanes, float laneWidth)
-    {
-        float centerLane = (totalLanes - 1) * 0.5f;
-        return (lane - centerLane) * laneWidth;
-    }
-
     // ============================================================
-    // VERIFICATION METHODS - Call these to check system health
+    // Verification Suite
     // ============================================================
 
     [ContextMenu("Run Full System Verification")]
@@ -329,23 +432,17 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         Debug.Log("=== LEVEL GENERATOR VERIFICATION ===");
 
         bool allPassed = true;
-
         allPassed &= VerifyConfiguration();
         allPassed &= VerifyGoldenPathIntegrity();
         allPassed &= VerifyWalkability();
-        allPassed &= VerifyBiomeCoherence();
+        allPassed &= VerifyZoneSystemCoherence();
         allPassed &= VerifyConstraintCompliance();
         allPassed &= VerifyEdgeLaneIntegrity();
         allPassed &= VerifyEdgeWallCoverage();
 
-        if (allPassed)
-        {
-            Debug.Log("<color=green>✓ ALL VERIFICATION CHECKS PASSED</color>");
-        }
-        else
-        {
-            Debug.LogError("<color=red>✗ SOME VERIFICATION CHECKS FAILED - See above for details</color>");
-        }
+        Debug.Log(allPassed
+            ? "<color=green>✓ ALL VERIFICATION CHECKS PASSED</color>"
+            : "<color=red>✗ SOME VERIFICATION CHECKS FAILED - See above for details</color>");
 
         PrintStatistics();
     }
@@ -354,34 +451,40 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     {
         Debug.Log("\n--- Configuration Check ---");
 
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
+        var config = GetConfig();
+        if (config == null) { Debug.LogError("✗ Config is null!"); return false; }
+        if (config.catalog == null) { Debug.LogError("✗ Catalog is null!"); return false; }
+        if (config.weightRules == null) { Debug.LogError("✗ WeightRules is null!"); return false; }
+        if (config.laneCount < 3) Debug.LogWarning($"⚠ Lane count is very low: {config.laneCount}");
 
-        if (config == null)
+        int biomeIndex = GetCurrentBiomeIndex();
+        var biomes = GetBiomeConfigs();
+        if (biomes != null && biomes.Count > 0)
         {
-            Debug.LogError("✗ Config is null!");
-            return false;
+            string activeName = biomeIndex >= 0 && biomeIndex < biomes.Count && biomes[biomeIndex] != null
+                ? biomes[biomeIndex].name
+                : "(unknown)";
+            Debug.Log($"✓ Config valid: {config.laneCount} lanes, buffer={config.bufferRows}, chunk={config.chunkSize} | " +
+                      $"ActiveBiome={biomeIndex}/{biomes.Count - 1} '{activeName}'");
         }
-
-        if (config.catalog == null)
+        else
         {
-            Debug.LogError("✗ Catalog is null!");
-            return false;
+            Debug.Log($"✓ Config valid: {config.laneCount} lanes, buffer={config.bufferRows}, chunk={config.chunkSize}");
         }
+        // Print a best-effort snapshot of biome-related fields without hard-binding to any one config version.
+        var sb = new StringBuilder();
+        sb.Append($"  Biome system: {(config.useBiomeSystem ? "ON" : "OFF")}");
 
-        if (config.weightRules == null)
-        {
-            Debug.LogError("✗ WeightRules is null!");
-            return false;
-        }
+        if (TryGetConfigValue<float>("biomeNoiseScale", out var noiseScale)) sb.Append($", noiseScale={noiseScale}");
+        if (TryGetConfigValue<int>("biomeOctaves", out var oct)) sb.Append($", octaves={oct}");
+        if (TryGetConfigValue<float>("biomeLacunarity", out var lac)) sb.Append($", lacunarity={lac}");
+        if (TryGetConfigValue<float>("biomeGain", out var gain)) sb.Append($", gain={gain}");
+        if (TryGetConfigValue<float>("biomeWarpStrength", out var warp)) sb.Append($", warpStrength={warp}");
+        if (TryGetConfigValue<float>("biomeWarpScale", out var warpScale)) sb.Append($", warpScale={warpScale}");
+        if (TryGetConfigValue<float>("biomeBlur", out var blur)) sb.Append($", blur={blur}");
+        if (TryGetConfigValue<float>("biomeCollapseBias", out var collapseBias)) sb.Append($", collapseBias={collapseBias}");
 
-        if (config.laneCount < 3)
-        {
-            Debug.LogWarning($"⚠ Lane count is very low: {config.laneCount}");
-        }
-
-        Debug.Log($"✓ Config valid: {config.laneCount} lanes, buffer={config.bufferRows}, chunk={config.chunkSize}");
+        Debug.Log(sb.ToString());
         return true;
     }
 
@@ -389,27 +492,22 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     {
         Debug.Log("\n--- Golden Path Integrity Check ---");
 
-        var goldenPathField = typeof(RunnerLevelGenerator).GetField("goldenPathSet",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var goldenPath = goldenPathField?.GetValue(generator) as HashSet<(int z, int lane)>;
-
+        var goldenPath = GetGoldenPath();
         if (goldenPath == null || goldenPath.Count == 0)
         {
             Debug.LogWarning("⚠ Golden path is empty - has generation started?");
-            return true; // Not necessarily an error
+            return true;
         }
 
-        // Check for gaps
         var sortedPath = goldenPath.OrderBy(p => p.z).ToList();
         int gaps = 0;
 
         for (int i = 1; i < sortedPath.Count; i++)
         {
-            int zDiff = sortedPath[i].z - sortedPath[i - 1].z;
-            if (zDiff > 1)
+            if (sortedPath[i].z - sortedPath[i - 1].z > 1)
             {
                 gaps++;
-                Debug.LogWarning($"⚠ Golden path gap detected: Z {sortedPath[i - 1].z} → {sortedPath[i].z}");
+                Debug.LogWarning($"⚠ Gap: Z {sortedPath[i - 1].z} → {sortedPath[i].z}");
             }
         }
 
@@ -418,146 +516,197 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.Log($"✓ Golden path continuous: {goldenPath.Count} cells");
             return true;
         }
-        else
-        {
-            Debug.LogError($"✗ Golden path has {gaps} gaps!");
-            return false;
-        }
+
+        Debug.LogError($"✗ Golden path has {gaps} gaps!");
+        return false;
     }
 
     bool VerifyWalkability()
     {
         Debug.Log("\n--- Walkability Check ---");
 
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
+        var grid = GetGrid();
+        var config = GetConfig();
+        if (grid == null || config == null) { Debug.LogWarning("⚠ Missing data"); return true; }
 
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (grid == null || config == null)
-        {
-            Debug.LogWarning("⚠ Cannot verify walkability - grid or config null");
-            return true;
-        }
-
-        // Group by Z row
-        var rowGroups = grid.GroupBy(kvp => kvp.Key.z).OrderBy(g => g.Key);
-
+        var rows = grid.GroupBy(kvp => kvp.Key.z).OrderBy(g => g.Key);
         int blockedRows = 0;
-        foreach (var row in rowGroups)
+
+        foreach (var row in rows)
         {
-            int z = row.Key;
-            bool hasWalkable = false;
-
-            foreach (var cell in row)
-            {
-                int lane = cell.Key.lane;
-                CellState c = cell.Value;
-
-                // Skip edge lanes
-                if (c.isEdgeLane) continue;
-
-                // Check if walkable
-                bool isWalkable = c.surface != SurfaceType.Hole &&
-                                 (c.occupant == OccupantType.None ||
-                                  c.occupant == OccupantType.Collectible);
-
-                if (isWalkable)
-                {
-                    hasWalkable = true;
-                    break;
-                }
-            }
+            bool hasWalkable = row.Any(c =>
+                !c.Value.isEdgeLane &&
+                c.Value.surface != SurfaceType.Hole &&
+                (c.Value.occupant == OccupantType.None || c.Value.occupant == OccupantType.Collectible));
 
             if (!hasWalkable)
             {
                 blockedRows++;
-                Debug.LogError($"✗ Row {z} has NO walkable lanes!");
+                Debug.LogError($"✗ Row {row.Key} has NO walkable lanes!");
             }
         }
 
         if (blockedRows == 0)
         {
-            Debug.Log($"✓ All {rowGroups.Count()} rows have at least one walkable lane");
+            Debug.Log($"✓ All {rows.Count()} rows have at least one walkable lane");
             return true;
         }
-        else
-        {
-            Debug.LogError($"✗ {blockedRows} rows are completely blocked!");
-            return false;
-        }
+
+        Debug.LogError($"✗ {blockedRows} rows are completely blocked!");
+        return false;
     }
 
-    bool VerifyBiomeCoherence()
+    // Zone-first biome system (RunnerLevelGenerator):
+    //   - Noise defines a discrete zone (Forest/Grass/Sandy/Water) via thresholds.
+    //   - "Deep" cells (zone-consistent neighbourhood) are pre-collapsed to the zone's dominant tile.
+    //   - Boundary cells keep many candidates with noise-biased weights, and WFC handles transitions.
+    // We verify:
+    //   1) SampleBiomeNoise returns 0..1
+    //   2) Noise field is reasonably smooth (avg neighbour delta)
+    //   3) Deep-zone cells are mostly stamped with the dominant zone tile
+    bool VerifyZoneSystemCoherence()
     {
-        Debug.Log("\n--- Biome Coherence Check ---");
+        Debug.Log("\n--- Zone System Coherence Check ---");
 
-        var biomeMapField = typeof(RunnerLevelGenerator).GetField("biomeMap",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var biomeMap = biomeMapField?.GetValue(generator) as Dictionary<(int z, int lane), BiomeType>;
-
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
+        var config = GetConfig();
+        var grid = GetGrid();
+        if (config == null || grid == null) { Debug.LogWarning("⚠ Missing data"); return true; }
 
         if (!config.useBiomeSystem)
         {
-            Debug.Log("○ Biome system disabled - skipping");
+            Debug.Log("○ Biome system disabled — skipping noise check");
             return true;
         }
 
-        if (biomeMap == null || biomeMap.Count == 0)
+        if (sampleBiomeNoiseMethod == null)
         {
-            Debug.LogWarning("⚠ Biome map is empty");
+            Debug.LogWarning("⚠ SampleBiomeNoise method not found via reflection — " +
+                "ensure it is not renamed and is non-public instance.");
             return true;
         }
 
-        // Count biome transitions
-        var sortedCells = biomeMap.OrderBy(kvp => kvp.Key.z).ThenBy(kvp => kvp.Key.lane).ToList();
-        int transitions = 0;
+        // 1. Spot-check noise values are in range
+        int outOfRange = 0;
+        var sampleCells = grid.Where(k => !k.Value.isEdgeLane).Take(200).ToList();
 
-        for (int i = 1; i < sortedCells.Count; i++)
+        foreach (var kvp in sampleCells)
         {
-            var prev = sortedCells[i - 1];
-            var curr = sortedCells[i];
+            float n = SampleNoise(kvp.Key.z, kvp.Key.lane);
+            if (n < 0f || n > 1f) outOfRange++;
+        }
 
-            if (prev.Value != curr.Value)
+        if (outOfRange > 0)
+            Debug.LogError($"✗ {outOfRange} cells returned noise outside 0..1!");
+        else
+            Debug.Log($"✓ Noise values in valid range across {sampleCells.Count} sampled cells");
+
+        // 2. Check gradient smoothness — adjacent cells should have similar noise values.
+        // High delta variance indicates the noise scale is too small (too noisy/grainy).
+        var playableCells = grid
+            .Where(k => !k.Value.isEdgeLane && k.Value.isCollapsed)
+            .ToDictionary(k => k.Key, k => k.Value);
+
+        float totalDelta = 0f;
+        int comparisons = 0;
+        float maxDelta = 0f;
+
+        foreach (var kvp in playableCells)
+        {
+            (int z, int lane) = kvp.Key;
+            float n0 = SampleNoise(z, lane);
+
+            if (playableCells.ContainsKey((z, lane + 1)))
             {
-                transitions++;
+                float delta = Mathf.Abs(n0 - SampleNoise(z, lane + 1));
+                totalDelta += delta;
+                maxDelta = Mathf.Max(maxDelta, delta);
+                comparisons++;
+            }
+            if (playableCells.ContainsKey((z + 1, lane)))
+            {
+                float delta = Mathf.Abs(n0 - SampleNoise(z + 1, lane));
+                totalDelta += delta;
+                maxDelta = Mathf.Max(maxDelta, delta);
+                comparisons++;
             }
         }
 
-        float transitionRate = (float)transitions / biomeMap.Count;
-        Debug.Log($"✓ Biome transitions: {transitions}/{biomeMap.Count} ({transitionRate:P1})");
-
-        if (transitionRate > 0.5f)
+        if (comparisons > 0)
         {
-            Debug.LogWarning("⚠ High biome transition rate - may appear noisy");
+            float avgDelta = totalDelta / comparisons;
+            Debug.Log($"  Noise gradient: avg delta={avgDelta:F4}, max delta={maxDelta:F4}");
+
+            if (avgDelta > 0.15f)
+                Debug.LogWarning($"⚠ High average noise delta ({avgDelta:F4}) — biomeNoiseScale may be too small, " +
+                    "causing noisy terrain patches. Try increasing it.");
+            else
+                Debug.Log("✓ Noise gradients look smooth");
+
+            if (maxDelta > 0.5f)
+                Debug.LogWarning($"⚠ Max noise delta {maxDelta:F4} is very high — " +
+                    "possible warp overshoot. Try lowering biomeWarpStrength.");
         }
 
-        return true;
+        // 3. Deep-zone stamping check: cells that are deeply inside a zone should
+        // be pre-collapsed to the dominant tile for that zone.
+        int deepChecked = 0;
+        int deepMismatches = 0;
+        int deepNoMapping = 0;
+
+        foreach (var kvp in playableCells.Take(600))
+        {
+            (int z, int lane) = kvp.Key;
+            CellState cell = kvp.Value;
+            if (cell.surfaceDef == null) continue;
+            if (cell.surfaceDef.SurfaceType == SurfaceType.SafePath) continue; // forced, skip
+            if (GetGoldenPath() != null && GetGoldenPath().Contains((z, lane))) continue;
+
+            float noise = SampleNoise(z, lane);
+            if (noise < 0f) continue;
+
+            object zone = GetZoneFromNoise(noise);
+            if (!IsDeeplyInsideZone(z, lane, zone)) continue;
+
+            string dominantId = GetDominantSurfaceIdForZone(zone);
+            if (string.IsNullOrEmpty(dominantId)) { deepNoMapping++; continue; }
+
+            deepChecked++;
+            if (!string.Equals(cell.surfaceDef.ID, dominantId, System.StringComparison.Ordinal))
+            {
+                deepMismatches++;
+                Debug.LogWarning($"⚠ Deep-zone mismatch at ({z},{lane}) zone={zone} noise={noise:F3}: " +
+                    $"expected '{dominantId}', got '{cell.surfaceDef.ID}'");
+            }
+        }
+
+        if (deepChecked > 0)
+        {
+            float mismatchRate = (float)deepMismatches / deepChecked;
+            if (deepMismatches == 0)
+                Debug.Log($"✓ Deep-zone stamping OK ({deepChecked} deep cells checked)");
+            else if (mismatchRate < 0.10f)
+                Debug.LogWarning($"⚠ Deep-zone stamping had {deepMismatches}/{deepChecked} mismatches ({mismatchRate:P0}). " +
+                    "Small rates can happen if WFC forced a legal fix; large rates usually mean ZoneDominantID is out of sync with the catalog.");
+            else
+                Debug.LogError($"✗ Deep-zone stamping had {deepMismatches}/{deepChecked} mismatches ({mismatchRate:P0}). " +
+                    "Update ZoneDominantID in RunnerLevelGenerator or your catalog IDs.");
+        }
+        else
+        {
+            Debug.Log("○ No deep-zone cells detected in sample (this can happen with small chunks, very noisy settings, or biome system off)." +
+                      (deepNoMapping > 0 ? " Dominant ID map missing/unreadable." : string.Empty));
+        }
+
+        return outOfRange == 0 && deepMismatches == 0;
     }
 
     bool VerifyConstraintCompliance()
     {
         Debug.Log("\n--- Constraint Compliance Check ---");
 
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
-
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (grid == null || config?.weightRules == null)
-        {
-            Debug.LogWarning("⚠ Cannot verify constraints - missing data");
-            return true;
-        }
+        var grid = GetGrid();
+        var config = GetConfig();
+        if (grid == null || config?.weightRules == null) { Debug.LogWarning("⚠ Missing data"); return true; }
 
         int violations = 0;
 
@@ -565,49 +714,24 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             (int z, int lane) = kvp.Key;
             CellState cell = kvp.Value;
+            if (cell.surfaceDef == null || cell.isEdgeLane) continue;
 
-            if (cell.surfaceDef == null) continue;
-            if (cell.isEdgeLane) continue; // Edge lanes don't follow neighbor rules
-
-            // Check forward neighbor
-            if (grid.TryGetValue((z + 1, lane), out CellState forward))
+            void Check(int tz, int tl, Direction dir)
             {
-                if (forward.surfaceDef != null && !forward.isEdgeLane)
-                {
-                    bool allowed = config.weightRules.IsNeighborAllowed(
-                        cell.surfaceDef, forward.surfaceDef, Direction.Forward);
+                if (!grid.TryGetValue((tz, tl), out CellState neighbor)) return;
+                if (neighbor.surfaceDef == null || neighbor.isEdgeLane) return;
 
-                    if (!allowed)
-                    {
-                        violations++;
-                        if (logConstraintViolations)
-                        {
-                            Debug.LogWarning($"⚠ Constraint violation at ({z},{lane}): " +
-                                $"{cell.surfaceDef.ID} → {forward.surfaceDef.ID} (Forward)");
-                        }
-                    }
+                if (!config.weightRules.IsNeighborAllowed(cell.surfaceDef, neighbor.surfaceDef, dir))
+                {
+                    violations++;
+                    if (logConstraintViolations)
+                        Debug.LogWarning($"⚠ Violation ({z},{lane})→({tz},{tl}) [{dir}]: " +
+                            $"{cell.surfaceDef.ID} → {neighbor.surfaceDef.ID}");
                 }
             }
 
-            // Check right neighbor
-            if (grid.TryGetValue((z, lane + 1), out CellState right))
-            {
-                if (right.surfaceDef != null && !right.isEdgeLane)
-                {
-                    bool allowed = config.weightRules.IsNeighborAllowed(
-                        cell.surfaceDef, right.surfaceDef, Direction.Right);
-
-                    if (!allowed)
-                    {
-                        violations++;
-                        if (logConstraintViolations)
-                        {
-                            Debug.LogWarning($"⚠ Constraint violation at ({z},{lane}): " +
-                                $"{cell.surfaceDef.ID} → {right.surfaceDef.ID} (Right)");
-                        }
-                    }
-                }
-            }
+            Check(z + 1, lane, Direction.Forward);
+            Check(z, lane + 1, Direction.Right);
         }
 
         if (violations == 0)
@@ -615,208 +739,170 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.Log("✓ No constraint violations detected");
             return true;
         }
-        else
-        {
-            Debug.LogError($"✗ {violations} constraint violations found!");
 
-            return false;
-        }
+        Debug.LogError($"✗ {violations} constraint violations found!");
+        return false;
     }
 
     bool VerifyEdgeLaneIntegrity()
     {
         Debug.Log("\n--- Edge Lane Integrity Check ---");
 
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
-
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (grid == null || config == null)
-        {
-            Debug.LogWarning("⚠ Cannot verify edge lanes");
-            return true;
-        }
+        var grid = GetGrid();
+        var config = GetConfig();
+        if (grid == null || config == null) { Debug.LogWarning("⚠ Missing data"); return true; }
 
         int totalLanes = config.laneCount + 2;
-        int edgeViolations = 0;
+        int violations = 0;
 
         foreach (var kvp in grid)
         {
             int lane = kvp.Key.lane;
             CellState cell = kvp.Value;
-
-            bool shouldBeEdge = (lane == 0 || lane == totalLanes - 1);
+            bool shouldBeEdge = lane == 0 || lane == totalLanes - 1;
 
             if (shouldBeEdge && !cell.isEdgeLane)
-            {
-                edgeViolations++;
-                Debug.LogError($"✗ Lane {lane} should be edge but isn't!");
-            }
+            { violations++; Debug.LogError($"✗ Lane {lane} should be edge but isn't!"); }
 
             if (!shouldBeEdge && cell.isEdgeLane)
-            {
-                edgeViolations++;
-                Debug.LogError($"✗ Lane {lane} is edge but shouldn't be!");
-            }
+            { violations++; Debug.LogError($"✗ Lane {lane} is marked edge but shouldn't be!"); }
 
             if (cell.isEdgeLane && cell.surface != SurfaceType.Edge)
-            {
-                edgeViolations++;
-                Debug.LogError($"✗ Edge lane has wrong surface type: {cell.surface}");
-            }
+            { violations++; Debug.LogError($"✗ Edge lane at ({kvp.Key.z},{lane}) has wrong surface: {cell.surface}"); }
         }
 
-        if (edgeViolations == 0)
-        {
-            Debug.Log("✓ Edge lanes correctly configured");
-            return true;
-        }
-        else
-        {
-            Debug.LogError($"✗ {edgeViolations} edge lane violations!");
-            return false;
-        }
+        if (violations == 0) { Debug.Log("✓ Edge lanes correctly configured"); return true; }
+        Debug.LogError($"✗ {violations} edge lane violations!"); return false;
     }
 
     bool VerifyEdgeWallCoverage()
     {
         if (!logEdgeWallGeneration) return true;
-
         Debug.Log("\n--- Edge Wall Coverage Check ---");
 
-        var gridField = typeof(RunnerLevelGenerator).GetField("grid",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var grid = gridField?.GetValue(generator) as Dictionary<(int z, int lane), CellState>;
-
-        var configField = typeof(RunnerLevelGenerator).GetField("config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var config = configField?.GetValue(generator) as RunnerGenConfig;
-
-        if (grid == null || config == null)
-        {
-            Debug.LogWarning("⚠ Cannot verify edge walls");
-            return true;
-        }
+        var grid = GetGrid();
+        var config = GetConfig();
+        if (grid == null || config == null) { Debug.LogWarning("⚠ Missing data"); return true; }
 
         int totalLanes = config.laneCount + 2;
         int leftLane = 0;
         int rightLane = totalLanes - 1;
 
-        // Get all edge lane cells sorted by Z
-        var leftCells = grid.Where(kvp => kvp.Key.lane == leftLane).OrderBy(kvp => kvp.Key.z).ToList();
-        var rightCells = grid.Where(kvp => kvp.Key.lane == rightLane).OrderBy(kvp => kvp.Key.z).ToList();
+        AnalyzeEdgeLane(grid, leftLane, config.cellLength, "Left");
+        AnalyzeEdgeLane(grid, rightLane, config.cellLength, "Right");
 
-        int leftWalls = 0, rightWalls = 0;
-        int leftEmpty = 0, rightEmpty = 0;
-        Dictionary<int, int> leftWallLengths = new Dictionary<int, int>();
-        Dictionary<int, int> rightWallLengths = new Dictionary<int, int>();
-
-        // Analyze left lane
-        foreach (var kvp in leftCells)
-        {
-            if (kvp.Value.occupant == OccupantType.EdgeWall)
-            {
-                leftWalls++;
-                int sizeZ = kvp.Value.occupantDef?.SizeZ ?? 1;
-                if (!leftWallLengths.ContainsKey(sizeZ))
-                    leftWallLengths[sizeZ] = 0;
-                leftWallLengths[sizeZ]++;
-            }
-            else if (kvp.Value.occupant == OccupantType.None)
-            {
-                leftEmpty++;
-            }
-        }
-
-        // Analyze right lane
-        foreach (var kvp in rightCells)
-        {
-            if (kvp.Value.occupant == OccupantType.EdgeWall)
-            {
-                rightWalls++;
-                int sizeZ = kvp.Value.occupantDef?.SizeZ ?? 1;
-                if (!rightWallLengths.ContainsKey(sizeZ))
-                    rightWallLengths[sizeZ] = 0;
-                rightWallLengths[sizeZ]++;
-            }
-            else if (kvp.Value.occupant == OccupantType.None)
-            {
-                rightEmpty++;
-            }
-        }
-
-        Debug.Log($"Left lane: {leftWalls} wall cells, {leftEmpty} empty cells (Total: {leftCells.Count})");
-        Debug.Log($"Right lane: {rightWalls} wall cells, {rightEmpty} empty cells (Total: {rightCells.Count})");
-
-        if (leftWallLengths.Count > 0)
-        {
-            Debug.Log("Left wall distribution:");
-            foreach (var kvp in leftWallLengths.OrderBy(k => k.Key))
-            {
-                Debug.Log($"  SizeZ={kvp.Key}: {kvp.Value} cells");
-            }
-        }
-
-        if (rightWallLengths.Count > 0)
-        {
-            Debug.Log("Right wall distribution:");
-            foreach (var kvp in rightWallLengths.OrderBy(k => k.Key))
-            {
-                Debug.Log($"  SizeZ={kvp.Key}: {kvp.Value} cells");
-            }
-        }
-
-        // Count unique wall segments (origin cells only)
-        int leftSegments = 0, rightSegments = 0;
-
-        for (int i = 0; i < leftCells.Count; i++)
-        {
-            var cell = leftCells[i].Value;
-            if (cell.occupant == OccupantType.EdgeWall)
-            {
-                // Check if this is an origin cell (prev cell doesn't have same def)
-                bool isOrigin = true;
-                if (i > 0 && leftCells[i - 1].Value.occupant == OccupantType.EdgeWall
-                    && leftCells[i - 1].Value.occupantDef == cell.occupantDef)
-                {
-                    isOrigin = false;
-                }
-                if (isOrigin) leftSegments++;
-            }
-        }
-
-        for (int i = 0; i < rightCells.Count; i++)
-        {
-            var cell = rightCells[i].Value;
-            if (cell.occupant == OccupantType.EdgeWall)
-            {
-                bool isOrigin = true;
-                if (i > 0 && rightCells[i - 1].Value.occupant == OccupantType.EdgeWall
-                    && rightCells[i - 1].Value.occupantDef == cell.occupantDef)
-                {
-                    isOrigin = false;
-                }
-                if (isOrigin) rightSegments++;
-            }
-        }
+        int leftSegments = CountWallSegments(grid, leftLane);
+        int rightSegments = CountWallSegments(grid, rightLane);
 
         Debug.Log($"Wall segments: Left={leftSegments}, Right={rightSegments}");
 
         if (leftSegments <= 1 || rightSegments <= 1)
         {
-            Debug.LogError($"✗ Very few wall segments detected! Left={leftSegments}, Right={rightSegments}");
-            Debug.LogError("   This suggests edge walls are only spawning once per chunk.");
+            Debug.LogError("✗ Very few wall segments — edge walls may only be spawning once per chunk.");
             return false;
         }
-        else
+
+        Debug.Log("✓ Multiple wall segments in both lanes"); return true;
+    }
+
+    private void AnalyzeEdgeLane(Dictionary<(int z, int lane), CellState> grid, int lane,
+        float cellLength, string label)
+    {
+        var cells = grid.Where(k => k.Key.lane == lane).OrderBy(k => k.Key.z).ToList();
+        int walls = cells.Count(c => c.Value.occupant == OccupantType.EdgeWall);
+        int empty = cells.Count(c => c.Value.occupant == OccupantType.None);
+
+        Debug.Log($"{label} lane: {walls} wall cells, {empty} empty, {cells.Count} total");
+
+        var bySize = cells
+            .Where(c => c.Value.occupant == OccupantType.EdgeWall && c.Value.occupantDef != null)
+            .GroupBy(c => c.Value.occupantDef.SizeZ)
+            .OrderBy(g => g.Key);
+
+        foreach (var g in bySize)
+            Debug.Log($"  SizeZ={g.Key}: {g.Count()} cells");
+    }
+
+    private int CountWallSegments(Dictionary<(int z, int lane), CellState> grid, int lane)
+    {
+        var cells = grid.Where(k => k.Key.lane == lane).OrderBy(k => k.Key.z).ToList();
+        int segments = 0;
+
+        for (int i = 0; i < cells.Count; i++)
         {
-            Debug.Log($"✓ Multiple wall segments detected in both lanes");
-            return true;
+            if (cells[i].Value.occupant != OccupantType.EdgeWall) continue;
+            bool isOrigin = i == 0 ||
+                cells[i - 1].Value.occupant != OccupantType.EdgeWall ||
+                cells[i - 1].Value.occupantDef != cells[i].Value.occupantDef;
+            if (isOrigin) segments++;
         }
+
+        return segments;
+    }
+
+    // ============================================================
+    // Detailed Violation Debugger
+    // ============================================================
+
+    [ContextMenu("Debug Specific Violation")]
+    public void DebugSpecificViolation()
+    {
+        var grid = GetGrid();
+        var config = GetConfig();
+        if (grid == null || config == null) return;
+
+        var allSurfaces = config.catalog.Definitions
+            .Where(d => d.Layer == ObjectLayer.Surface).ToList();
+
+        Debug.Log("=== DETAILED CONSTRAINT ANALYSIS ===");
+
+        foreach (var kvp in grid.OrderBy(k => k.Key.z).ThenBy(k => k.Key.lane))
+        {
+            (int z, int lane) = kvp.Key;
+            CellState cell = kvp.Value;
+            if (cell.surfaceDef == null || cell.isEdgeLane) continue;
+
+            if (!grid.TryGetValue((z + 1, lane), out CellState forward)) continue;
+            if (forward.surfaceDef == null || forward.isEdgeLane) continue;
+
+            if (config.weightRules.IsNeighborAllowed(cell.surfaceDef, forward.surfaceDef, Direction.Forward))
+                continue;
+
+            Debug.LogError($"\n=== VIOLATION ===");
+            Debug.LogError($"Position: ({z},{lane}) → ({z + 1},{lane})");
+            Debug.LogError($"Tiles: {cell.surfaceDef.ID} → {forward.surfaceDef.ID} (Forward)");
+            Debug.LogError($"Reverse (Backward): " +
+                $"{config.weightRules.IsNeighborAllowed(forward.surfaceDef, cell.surfaceDef, Direction.Backward)}");
+
+            List<float> weights;
+            var allowed = config.weightRules.GetAllowedNeighbors(
+                cell.surfaceDef, Direction.Forward, allSurfaces, out weights);
+            Debug.LogError($"{cell.surfaceDef.ID} allowed Forward neighbors: " +
+                string.Join(", ", allowed.Select(d => d.ID)));
+
+            // Show noise context for both cells
+            if (config.useBiomeSystem)
+            {
+                Debug.LogError($"Noise at ({z},{lane}): {SampleNoise(z, lane):F4} | " +
+                    $"at ({z + 1},{lane}): {SampleNoise(z + 1, lane):F4}");
+            }
+
+            bool found = config.weightRules.TryGetEntry(
+                cell.surfaceDef.ID, cell.surfaceDef.Layer,
+                out NeighborRulesConfig.NeighborEntry rules);
+
+            Debug.LogError(found
+                ? $"Rules for '{cell.surfaceDef.ID}': {rules.allowed.Count} allowed, {rules.denied.Count} denied"
+                : $"NO CACHED RULES found for '{cell.surfaceDef.ID}' — check ID mismatch or missing entry");
+
+            if (rules != null)
+                foreach (var a in rules.allowed)
+                    Debug.LogError($"  → {a.neighborID} (directions: {a.directions})");
+
+            return; // Stop at first violation
+        }
+
+        Debug.Log("No violations found!");
     }
 
     void PrintStatistics()
@@ -825,9 +911,8 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
 
         if (frameTimeHistory.Count > 0)
         {
-            float avgFrameTime = frameTimeHistory.Average();
-            float maxFrameTime = frameTimeHistory.Max();
-            Debug.Log($"Frame time: Avg={avgFrameTime:F1}ms, Max={maxFrameTime:F1}ms, Target={maxFrameTimeMs}ms");
+            Debug.Log($"Frame time: Avg={frameTimeHistory.Average():F1}ms, " +
+                $"Max={frameTimeHistory.Max():F1}ms, Target={maxFrameTimeMs}ms");
         }
 
         Debug.Log($"Total chunks generated: {totalChunksGenerated}");
@@ -836,7 +921,7 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         if (totalWFCIterations > 0)
         {
             Debug.Log($"Total WFC iterations: {totalWFCIterations}");
-            Debug.Log($"Avg iterations/chunk: {(float)totalWFCIterations / totalChunksGenerated:F1}");
+            Debug.Log($"Avg iterations/chunk: {(float)totalWFCIterations / Mathf.Max(1, totalChunksGenerated):F1}");
         }
     }
 }

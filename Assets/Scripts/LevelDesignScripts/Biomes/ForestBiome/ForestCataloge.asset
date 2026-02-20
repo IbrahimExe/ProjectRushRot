@@ -27,7 +27,8 @@ MonoBehaviour:
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    IsWalkable: 1
+    AllowWFC: 0
     biomeAffinities:
     - biome: 0
       weight: 0
@@ -46,6 +47,7 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    AllowWFC: 1
     biomeAffinities:
     - biome: 2
       weight: 2
@@ -68,15 +70,12 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    AllowWFC: 1
     biomeAffinities:
     - biome: 3
-      weight: 2
-    - biome: 2
       weight: 1
-    - biome: 1
-      weight: 0
   - ID: Forest_SUR
-    Name: grass
+    Name: Forest
     Prefabs:
     - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
     Layer: 0
@@ -90,6 +89,7 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    AllowWFC: 1
     biomeAffinities:
     - biome: 1
       weight: 2
@@ -108,13 +108,10 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     IsWalkable: 0
+    AllowWFC: 1
     biomeAffinities:
     - biome: 3
       weight: 3
-    - biome: 1
-      weight: 0
-    - biome: 2
-      weight: 0
   - ID: WALL_SUR
     Name: WALL
     Prefabs:
@@ -130,13 +127,8 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     IsWalkable: 0
-    biomeAffinities:
-    - biome: 3
-      weight: 3
-    - biome: 1
-      weight: 0
-    - biome: 2
-      weight: 0
+    AllowWFC: 1
+    biomeAffinities: []
   - ID: WALL_occ
     Name: WALL
     Prefabs:
@@ -152,14 +144,26 @@ MonoBehaviour:
     SizeZ: 2
     AllowedSurfaceIDs: []
     IsWalkable: 0
-    biomeAffinities:
-    - biome: 3
-      weight: 3
-    - biome: 1
-      weight: 0
-    - biome: 2
-      weight: 0
+    AllowWFC: 1
+    biomeAffinities: []
   debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
-  debugSurface: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugSurfaceDef:
+    ID: DEBUGSURFACE
+    Name: 
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 10
+    Tags: []
+    Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    AllowWFC: 1
+    biomeAffinities: []
   debugOccupant: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
   debugEdgeWall: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
