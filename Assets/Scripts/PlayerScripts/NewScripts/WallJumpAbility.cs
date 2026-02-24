@@ -14,7 +14,7 @@ public class WallJumpAbility : MonoBehaviour
     public float wallJumpAwayImpulse = 8.5f;
 
     [Tooltip("Extra push away from the wall (use this to make the kick-off stronger).")]
-    public float extraAwayImpulse = 6f; 
+    public float extraAwayImpulse = 6f;
 
     [Tooltip("Prevents repeated wall jumps in the same instant.")]
     public float wallJumpCooldown = 0.15f;
@@ -88,7 +88,7 @@ public class WallJumpAbility : MonoBehaviour
             // Preserve the tangential (along-wall) velocity component
             Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
             Vector3 tangentialVel = Vector3.ProjectOnPlane(planarVel, n);
-            
+
             // Remove only velocity going INTO the wall (negative dot product)
             float intoWall = Vector3.Dot(vel, n);
             if (intoWall < 0f)
@@ -98,12 +98,12 @@ public class WallJumpAbility : MonoBehaviour
             float kickStrength = wallJumpAwayImpulse + extraAwayImpulse;
             vel += kickDir * kickStrength;
             vel += up * wallJumpUpImpulse;
-            
+
             // Preserve the tangential momentum from wall running
             // Re-add the tangential component to maintain forward speed
             Vector3 newPlanar = Vector3.ProjectOnPlane(vel, up);
             Vector3 newTangential = Vector3.ProjectOnPlane(newPlanar, n);
-            
+
             // If the new tangential is less than what we had, restore the original
             if (newTangential.magnitude < tangentialVel.magnitude)
             {

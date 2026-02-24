@@ -4,8 +4,8 @@ public class WallRunAbility : MonoBehaviour
 {
     [Header("Refs")]
     public PlayerControllerBase motor;
-    public DashAbility dash; // block wallrun while dashing
-    public Transform cartModel; // for wall visual alignment
+    public DashAbility dash;
+    public Transform cartModel;
 
     [Header("Wall Surface")]
     public LayerMask wallLayers = ~0;
@@ -14,7 +14,7 @@ public class WallRunAbility : MonoBehaviour
 
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
-    public float wallRunSpeedMultiplier = 1.0f;   // multiplier 
+    public float wallRunSpeedMultiplier = 1.0f;
     public float wallRunDuration = 4f;
     public float wallRunMinHeight = 1.1f;
     public float wallRunMinForwardDot = 0.2f;
@@ -22,7 +22,7 @@ public class WallRunAbility : MonoBehaviour
     public float wallRunStick = 0.5f;
     private float wallRunLockUntil = 0f;
 
-    [Header("Wall Run Vertical (Sands of Time)")]
+    [Header("Wall Run Vertical")]
     public float wallRunRiseDuration = 1.0f;
     public float wallRunRiseSpeed = 3.0f;
     [Range(0f, 1f)] public float wallRunGravityScale = 0.08f;
@@ -35,6 +35,9 @@ public class WallRunAbility : MonoBehaviour
 
     [Header("Wall Facing")]
     public float wallRunFaceTurnLerp = 12f;
+
+    [Header("Wall Visual Lean")]
+    [Range(0f, 1f)] public float wallVisualLeanAmount = 0.65f; // 0 = upright, 1 = full lean into wall
 
     public bool IsWallRunning => isWallRunning;
     public Vector3 WallNormal => wallRunNormal;
@@ -60,7 +63,7 @@ public class WallRunAbility : MonoBehaviour
             WallRunMove();
             ApplyWallRunVertical();
             UpdateOrientation();
-            AlignModelToWall();
+            AlignModelToWallStuck();
         }
     }
 
@@ -87,7 +90,6 @@ public class WallRunAbility : MonoBehaviour
             return;
         }
 
-        // don’t start while grounded, cooling down, or dashing
         if (motor.IsGrounded || Time.time < nextWallRunReadyTime)
         {
             StopWallRun(motor.IsGrounded);
@@ -109,7 +111,6 @@ public class WallRunAbility : MonoBehaviour
         Vector3 wishDir = forwardFlat * Mathf.Max(0f, v);
         if (wishDir.sqrMagnitude > 1f) wishDir.Normalize();
 
-        // START
         if (!isWallRunning)
         {
             if (TryGetWall(out Vector3 n))
@@ -222,7 +223,6 @@ public class WallRunAbility : MonoBehaviour
         // smooth acceleration instead of snap
         RB.AddForce(t * delta, ForceMode.Acceleration);
 
-        // stick to wall
         RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
         // ---------------------------------------------------------------------
     }
@@ -240,7 +240,6 @@ public class WallRunAbility : MonoBehaviour
         else
         {
             vel.y += Physics.gravity.y * wallRunGravityScale * Time.fixedDeltaTime;
-
             if (vel.y < wallRunSlowFallMaxDownSpeed)
                 vel.y = wallRunSlowFallMaxDownSpeed;
         }
@@ -263,20 +262,27 @@ public class WallRunAbility : MonoBehaviour
         transform.rotation = Quaternion.Slerp(currentRot, targetRot, Time.deltaTime * wallRunFaceTurnLerp);
     }
 
-    private void AlignModelToWall()
+    private void AlignModelToWallStuck()
     {
         if (cartModel == null) return;
-        if (wallRunNormal == Vector3.zero) return;
+        if (wallRunNormal == Vector3.zero || wallRunTangent == Vector3.zero) return;
 
-        Vector3 upDir = wallRunNormal;
-        Vector3 forwardDir = wallRunTangent.sqrMagnitude > 0.001f
-            ? wallRunTangent
-            : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        // Forward along the wall
+        Vector3 forwardDir = Vector3.ProjectOnPlane(wallRunTangent, Vector3.up).normalized;
+        if (forwardDir.sqrMagnitude < 0.0001f)
+            forwardDir = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+
+        // Up = wall normal (stuck sideways onto the wall)
+        Vector3 upDir = wallRunNormal.normalized;
+
+        // Prevent rare LookRotation freakouts when vectors get too close
+        if (Vector3.Cross(forwardDir, upDir).sqrMagnitude < 0.0001f)
+            return;
 
         Quaternion targetRot = Quaternion.LookRotation(forwardDir, upDir);
-
         cartModel.rotation = Quaternion.Slerp(cartModel.rotation, targetRot, Time.deltaTime * motor.groundAlignSpeed);
     }
+
 
     private bool HighEnoughForWallRun()
     {

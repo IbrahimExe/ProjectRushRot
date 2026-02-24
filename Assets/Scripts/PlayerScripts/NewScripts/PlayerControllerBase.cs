@@ -22,7 +22,7 @@ public class PlayerControllerBase : MonoBehaviour
     public float backwardDeceleration = 20f;
 
     public float rotationSpeed = 75f;
-    public float linearDrag = 5f;
+    public float linearDrag = 0.2f;
 
     [Header("Drift Settings")]
     public float baseGrip = 8f;
