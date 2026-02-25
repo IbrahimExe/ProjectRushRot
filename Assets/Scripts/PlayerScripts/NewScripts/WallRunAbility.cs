@@ -4,24 +4,25 @@ public class WallRunAbility : MonoBehaviour
 {
     [Header("Refs")]
     public PlayerControllerBase motor;
-    public DashAbility dash; // block wallrun while dashing
-    public Transform cartModel; // for wall visual alignment
+    public DashAbility dash;
+    public Transform cartModel;
 
     [Header("Wall Surface")]
     public LayerMask wallLayers = ~0;
-    public float wallCheckRadius = 1f;
-    public float wallCheckDistance = 2f;
+    public float wallCheckRadius = 1.6f; // increased from 1f to make detection wider
+    public float wallCheckDistance = 2.5f; // slightly longer check distance
 
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
-    public float wallRunSpeedMultiplier = 1.0f;   // multiplier 
+    public float wallRunSpeedMultiplier = 1.1f;
     public float wallRunDuration = 4f;
     public float wallRunMinHeight = 1.1f;
-    public float wallRunMinForwardDot = 0.2f;
+    public float wallRunMinForwardDot = 0.05f; // decreased from 0.2f so you don't detach when looking slightly away
     public float wallRunCooldown = 1f;
-    public float wallRunStick = 0.5f;
+    public float wallRunStick = 25f; // increased from 0.5f to actively pull the player into the wall
+    private float wallRunLockUntil = 0f;
 
-    [Header("Wall Run Vertical (Sands of Time)")]
+    [Header("Wall Run Vertical")]
     public float wallRunRiseDuration = 1.0f;
     public float wallRunRiseSpeed = 3.0f;
     [Range(0f, 1f)] public float wallRunGravityScale = 0.08f;
@@ -35,6 +36,9 @@ public class WallRunAbility : MonoBehaviour
     [Header("Wall Facing")]
     public float wallRunFaceTurnLerp = 12f;
 
+    [Header("Wall Visual Lean")]
+    [Range(0f, 1f)] public float wallVisualLeanAmount = 0.65f; // 0 = upright, 1 = full lean into wall
+
     public bool IsWallRunning => isWallRunning;
     public Vector3 WallNormal => wallRunNormal;
     public Vector3 WallTangent => wallRunTangent;
@@ -47,6 +51,8 @@ public class WallRunAbility : MonoBehaviour
 
     private float wallRunEntryTime = -999f;
 
+    private float wallRunEntrySpeed;
+
     Rigidbody RB => motor.RB;
 
     public void TickFixed()
@@ -57,7 +63,7 @@ public class WallRunAbility : MonoBehaviour
             WallRunMove();
             ApplyWallRunVertical();
             UpdateOrientation();
-            AlignModelToWall();
+            AlignModelToWallStuck();
         }
     }
 
@@ -68,13 +74,19 @@ public class WallRunAbility : MonoBehaviour
 
     private void HandleWallRunState()
     {
+        // prevent wallrun during lock period
+        if (Time.time < wallRunLockUntil)
+        {
+            StopWallRun(false);
+            return;
+        }
+
         if (!wallRunEnabled)
         {
             StopWallRun(motor.IsGrounded);
             return;
         }
 
-        // don’t start while grounded, cooling down, or dashing
         if (motor.IsGrounded || Time.time < nextWallRunReadyTime)
         {
             StopWallRun(motor.IsGrounded);
@@ -96,7 +108,6 @@ public class WallRunAbility : MonoBehaviour
         Vector3 wishDir = forwardFlat * Mathf.Max(0f, v);
         if (wishDir.sqrMagnitude > 1f) wishDir.Normalize();
 
-        // START
         if (!isWallRunning)
         {
             if (TryGetWall(out Vector3 n))
@@ -115,6 +126,12 @@ public class WallRunAbility : MonoBehaviour
                     wallRunTangent = t;
                     wallRunEndTime = Time.time + wallRunDuration;
                     wallRunEntryTime = Time.time;
+
+                    // capture entry momentum
+                    wallRunEntrySpeed = Vector3.Dot(planarVel, t);
+
+                    // Speed boost on wallo-run entry
+                    RB.AddForce(t * wallRunEntryBoost, ForceMode.VelocityChange);
                 }
                 else
                 {
@@ -167,23 +184,22 @@ public class WallRunAbility : MonoBehaviour
         Vector3 t = Vector3.ProjectOnPlane(wallRunTangent, up).normalized;
         Vector3 n = wallRunNormal.normalized;
 
-        float baseSpeed = Mathf.Max(motor.currentMoveSpeed, 0.01f);
-        float targetAlong = baseSpeed * wallRunSpeedMultiplier * v;
-
-        if (Time.time - wallRunEntryTime <= 0.10f && v > 0f)
-            targetAlong += wallRunEntryBoost;
-
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
         float currentAlong = Vector3.Dot(planarVel, t);
-        float deltaAlong = targetAlong - currentAlong;
 
-        float maxDelta = wallRunTangentAccel * Time.fixedDeltaTime;
-        deltaAlong = Mathf.Clamp(deltaAlong, -maxDelta, maxDelta);
+        // preserve entry momentum
+        float targetAlong = wallRunEntrySpeed;
 
-        RB.AddForce(t * deltaAlong, ForceMode.VelocityChange);
+        // accelerate if pressing forward
+        if (v > 0f)
+            targetAlong += wallRunTangentAccel * v;
 
-        // stick to wall
+        float delta = targetAlong - currentAlong;
+
+        // smooth acceleration instead of snap
+        RB.AddForce(t * delta, ForceMode.Acceleration);
+
         RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
     }
 
@@ -200,7 +216,6 @@ public class WallRunAbility : MonoBehaviour
         else
         {
             vel.y += Physics.gravity.y * wallRunGravityScale * Time.fixedDeltaTime;
-
             if (vel.y < wallRunSlowFallMaxDownSpeed)
                 vel.y = wallRunSlowFallMaxDownSpeed;
         }
@@ -223,25 +238,35 @@ public class WallRunAbility : MonoBehaviour
         transform.rotation = Quaternion.Slerp(currentRot, targetRot, Time.deltaTime * wallRunFaceTurnLerp);
     }
 
-    private void AlignModelToWall()
+    private void AlignModelToWallStuck()
     {
         if (cartModel == null) return;
-        if (wallRunNormal == Vector3.zero) return;
+        if (wallRunNormal == Vector3.zero || wallRunTangent == Vector3.zero) return;
 
-        Vector3 upDir = wallRunNormal;
-        Vector3 forwardDir = wallRunTangent.sqrMagnitude > 0.001f
-            ? wallRunTangent
-            : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+        // Forward along the wall
+        Vector3 forwardDir = Vector3.ProjectOnPlane(wallRunTangent, Vector3.up).normalized;
+        if (forwardDir.sqrMagnitude < 0.0001f)
+            forwardDir = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+
+        // Up = wall normal (stuck sideways onto the wall)
+        Vector3 upDir = wallRunNormal.normalized;
+
+        // Prevent rare LookRotation freakouts when vectors get too close
+        if (Vector3.Cross(forwardDir, upDir).sqrMagnitude < 0.0001f)
+            return;
 
         Quaternion targetRot = Quaternion.LookRotation(forwardDir, upDir);
-
         cartModel.rotation = Quaternion.Slerp(cartModel.rotation, targetRot, Time.deltaTime * motor.groundAlignSpeed);
     }
 
+
     private bool HighEnoughForWallRun()
     {
-        Vector3 origin = transform.position + Vector3.up;
-        float downDist = wallRunMinHeight + 1.0f;
+        // Start raycast slightly above feet to avoid clipping false positives
+        Vector3 origin = transform.position + (Vector3.up * 0.1f);
+        // We only care if the ground is immediately below us. 
+        // If we are falling from the 2nd floor, hit.distance will be huge, which is fine.
+        float downDist = wallRunMinHeight + 0.2f;
 
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, downDist, ~0, QueryTriggerInteraction.Ignore))
             return hit.distance > wallRunMinHeight;
@@ -257,13 +282,20 @@ public class WallRunAbility : MonoBehaviour
         float radius = wallCheckRadius;
         float dist = wallCheckDistance;
 
-        Vector3[] dirs =
+        Vector3[] baseDirs =
         {
             transform.right,
             -transform.right,
             transform.forward,
             -transform.forward
         };
+
+        // If already wall running, always check in the direction of the current wall
+        // so we don't accidentally lose it while turning
+        int dirsCount = (isWallRunning && wallRunNormal != Vector3.zero) ? 5 : 4;
+        Vector3[] dirs = new Vector3[dirsCount];
+        for (int i = 0; i < 4; i++) dirs[i] = baseDirs[i];
+        if (dirsCount == 5) dirs[4] = -wallRunNormal;
 
         foreach (Vector3 dir in dirs)
         {
@@ -272,11 +304,17 @@ public class WallRunAbility : MonoBehaviour
                 if (Vector3.Dot(hit.normal, Vector3.up) < 0.5f)
                 {
                     wallNormal = hit.normal;
+                    // message to tell the player can wallrun
+                    Debug.Log("Can WallRun! Normal: " + wallNormal);
                     return true;
                 }
             }
         }
 
         return false;
+    }
+    public void LockWallRun(float duration)
+    {
+        wallRunLockUntil = Time.time + duration;
     }
 }

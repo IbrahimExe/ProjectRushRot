@@ -12,13 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa1153e286dba1c42abc554c2dce6766, type: 3}
   m_Name: Trolley
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterData
-  modelPrefab: {fileID: 0}
-  startMoveSpeed: 5
-  maxMoveSpeed: 50
-  acceleration: 25
+  modelPrefab: {fileID: 4919600064163107117, guid: dbb61a7156295ae4eba7dbc0108186e9, type: 3}
+  modelOffset: {x: 0, y: -2.17, z: 0}
+  modelScale: {x: 1, y: 1, z: 1}
+  modelRotation: {x: 0, y: -90, z: 0}
+  maxMoveSpeed: 60
+  acceleration: 30
   deceleration: 25
-  jumpForce: 125
-  wallJumpUpImpulse: 7.5
-  wallJumpAwayImpulse: 8.5
-  wallRunSpeed: 75
-  wallRunDuration: 4
+  mass: 1
+  rotationSpeed: 100
+  baseGrip: 10
+  turnGrip: 2.5
+  jumpForce: 25
+  wallRunCooldown: 1
+  wallRunDuration: 2
+  wallRunSpeedMultiplier: 1.1
+  wallJumpUpImpulse: 25
+  wallJumpAwayImpulse: 20
+  dashCooldown: 2
+  dashSpeedBoostMultiplier: 1.15
+  dashBoostDuration: 1.5

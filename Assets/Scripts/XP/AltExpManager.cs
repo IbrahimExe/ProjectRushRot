@@ -62,6 +62,7 @@ public class AltExpManager : MonoBehaviour
     // External multipliers (set from other systems)
     [HideInInspector] public float speedMultiplier = 1f; // public read of current multiplier
     [HideInInspector] public float globalMultiplier = 1f; // other buffs
+    [HideInInspector] public float dashKillMultiplier = 1f; // set by DashAbility
 
     // Events
     public event Action<int> OnLevelUp; // passes new level
@@ -174,7 +175,7 @@ public class AltExpManager : MonoBehaviour
         }
 
         // accumulate XP based on base + multipliers
-        float xpThisFrame = baseXPPerSecond * Time.deltaTime * speedMultiplier * globalMultiplier;
+        float xpThisFrame = baseXPPerSecond * Time.deltaTime * speedMultiplier * globalMultiplier * dashKillMultiplier;
         AddXP(xpThisFrame);
     }
 
@@ -261,4 +262,6 @@ public class AltExpManager : MonoBehaviour
     // Utility: set speed multiplier from other scripts manually (overrides automatic sampling for one frame)
     public void SetSpeedMultiplier(float m) => speedMultiplier = m;
     public void AddGlobalMultiplier(float m) => globalMultiplier *= m;
+    public void SetDashKillMultiplier(float m) => dashKillMultiplier = Mathf.Max(1f, m);
+
 }
