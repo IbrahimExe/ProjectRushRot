@@ -62,6 +62,8 @@ public struct SpaceChannel
 public struct WoodSettings
 {
     public bool enabled;
+    [Tooltip("Base sampling frequency. Controls zoom of the underlying noise. Try 0.5–5.")]
+    public float frequency;
     [Tooltip("Grain ring density — higher = more rings. Try 8–20.")]
     public float multiplier;
 }
