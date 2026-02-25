@@ -9,25 +9,23 @@ public class PlayerControllerBase : MonoBehaviour
     private GameObject currentModel;
 
     [Header("Movement Settings")]
-    public float baseMaxMoveSpeed = 50f;
+    public float baseMaxMoveSpeed = 70f;
     public float baseAcceleration = 25f;
     public float baseDeceleration = 25f;
 
     private float maxMoveSpeed;
     private float acceleration;
 
-    public float manualDeceleration = 30f;
-    public float backwardMaxMoveSpeed = 10f;
     public float backwardAcceleration = 15f;
-    public float backwardDeceleration = 20f;
 
-    public float rotationSpeed = 75f;
+    public float rotationSpeed = 100f;
     public float linearDrag = 0.2f;
+    public float mass = 1f;
 
     [Header("Drift Settings")]
-    public float baseGrip = 8f;
-    public float turnGrip = 2f;
-    public float gripLerpSpeed = 5f;
+    public float baseGrip = 10f;
+    public float turnGrip = 2.5f;
+    public float gripLerpSpeed = 1f;
 
     [Header("Landing Grip")]
     public float landingGripDelay = 0.35f;
@@ -84,9 +82,13 @@ public class PlayerControllerBase : MonoBehaviour
     public bool SuppressMoveInput { get; set; } = false;   // dash uses this
     public bool SuppressJumpBuffer { get; set; } = false;  // dash flip uses this
     public float MaxSpeedMultiplier { get; set; } = 1f;    // dash boost uses this
+    public bool SuppressVelocityOverride { get; set; } = false; // bounce uses this
 
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
+    
+    [Header("Air Jumps")]
+    public int currentJumps = 0;
 
     void Start()
     {
@@ -95,7 +97,7 @@ public class PlayerControllerBase : MonoBehaviour
 
         RB = GetComponent<Rigidbody>();
 
-        if (characterData != null) ApplyCharacter(characterData);
+        if (characterData != null) ChangeCharacter(characterData);
         else SetBaseStats();
     }
 
@@ -103,10 +105,15 @@ public class PlayerControllerBase : MonoBehaviour
     {
         characterData = data;
 
-        //baseStartMoveSpeed = data.startMoveSpeed;
         baseMaxMoveSpeed = data.maxMoveSpeed;
         baseAcceleration = data.acceleration;
         baseDeceleration = data.deceleration;
+        mass = data.mass;
+
+        rotationSpeed = data.rotationSpeed;
+        baseGrip = data.baseGrip;
+        turnGrip = data.turnGrip;
+
         baseJumpForce = data.jumpForce;
 
         SetBaseStats();
@@ -138,16 +145,27 @@ public class PlayerControllerBase : MonoBehaviour
         maxMoveSpeed = baseMaxMoveSpeed;
         acceleration = baseAcceleration;
 
+        RB.mass = mass;
+
         jumpForce = baseJumpForce;
     }
     public void NotifyWallJump()
     {
         lastWallJumpTime = Time.time;
+        currentJumps = 1;
     }
     void Update()
     {
         IsGrounded = CheckGrounded();
-        if (IsGrounded) lastGroundedTime = Time.time;
+        if (IsGrounded) 
+        {
+            lastGroundedTime = Time.time;
+            currentJumps = 0;
+        }
+        else if (currentJumps == 0 && !CanCoyoteJump())
+        {
+            currentJumps = 1;
+        }
 
         if (!SuppressJumpBuffer)
         {
@@ -236,9 +254,13 @@ public class PlayerControllerBase : MonoBehaviour
         // SPEED LIMIT
         Vector3 newPlanar = Vector3.ClampMagnitude(planarVel, maxForward);
 
-        RB.linearVelocity =
-            newPlanar +
-            Vector3.Project(RB.linearVelocity, up);
+        if (!SuppressVelocityOverride)
+        {
+            RB.linearVelocity =
+                newPlanar +
+                Vector3.Project(RB.linearVelocity, up);
+        }
+        SuppressVelocityOverride = false; // auto-clear every frame
 
         // Grip / Drift (only when grounded, and only sideways)
         if (IsGrounded)
@@ -306,6 +328,20 @@ public class PlayerControllerBase : MonoBehaviour
     public void DoNormalJump()
     {
         RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        currentJumps = 1;
+    }
+
+    public bool CanAirJump()
+    {
+        int maxJ = characterData != null ? characterData.numOfJumps : 1;
+        return currentJumps < maxJ;
+    }
+
+    public void DoAirJump()
+    {
+        RB.linearVelocity = new Vector3(RB.linearVelocity.x, 0f, RB.linearVelocity.z);
+        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        currentJumps++;
     }
 
     private bool CheckGrounded()
@@ -458,6 +494,27 @@ public class PlayerControllerBase : MonoBehaviour
     public void ChangeCharacter(PlayerCharacterData newData)
     {
         ApplyCharacter(newData);
+
+        if (wallRun != null)
+        {
+            wallRun.wallRunCooldown = newData.wallRunCooldown;
+            wallRun.wallRunDuration = newData.wallRunDuration;
+            wallRun.wallRunSpeedMultiplier = newData.wallRunSpeedMultiplier;
+        }
+
+        if (wallJump != null)
+        {
+            wallJump.wallJumpUpImpulse = newData.wallJumpUpImpulse;
+            wallJump.wallJumpAwayImpulse = newData.wallJumpAwayImpulse;
+        }
+
+        if (dash != null)
+        {
+            dash.dashCooldown = newData.dashCooldown;
+            dash.dashSpeedBoostMultiplier = newData.dashSpeedBoostMultiplier;
+            dash.dashBoostDuration = newData.dashBoostDuration;
+
+        }
     }
 
 }
