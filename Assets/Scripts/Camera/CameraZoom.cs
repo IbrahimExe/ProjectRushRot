@@ -3,14 +3,36 @@ using Unity.Cinemachine;
 
 public class CameraZoom : MonoBehaviour
 {
+    [Header("References")]
     public CinemachineCamera vcam;
     public Rigidbody playerRb;
-    public float baseFOV = 60f, maxFOV = 80f, speedForMax = 20f;
+    public DashAbility dashAbility; // Reference to detect dashing
+
+    [Header("FOV Settings")]
+    public float baseFOV = 60f;
+    public float maxFOV = 100f;
+    public float speedForMax = 60f;
+
+    [Header("Smoothing")]
+    [Tooltip("How quickly FOV changes. Lower = smoother but slower response.")]
+    public float fovSmoothTime = 0.15f;
+
+    [Tooltip("How quickly speed is smoothed before calculating FOV. Lower = less jitter.")]
+    public float speedSmoothTime = 0.2f;
+
+    [Tooltip("Faster FOV response during dash for more punch.")]
+    public float dashFovSmoothTime = 0.08f;
 
     [Header("Look Back Settings")]
-    public KeyCode lookBackKey = KeyCode.N;
+    public KeyCode lookBackKey = KeyCode.F;
     public float rotationSpeed = 5f;
     public float lookBackFOV = 60f;
+
+    // Smoothing variables
+    private float currentFOV;
+    private float fovVelocity;
+    private float smoothedSpeed;
+    private float speedVelocity;
 
     private CinemachineOrbitalFollow orbitalFollow;
     private float originalRangeMin;
@@ -21,59 +43,76 @@ public class CameraZoom : MonoBehaviour
     void Start()
     {
         orbitalFollow = vcam.GetComponent<CinemachineOrbitalFollow>();
-        // Store the original axis range limits
         originalRangeMin = orbitalFollow.HorizontalAxis.Range.x;
         originalRangeMax = orbitalFollow.HorizontalAxis.Range.y;
+
+        // Initialize smoothed values
+        currentFOV = baseFOV;
+        vcam.Lens.FieldOfView = currentFOV;
     }
 
     void LateUpdate()
     {
+        HandleLookBack();
 
-        // Look back control
+        if (!isLookingBack)
+        {
+            HandleSpeedBasedFOV();
+        }
+    }
+
+    void HandleLookBack()
+    {
         if (Input.GetKey(lookBackKey))
         {
             isLookingBack = true;
-            // Expand the range to allow 180 degree rotation
             orbitalFollow.HorizontalAxis.Range = new Vector2(-180f, 180f);
-
-            // Target is 180 degrees (straight back)
             lookBackTarget = Mathf.MoveTowards(lookBackTarget, 180f, rotationSpeed * 100f * Time.deltaTime);
             orbitalFollow.HorizontalAxis.Value = lookBackTarget;
 
-            // Use fixed FOV when looking back
-            vcam.Lens.FieldOfView = lookBackFOV;
+            // Smoothly transition to look back FOV
+            currentFOV = Mathf.SmoothDamp(currentFOV, lookBackFOV, ref fovVelocity, fovSmoothTime);
+            vcam.Lens.FieldOfView = currentFOV;
         }
         else
         {
-            // Return to center (0)
             lookBackTarget = Mathf.MoveTowards(lookBackTarget, 0f, rotationSpeed * 100f * Time.deltaTime);
 
-            // Only override if we're still returning
             if (Mathf.Abs(lookBackTarget) > 0.1f)
             {
                 orbitalFollow.HorizontalAxis.Value = lookBackTarget;
-                // Keep fixed FOV while transitioning back
-                vcam.Lens.FieldOfView = lookBackFOV;
+
+                // Keep transitioning FOV smoothly
+                currentFOV = Mathf.SmoothDamp(currentFOV, lookBackFOV, ref fovVelocity, fovSmoothTime);
+                vcam.Lens.FieldOfView = currentFOV;
             }
             else
             {
                 isLookingBack = false;
-                // Restore original range when back to normal
                 orbitalFollow.HorizontalAxis.Range = new Vector2(originalRangeMin, originalRangeMax);
             }
-
-            // Speed-based FOV
-            if (!isLookingBack)
-            {
-
-                //float speed = playerRb.linearVelocity.magnitude;
-
-                //horizontal only speed
-                float speed = new Vector3(playerRb.linearVelocity.x, 0f, playerRb.linearVelocity.z).magnitude;
-
-
-                vcam.Lens.FieldOfView = Mathf.Lerp(baseFOV, maxFOV, speed / speedForMax);
-            }
         }
+    }
+
+    void HandleSpeedBasedFOV()
+    {
+        // Calculate current horizontal speed
+        float currentSpeed = new Vector3(playerRb.linearVelocity.x, 0f, playerRb.linearVelocity.z).magnitude;
+
+        // Smooth the speed reading to prevent sudden jumps
+        smoothedSpeed = Mathf.SmoothDamp(smoothedSpeed, currentSpeed, ref speedVelocity, speedSmoothTime);
+
+        // Calculate target FOV based on smoothed speed
+        float targetFOV = Mathf.Lerp(baseFOV, maxFOV, smoothedSpeed / speedForMax);
+
+        // Use faster smoothing during dash for more responsive feel
+        float activeSmoothTime = (dashAbility != null && (dashAbility.IsDashing || dashAbility.IsSideDashing))
+            ? dashFovSmoothTime
+            : fovSmoothTime;
+
+        // Smooth the FOV change
+        currentFOV = Mathf.SmoothDamp(currentFOV, targetFOV, ref fovVelocity, activeSmoothTime);
+
+        vcam.Lens.FieldOfView = currentFOV;
     }
 }

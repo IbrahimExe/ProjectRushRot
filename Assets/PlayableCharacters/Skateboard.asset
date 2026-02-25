@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa1153e286dba1c42abc554c2dce6766, type: 3}
   m_Name: Skateboard
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterData
-  modelPrefab: {fileID: 8349132317771950991, guid: 5c6050f2f560d99468768b3b8bacad74, type: 3}
-  modelOffset: {x: 0, y: 0, z: 0}
-  modelScale: {x: 1.8747203, y: 0.6236625, z: 6.3099375}
-  modelRotation: {x: 0, y: 0, z: 0}
+  modelPrefab: {fileID: 919132149155446097, guid: f2d3616beaed0bc4a938f9f9db615142, type: 3}
+  modelOffset: {x: 0, y: -1, z: 0}
+  modelScale: {x: -100, y: -270.52737, z: -19.93974}
+  modelRotation: {x: 90, y: 0, z: 180}
   maxMoveSpeed: 60
   acceleration: 36
   deceleration: 25
@@ -23,7 +23,7 @@ MonoBehaviour:
   rotationSpeed: 80
   baseGrip: 10
   turnGrip: 2.5
-  jumpForce: 50
+  jumpForce: 40
   wallRunCooldown: 0
   wallRunDuration: 3
   wallRunSpeedMultiplier: 1.1
@@ -32,5 +32,5 @@ MonoBehaviour:
   dashCooldown: 2
   dashSpeedBoostMultiplier: 1.15
   dashBoostDuration: 1.5
-  numOfJumps: 2
+  numOfJumps: 1
   xpMultiplierOnKill: 1
