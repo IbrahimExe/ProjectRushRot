@@ -19,7 +19,6 @@ public class WallJumpAbility : MonoBehaviour
     [Tooltip("Prevents repeated wall jumps in the same instant.")]
     public float wallJumpCooldown = 0.15f;
 
-    //private float wallJumpLockUntil = 0f; <-------------------------------------------------------- modified this line
     private float nextWallJumpAllowedTime = 0f;
 
     private Rigidbody RB => motor != null ? motor.RB : null;
@@ -33,11 +32,7 @@ public class WallJumpAbility : MonoBehaviour
         if (dash != null && (dash.IsDashing || dash.IsSideDashing || dash.IsDashFlipping))
             return;
 
-        //if (Time.time < wallJumpLockUntil) <-------------------------------------------------------- modified this line
-        //    return;
-
         bool WallJumpOnCooldown = Time.time < nextWallJumpAllowedTime;
-        // -------------------------------------------------------------------------------------------------------
 
         // Jump buffer check comes from the base controller
         if (!motor.WantsJumpBuffered())
@@ -81,7 +76,6 @@ public class WallJumpAbility : MonoBehaviour
 
             Vector3 kickDir = (n * awayWeight + along * alongWeight).normalized;
 
-            // ----------------------------------------------------------------
             // MOMENTUM PRESERVING WALL JUMP
             Vector3 vel = RB.linearVelocity;
 
@@ -110,47 +104,36 @@ public class WallJumpAbility : MonoBehaviour
                 vel += (tangentialVel - newTangential);
             }
 
-            // Only clamp if the speed is extremely high
-            // This prevents the clamp from reducing normal wall run speeds
-            //float maxPlanar = 60f;
-            //Vector3 planar = Vector3.ProjectOnPlane(vel, up);
-            //if (planar.magnitude > maxPlanar)
-            //    vel -= (planar - planar.normalized * maxPlanar);
-
             RB.linearVelocity = vel;
 
-            // ----------------------------------------------------------------
-
-            // added this block ---------------------------------------------------------
             // Prevent immediate re-entry into wallrun
             wallRun.ForceStopAndCooldown();
             wallRun.LockWallRun(0.2f); // we need to tweek this number if needed, maybe make it variable
-            // ---------------------------------------------------------
 
             // Lock out air-upright briefly so the kick isn't visually cancelled
             motor.NotifyWallJump();
 
-            // ---------------------------------------------------------
-            //wallJumpLockUntil = Time.time + wallJumpCooldown;
             nextWallJumpAllowedTime = Time.time + wallJumpCooldown;
-            // ---------------------------------------------------------
 
             motor.ConsumeJumpBuffer();
             return;
         }
-
-
 
         //NORMAL JUMP(ground +coyote)
         if (motor.IsGrounded || motor.CanCoyoteJump())
         {
             motor.DoNormalJump();
-            //wallJumpLockUntil = Time.time + wallJumpCooldown;
 
             motor.ConsumeJumpBuffer();
             return;
         }
 
-        // motor.ConsumeJumpBuffer();
+        // AIR JUMP (Double Jump)
+        if (!motor.IsGrounded && !motor.CanCoyoteJump() && motor.CanAirJump())
+        {
+            motor.DoAirJump();
+            motor.ConsumeJumpBuffer();
+            return;
+        }
     }
 }

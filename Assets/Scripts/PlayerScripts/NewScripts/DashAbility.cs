@@ -342,8 +342,14 @@ public class DashAbility : MonoBehaviour
 
     private void PushDashKillMultiplierToXP()
     {
-        // linear: 2x per kill => 2,4,6,...,20 (cap at 10 kills)
-        float mult = (dashKillCount <= 0) ? 1f : Mathf.Min(2f * dashKillCount, 2f * dashKillCap);
+        float killMult = 2f;
+        if (motor != null && motor.characterData != null)
+        {
+            killMult = motor.characterData.xpMultiplierOnKill;
+        }
+
+        // linear: based on xpMultiplierOnKill per kill
+        float mult = (dashKillCount <= 0) ? 1f : Mathf.Min(killMult * dashKillCount, killMult * dashKillCap);
 
         if (AltExpManager.Instance != null)
             AltExpManager.Instance.SetDashKillMultiplier(mult);

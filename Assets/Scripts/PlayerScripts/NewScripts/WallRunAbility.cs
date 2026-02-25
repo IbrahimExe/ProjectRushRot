@@ -9,17 +9,17 @@ public class WallRunAbility : MonoBehaviour
 
     [Header("Wall Surface")]
     public LayerMask wallLayers = ~0;
-    public float wallCheckRadius = 1f;
-    public float wallCheckDistance = 2f;
+    public float wallCheckRadius = 1.6f; // increased from 1f to make detection wider
+    public float wallCheckDistance = 2.5f; // slightly longer check distance
 
     [Header("Wall Run")]
     public bool wallRunEnabled = true;
-    public float wallRunSpeedMultiplier = 1.0f;
+    public float wallRunSpeedMultiplier = 1.1f;
     public float wallRunDuration = 4f;
     public float wallRunMinHeight = 1.1f;
-    public float wallRunMinForwardDot = 0.2f;
+    public float wallRunMinForwardDot = 0.05f; // decreased from 0.2f so you don't detach when looking slightly away
     public float wallRunCooldown = 1f;
-    public float wallRunStick = 0.5f;
+    public float wallRunStick = 25f; // increased from 0.5f to actively pull the player into the wall
     private float wallRunLockUntil = 0f;
 
     [Header("Wall Run Vertical")]
@@ -74,15 +74,12 @@ public class WallRunAbility : MonoBehaviour
 
     private void HandleWallRunState()
     {
-        // added this check -------------------------------------------------
         // prevent wallrun during lock period
         if (Time.time < wallRunLockUntil)
         {
             StopWallRun(false);
             return;
         }
-        // -----------------------------------------------------------------
-
 
         if (!wallRunEnabled)
         {
@@ -133,7 +130,7 @@ public class WallRunAbility : MonoBehaviour
                     // capture entry momentum
                     wallRunEntrySpeed = Vector3.Dot(planarVel, t);
 
-                    // arcade boost
+                    // Speed boost on wallo-run entry
                     RB.AddForce(t * wallRunEntryBoost, ForceMode.VelocityChange);
                 }
                 else
@@ -187,26 +184,6 @@ public class WallRunAbility : MonoBehaviour
         Vector3 t = Vector3.ProjectOnPlane(wallRunTangent, up).normalized;
         Vector3 n = wallRunNormal.normalized;
 
-        //float baseSpeed = Mathf.Max(motor.currentMoveSpeed, 0.01f);
-        //float targetAlong = baseSpeed * wallRunSpeedMultiplier * v;
-
-        //if (Time.time - wallRunEntryTime <= 0.10f && v > 0f)
-        //    targetAlong += wallRunEntryBoost;
-
-        //Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
-
-        //float currentAlong = Vector3.Dot(planarVel, t);
-        //float deltaAlong = targetAlong - currentAlong;
-
-        //float maxDelta = wallRunTangentAccel * Time.fixedDeltaTime;
-        //deltaAlong = Mathf.Clamp(deltaAlong, -maxDelta, maxDelta);
-
-        //RB.AddForce(t * deltaAlong, ForceMode.VelocityChange);
-
-        //// stick to wall
-        //RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
-
-        // ---------------------------------------------------------------------
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
         float currentAlong = Vector3.Dot(planarVel, t);
@@ -224,7 +201,6 @@ public class WallRunAbility : MonoBehaviour
         RB.AddForce(t * delta, ForceMode.Acceleration);
 
         RB.AddForce(-n * wallRunStick, ForceMode.Acceleration);
-        // ---------------------------------------------------------------------
     }
 
     private void ApplyWallRunVertical()
@@ -286,8 +262,11 @@ public class WallRunAbility : MonoBehaviour
 
     private bool HighEnoughForWallRun()
     {
-        Vector3 origin = transform.position + Vector3.up;
-        float downDist = wallRunMinHeight + 1.0f;
+        // Start raycast slightly above feet to avoid clipping false positives
+        Vector3 origin = transform.position + (Vector3.up * 0.1f);
+        // We only care if the ground is immediately below us. 
+        // If we are falling from the 2nd floor, hit.distance will be huge, which is fine.
+        float downDist = wallRunMinHeight + 0.2f;
 
         if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, downDist, ~0, QueryTriggerInteraction.Ignore))
             return hit.distance > wallRunMinHeight;
@@ -303,13 +282,20 @@ public class WallRunAbility : MonoBehaviour
         float radius = wallCheckRadius;
         float dist = wallCheckDistance;
 
-        Vector3[] dirs =
+        Vector3[] baseDirs =
         {
             transform.right,
             -transform.right,
             transform.forward,
             -transform.forward
         };
+
+        // If already wall running, always check in the direction of the current wall
+        // so we don't accidentally lose it while turning
+        int dirsCount = (isWallRunning && wallRunNormal != Vector3.zero) ? 5 : 4;
+        Vector3[] dirs = new Vector3[dirsCount];
+        for (int i = 0; i < 4; i++) dirs[i] = baseDirs[i];
+        if (dirsCount == 5) dirs[4] = -wallRunNormal;
 
         foreach (Vector3 dir in dirs)
         {
@@ -318,6 +304,8 @@ public class WallRunAbility : MonoBehaviour
                 if (Vector3.Dot(hit.normal, Vector3.up) < 0.5f)
                 {
                     wallNormal = hit.normal;
+                    // message to tell the player can wallrun
+                    Debug.Log("Can WallRun! Normal: " + wallNormal);
                     return true;
                 }
             }
@@ -325,8 +313,6 @@ public class WallRunAbility : MonoBehaviour
 
         return false;
     }
-
-    // added this method -------------------------------------------------
     public void LockWallRun(float duration)
     {
         wallRunLockUntil = Time.time + duration;

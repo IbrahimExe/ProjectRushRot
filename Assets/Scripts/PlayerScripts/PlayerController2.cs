@@ -223,18 +223,18 @@ public class PlayerController2 : MonoBehaviour
         characterData = data;
 
         // ---- STATS ----
-        baseStartMoveSpeed = data.startMoveSpeed;
-        baseMaxMoveSpeed = data.maxMoveSpeed;
-        baseAcceleration = data.acceleration;
-        baseDeceleration = data.deceleration;
+        //baseStartMoveSpeed = data.startMoveSpeed;
+        //baseMaxMoveSpeed = data.maxMoveSpeed;
+        //baseAcceleration = data.acceleration;
+        //baseDeceleration = data.deceleration;
 
-        baseJumpForce = data.jumpForce;
+        //baseJumpForce = data.jumpForce;
 
-        baseJumpUpImpulse = data.wallJumpUpImpulse;
-        baseJumpAwayImpulse = data.wallJumpAwayImpulse;
+        //baseJumpUpImpulse = data.wallJumpUpImpulse;
+        //baseJumpAwayImpulse = data.wallJumpAwayImpulse;
 
-        baseWallRunSpeed = data.wallRunSpeed;
-        baseWallRunDuration = data.wallRunDuration;
+        //baseWallRunSpeed = data.wallRunSpeed;
+        //baseWallRunDuration = data.wallRunDuration;
 
         // Re-apply to runtime values
         SetBaseStats();
