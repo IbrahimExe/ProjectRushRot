@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.Rendering;
 
 public class AltXPBarUI : MonoBehaviour
 {
@@ -12,6 +13,8 @@ public class AltXPBarUI : MonoBehaviour
     [Header("Smoothing")]
     public float fillSmoothTime = 0.1f;
     private float currentFillVelocity;
+
+    public bool IsXPBarReset = false;
 
     void Start()
     {
@@ -25,6 +28,7 @@ public class AltXPBarUI : MonoBehaviour
 
     void Update()
     {
+
         var em = AltExpManager.Instance;
         int required = em.XPRequiredForLevel(em.level);
         float targetFill = Mathf.Clamp01(em.xp / required);
@@ -35,5 +39,14 @@ public class AltXPBarUI : MonoBehaviour
         string s = $"Lvl {em.level}  {Mathf.FloorToInt(em.xp)}/{required}";
         if (levelTextTMP) levelTextTMP.text = s;
         if (levelTextLegacy) levelTextLegacy.text = s;
+
+    }
+
+    public void ResetXPBar()
+    {
+        fillImage.fillAmount = 0f;
+        if (levelTextTMP) levelTextTMP.text = $"Lvl {AltExpManager.Instance.level}  0/{AltExpManager.Instance.XPRequiredForLevel(AltExpManager.Instance.level)}";
+        if (levelTextLegacy) levelTextLegacy.text = $"Lvl {AltExpManager.Instance.level}  0/{AltExpManager.Instance.XPRequiredForLevel(AltExpManager.Instance.level)}";
+
     }
 }

@@ -17,9 +17,14 @@ public class CharacterSelector : MonoBehaviour
     [Header("Interaction")]
     [SerializeField] private KeyCode interactKey = KeyCode.E;
 
+
+    [SerializeField] AltXPBarUI xpBarUI;
+    [SerializeField] AltExpManager expManager;
+
     private GameObject currentModel;
     private Vector3 baseLocalPos;
     private float bobTimer;
+   
 
     private PlayerControllerBase playerInside;
 
@@ -38,9 +43,11 @@ public class CharacterSelector : MonoBehaviour
         if (playerInside != null && Input.GetKeyDown(interactKey))
         {
             playerInside.ChangeCharacter(characterData);
+            expManager.IsLevelReset= true;
         }
+        
     }
-    private void SpawnModel()
+    public void SpawnModel()
     {
         if (characterData == null || characterData.modelPrefab == null)
         {
@@ -51,6 +58,7 @@ public class CharacterSelector : MonoBehaviour
         {
             Destroy(currentModel);
         }
+       
 
         currentModel = Instantiate(characterData.modelPrefab, modelRoot);
 
@@ -60,6 +68,8 @@ public class CharacterSelector : MonoBehaviour
         t.localScale = characterData.modelScale;
 
         baseLocalPos = t.localPosition;
+
+
     }
 
     private void ModelAnimation()

@@ -70,6 +70,8 @@ public class AltExpManager : MonoBehaviour
     // internal
     private float targetSpeedMultiplier = 1f;
 
+    public bool IsLevelReset = false;
+
     // Cached references for performance
     private Rigidbody cachedRb;
     private CharacterController cachedChar;
@@ -79,6 +81,12 @@ public class AltExpManager : MonoBehaviour
 
     [Header("Debug")]
     public bool debugLog = true;
+
+   [SerializeField] public AltXPBarUI xpBar;
+   [SerializeField] public LevelUpCardSelector levelUpCardSelector;
+   [SerializeField] public CharacterSelector cs;
+   [SerializeField] public CharacterSelector cs2;
+   [SerializeField] public CharacterSelector cs3;
 
     private void Awake()
     {
@@ -177,6 +185,13 @@ public class AltExpManager : MonoBehaviour
         // accumulate XP based on base + multipliers
         float xpThisFrame = baseXPPerSecond * Time.deltaTime * speedMultiplier * globalMultiplier * dashKillMultiplier;
         AddXP(xpThisFrame);
+
+      if(IsLevelReset == true)
+        {
+            ResetLevel();
+            xpBar.ResetXPBar();
+            IsLevelReset = false;
+        }
     }
 
     private float GetPlayerSpeed()
@@ -257,6 +272,16 @@ public class AltExpManager : MonoBehaviour
             levelUpUI.TriggerLevelUp();
         else
             Debug.LogWarning("ExperienceManager: LevelUpUI reference is missing.");
+    }
+
+    public void ResetLevel()
+    {
+        xp = 0f;
+        level = 1;
+        speedMultiplier = 1f;
+        globalMultiplier = 1f;
+        dashKillMultiplier = 1f;
+        xpBar.ResetXPBar();
     }
 
     // Utility: set speed multiplier from other scripts manually (overrides automatic sampling for one frame)
