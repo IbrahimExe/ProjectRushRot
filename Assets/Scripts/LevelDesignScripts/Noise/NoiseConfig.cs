@@ -23,6 +23,7 @@ public class NoiseConfig : ScriptableObject
     public QuantizationSettings quantization;
     public MarbleSettings marble;
     public TurbulenceSettings turbulence;
+    public InvertSettings invert;
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -66,6 +67,8 @@ public struct WoodSettings
     public float frequency;
     [Tooltip("Grain ring density — higher = more rings. Try 8–20.")]
     public float multiplier;
+    [Range(0f, 1f), Tooltip("0 = no effect, 1 = fully overwrites previous layers.")]
+    public float blendWeight;
 }
 
 [Serializable]
@@ -89,6 +92,8 @@ public struct MarbleSettings
     [Tooltip("Gain — amplitude multiplier per layer. Typically 0.35–0.5.")]
     public float amplitudeMult;
     [Min(1)] public uint numLayers;
+    [Range(0f, 1f), Tooltip("0 = no effect, 1 = fully overwrites previous layers.")]
+    public float blendWeight;
 }
 
 [Serializable]
@@ -104,4 +109,14 @@ public struct TurbulenceSettings
     [Min(1)] public uint numLayers;
     [Tooltip("Divide final sum by this to normalise. 0 = automatic.")]
     public float maxNoiseVal;
+    [Range(0f, 1f), Tooltip("0 = no effect, 1 = fully overwrites previous layers.")]
+    public float blendWeight;
+}
+
+[Serializable]
+public struct InvertSettings
+{
+    public bool enabled;
+    [Range(0f, 1f), Tooltip("0 = no effect, 1 = full invert (1 - n). In-between blends toward the inverted value.")]
+    public float blendWeight;
 }

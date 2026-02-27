@@ -42,31 +42,13 @@ public class RunnerGenConfig : ScriptableObject
     [Tooltip("Chance to attempt occupant spawning per cell (0-1).")]
     [Range(0f, 1f)] public float globalSpawnChance = 0.5f;
 
-    [Header("Biome Noise (Zone System)")]
-    [Tooltip("Turns the zone/biome noise system on/off. When OFF, tiles ignore biome affinities and only neighbor rules affect surfaces.")]
-    public bool useBiomeSystem = true;
+    [Header("Noise Placement")]
+    [Tooltip("Controls how many world units in Z map to the full [0,1] UV range of the noise.\n" +
+             "The larger this is, the longer the world takes to repeat patterns.\n" +
+             "Note: U axis maps 1 pixel per lane, so large Z scales will stretch the noise horizontally " +
+             "along the track compared to square editor previews unless compensated via noise frequency.")]
+    public float worldNoiseScale = 5000f;
 
-    [Tooltip("Controls the SIZE of terrain zones in grid cells. Higher = larger, smoother zones. Lower = smaller, noisier patches.")]
-    [Range(5f, 50f)] public float biomeNoiseScale = 18f;
-
-    [Header("Biome Noise Quality")]
-    [Tooltip("Number of noise layers combined. More = richer detail, but too high can add speckle.")]
-    [Range(1, 8)] public int biomeOctaves = 8;
-
-    [Tooltip("Frequency multiplier per octave. Higher = more detail each octave.")]
-    [Range(1.2f, 3.5f)] public float biomeLacunarity = 1.2f;
-
-    [Tooltip("Amplitude multiplier per octave. Lower = smoother. Higher = more detail/speckle.")]
-    [Range(0.2f, 0.8f)] public float biomeGain = 0.2f;
-
-    [Tooltip("How much we 'warp' the noise coordinates to create rounder, more organic regions. 0 = no warp.")]
-    [Range(0f, 3f)] public float biomeWarpStrength = 1f;
-
-    [Tooltip("Scale of the warp field. Lower = broad bends. Higher = tighter twisting.")]
-    [Range(0.5f, 6f)] public float biomeWarpScale = 0.5f;
-
-    [Tooltip("Extra smoothing by averaging nearby noise samples. 0 = none. Higher = softer boundaries, fewer tiny islands.")]
-    [Range(0f, 1f)] public float biomeBlur = 0.5f;
 
     [Header("Golden Path Wave")]
     public bool useWavePath = true;
@@ -101,6 +83,9 @@ public class RunnerGenConfig : ScriptableObject
 
     public void EnsureReady()
     {
+        if (worldNoiseScale < cellLength * 2f) 
+            worldNoiseScale = cellLength * 2f; // Safety clamp to avoid precision death
+
         if (catalog != null) catalog.RebuildCache();
 
         if (weightRules != null)

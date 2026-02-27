@@ -32,17 +32,6 @@ namespace LevelGenerator.Data
         EdgeWall      // Walls that keep player in bounds on edge lanes
     }
 
-    // NEW: Biome types for regional coherence
-    public enum BiomeType
-    {
-        Default,      // Neutral/mixed (no preference)
-        Grassy,       // Green, natural, soft surfaces
-        Rocky,        // Stone, hard, grey surfaces
-        Sandy,        // Desert, warm, beige surfaces
-        Crystalline,  // Magical, glowing, fantasy surfaces
-        Swampy,       // Water, murky, dark green surfaces
-        Volcanic      // Fire, lava, red/orange surfaces
-    }
 
     // Directions for neighbor lookup
     public enum Direction
@@ -74,7 +63,7 @@ namespace LevelGenerator.Data
 
         // WFC Fields
         public bool isCollapsed;
-        public List<PrefabDef> surfaceCandidates;
+        public List<PrefabDef> occupantCandidates;
         public Dictionary<PrefabDef, float> candidateWeights;
         public float entropy;
 
@@ -87,7 +76,7 @@ namespace LevelGenerator.Data
             occupantDef = occupantP;
             isEdgeLane = edgeLane;
             isCollapsed = false;
-            surfaceCandidates = null;
+            occupantCandidates = null;
             candidateWeights = null;
             entropy = 0f;
         }
@@ -101,56 +90,13 @@ namespace LevelGenerator.Data
             occupantDef = null;
             isEdgeLane = false;
             isCollapsed = false;
-            surfaceCandidates = null;
+            occupantCandidates = null;
             candidateWeights = null;
             entropy = 0f;
         }
     }
 
-    /// Context information for weight calculations
-    /// Contains all data needed to make informed placement decisions
-    public struct PlacementContext
-    {
-        public (int z, int lane) position;
-        public SurfaceType currentSurface;
-        public OccupantType currentOccupant;
 
-        // References to grid data
-        public System.Func<int, int, CellState> GetCell;
-        public System.Func<(int, int), bool> IsOnGoldenPath;
-
-        // Grid metadata
-        public int laneCount;       // playable lane count (does NOT include the 2 edge lanes)
-        public int playerZIndex;
-
-        // True when this cell is one of the two structural boundary lanes.
-        public bool isEdgeLane;
-
-        // Helper methods
-        public bool IsEdgeLane => isEdgeLane;
-        public bool IsCenterLane => position.lane == (laneCount - 1) / 2;
-        public float NormalizedLanePosition => (float)position.lane / (laneCount - 1);
-
-        public int DistanceToGoldenPath
-        {
-            get
-            {
-                if (IsOnGoldenPath(position)) return 0;
-
-                // Find nearest golden path cell in same row
-                int minDist = int.MaxValue;
-                for (int lane = 0; lane < laneCount; lane++)
-                {
-                    if (IsOnGoldenPath((position.z, lane)))
-                    {
-                        int dist = Mathf.Abs(position.lane - lane);
-                        if (dist < minDist) minDist = dist;
-                    }
-                }
-                return minDist;
-            }
-        }
-    }
 
     [System.Serializable]
     public class PrefabDef
@@ -172,7 +118,7 @@ namespace LevelGenerator.Data
         [Header("Dimensions")]
         public Vector3Int Size = new Vector3Int(1, 1, 1);
 
-        [Tooltip("Used ONLY if Layer == Occupant. Ignored for Surfaces (WFC uses constraints).")]
+        [Tooltip("Selection weight for occupant WFC placement.")]
         [Range(0f, 100f)] public float OccupantWeight = 10f;
 
         public List<string> Tags = new List<string>();
@@ -195,39 +141,18 @@ namespace LevelGenerator.Data
         [Tooltip("Can the player walk through this object?")]
         public bool IsWalkable = false;
 
-        [Tooltip("If true, Wave Function Collapse / procedural selection may use this entry. " +
-                 "When false, the tile still participates in neighbor rules (so adjacencies are legal) " +
-                 "but WFC will never choose it as a collapse result.")]
-        public bool AllowWFC = true;
+        [Header("Noise Hierarchy")]
+        [Tooltip("Position in the sorted hierarchy (0 = lowest/darkest, N-1 = highest/brightest).")]
+        public int noiseTier = 0;
 
-        [Header("Biome System")]
-        [Tooltip("How strongly this tile prefers each biome. Higher = more likely. Leave empty for neutral (1.0).")]
-        public Dictionary<BiomeType, float> BiomeAffinities = new Dictionary<BiomeType, float>();
+        [Tooltip("Which noise asset this tile responds to (allows multi-layer setups).")]
+        public NoiseConfig noiseChannel;
 
-        /// Gets the biome affinity weight for a specific biome.
-        /// Returns 1.0 (neutral) if no affinity is defined.
-        [System.Serializable]
-        public struct BiomeAffinity
-        {
-            public BiomeType biome;
-            public float weight; // multiplier (0..whatever)
-        }
+        [Tooltip("Whether this def participates in noise-driven placement at all.")]
+        public bool isNoiseCandidate = true;
 
-        [Header("Biome System")]
-        [Tooltip("Biome weight multipliers. 1 = neutral, >1 prefers, <1 avoids.")]
-        public List<BiomeAffinity> biomeAffinities = new List<BiomeAffinity>();
-
-        public float GetBiomeAffinity(BiomeType biome)
-        {
-            if (biomeAffinities == null) return 1f;
-
-            for (int i = 0; i < biomeAffinities.Count; i++)
-            {
-                if (biomeAffinities[i].biome == biome)
-                    return Mathf.Max(0f, biomeAffinities[i].weight);
-            }
-            return 1f;
-        }
+        [Tooltip("Expands the tile's range at both edges, creating an overlap zone where it can appear instead of its neighbors.")]
+        [Range(0f, 1f)] public float noiseBlend = 0f;
     }
 
 }

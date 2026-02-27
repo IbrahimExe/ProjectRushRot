@@ -10,15 +10,11 @@ public class NeighborRulesConfigEditor : Editor
     private NeighborRulesConfig _target;
 
     // UI Cache
-    private string[] _surfaceDisplayNames;
-    private string[] _surfaceIDs;
-
-    // Occupants are now handled via "Allowed Surfaces" in PrefabDef, 
-    // but if we keep looking at neighbor rules for surfaces, we need the surface cache.
-    // The user requested removing neighbor rules for occupants.
+    private string[] _occupantDisplayNames;
+    private string[] _occupantIDs;
 
     private bool _cacheDirty = true;
-    private bool _showSurfaces = true;
+    private bool _showOccupants = true;
 
     private void OnEnable()
     {
@@ -30,17 +26,17 @@ public class NeighborRulesConfigEditor : Editor
     {
         if (_target.catalog == null)
         {
-            _surfaceDisplayNames = new string[0];
-            _surfaceIDs = new string[0];
+            _occupantDisplayNames = new string[0];
+            _occupantIDs = new string[0];
             return;
         }
 
-        var surfaces = _target.catalog.Definitions
-            .Where(d => d.Layer == ObjectLayer.Surface && !string.IsNullOrEmpty(d.ID))
+        var occupants = _target.catalog.Definitions
+            .Where(d => d.Layer == ObjectLayer.Occupant && !string.IsNullOrEmpty(d.ID))
             .ToList();
 
-        _surfaceDisplayNames = surfaces.Select(d => $"{d.Name} ({d.ID})").ToArray();
-        _surfaceIDs = surfaces.Select(d => d.ID).ToArray();
+        _occupantDisplayNames = occupants.Select(d => $"{d.Name} ({d.ID})").ToArray();
+        _occupantIDs = occupants.Select(d => d.ID).ToArray();
         _cacheDirty = false;
     }
 
@@ -67,26 +63,23 @@ public class NeighborRulesConfigEditor : Editor
         EditorGUILayout.LabelField("Tools", EditorStyles.boldLabel);
 
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Sync Surface Rules")) SyncSurfaceRules(_target);
+        if (GUILayout.Button("Sync Occupant Rules")) SyncOccupantRules(_target);
         if (GUILayout.Button("Auto-Fix Symmetry")) ValidateAndFixSymmetry(_target);
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
 
-        // 3. Surface Rules ONLY (Occupants use Budget/AllowedSurfaces now)
-        _showSurfaces = EditorGUILayout.Foldout(_showSurfaces, "Surface Neighbor Rules", true);
-        if (_showSurfaces)
+        // 3. Occupant Rules
+        _showOccupants = EditorGUILayout.Foldout(_showOccupants, "Occupant Neighbor Rules", true);
+        if (_showOccupants)
         {
-            DrawSurfaceRules(serializedObject.FindProperty("surfaceRules"));
+            DrawOccupantRules(serializedObject.FindProperty("occupantRules"));
         }
-
-        // Occupant rules are deprecated/removed from this view as per user request
-        // "occupants should only check the surface their on not their neighboors" -> This is done in PrefabDef now.
 
         serializedObject.ApplyModifiedProperties();
     }
 
-    private void DrawSurfaceRules(SerializedProperty list)
+    private void DrawOccupantRules(SerializedProperty list)
     {
         EditorGUI.indentLevel++;
         for (int i = 0; i < list.arraySize; i++)
@@ -96,9 +89,9 @@ public class NeighborRulesConfigEditor : Editor
 
             // Allow selecting the Self ID via Dropdown (if new entry) or just Label
             string currentId = selfIDProp.stringValue;
-            int currentIndex = System.Array.IndexOf(_surfaceIDs, currentId);
-            string entryLabel = (currentIndex >= 0 && currentIndex < _surfaceDisplayNames.Length)
-                ? _surfaceDisplayNames[currentIndex]
+            int currentIndex = System.Array.IndexOf(_occupantIDs, currentId);
+            string entryLabel = (currentIndex >= 0 && currentIndex < _occupantDisplayNames.Length)
+                ? _occupantDisplayNames[currentIndex]
                 : (string.IsNullOrEmpty(currentId) ? "[New Entry]" : currentId);
 
             entry.isExpanded = EditorGUILayout.Foldout(entry.isExpanded, entryLabel, true);
@@ -109,11 +102,11 @@ public class NeighborRulesConfigEditor : Editor
 
                 // Self ID Selection
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.PrefixLabel("Surface:");
-                int newIndex = EditorGUILayout.Popup(currentIndex, _surfaceDisplayNames);
-                if (newIndex >= 0 && newIndex < _surfaceIDs.Length)
+                EditorGUILayout.PrefixLabel("Occupant:");
+                int newIndex = EditorGUILayout.Popup(currentIndex, _occupantDisplayNames);
+                if (newIndex >= 0 && newIndex < _occupantIDs.Length)
                 {
-                    selfIDProp.stringValue = _surfaceIDs[newIndex];
+                    selfIDProp.stringValue = _occupantIDs[newIndex];
                 }
 
                 if (GUILayout.Button("Remove", GUILayout.Width(60)))
@@ -137,7 +130,7 @@ public class NeighborRulesConfigEditor : Editor
             }
         }
 
-        if (GUILayout.Button("Add New Surface Rule"))
+        if (GUILayout.Button("Add New Occupant Rule"))
         {
             list.InsertArrayElementAtIndex(list.arraySize);
         }
@@ -161,11 +154,11 @@ public class NeighborRulesConfigEditor : Editor
 
             // Neighbor ID Dropdown
             string currentID = neighborID.stringValue;
-            int curIndex = System.Array.IndexOf(_surfaceIDs, currentID);
-            int newIndex = EditorGUILayout.Popup(curIndex, _surfaceDisplayNames, GUILayout.MinWidth(150));
-            if (newIndex >= 0 && newIndex < _surfaceIDs.Length)
+            int curIndex = System.Array.IndexOf(_occupantIDs, currentID);
+            int newIndex = EditorGUILayout.Popup(curIndex, _occupantDisplayNames, GUILayout.MinWidth(150));
+            if (newIndex >= 0 && newIndex < _occupantIDs.Length)
             {
-                neighborID.stringValue = _surfaceIDs[newIndex];
+                neighborID.stringValue = _occupantIDs[newIndex];
             }
             else if (curIndex == -1 && !string.IsNullOrEmpty(currentID))
             {
@@ -221,7 +214,7 @@ public class NeighborRulesConfigEditor : Editor
 
     // --- LOGIC ---
 
-    private void SyncSurfaceRules(NeighborRulesConfig config)
+    private void SyncOccupantRules(NeighborRulesConfig config)
     {
         if (config.catalog == null) return;
 
@@ -229,22 +222,22 @@ public class NeighborRulesConfigEditor : Editor
         foreach (var def in config.catalog.Definitions)
         {
             if (string.IsNullOrEmpty(def.ID)) continue;
-            if (def.Layer != ObjectLayer.Surface) continue;
+            if (def.Layer != ObjectLayer.Occupant) continue;
 
-            if (!config.surfaceRules.Any(e => e.selfID == def.ID))
+            if (!config.occupantRules.Any(e => e.selfID == def.ID))
             {
-                config.surfaceRules.Add(new NeighborRulesConfig.NeighborEntry { selfID = def.ID });
+                config.occupantRules.Add(new NeighborRulesConfig.NeighborEntry { selfID = def.ID });
                 added++;
             }
         }
-        Debug.Log($"Synced surface rules. Added {added} entries.");
+        Debug.Log($"Synced occupant rules. Added {added} entries.");
         _cacheDirty = true;
     }
 
     private void ValidateAndFixSymmetry(NeighborRulesConfig config)
     {
         bool changed = false;
-        FixSymmetryForList(config.surfaceRules, config.surfaceRules, ref changed);
+        FixSymmetryForList(config.occupantRules, config.occupantRules, ref changed);
         if (changed) EditorUtility.SetDirty(config);
         Debug.Log("Symmetry check complete.");
     }

@@ -17,8 +17,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
 {
     [Header("Visualization")]
     [SerializeField] private bool showGoldenPath = true;
-    [SerializeField] private bool showNoiseWeights = true;   // Replaces showBiomes — shows raw noise value as a heat map
-    [SerializeField] private bool showTerrainZones = true;   // Zone-first biome system overlay (Forest/Grass/Sandy/Water)
     [SerializeField] private bool showSurfaceTypes = true;
     [SerializeField] private bool showWFCState = false;
     [SerializeField] private bool showOccupants = true;
@@ -26,8 +24,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     [SerializeField] private bool showEdgeWallSegments = true;
 
     [Header("Debug Output")]
-    [SerializeField] private bool logChunkGeneration = true;
-    [SerializeField] private bool logWFCSteps = false;
     [SerializeField] private bool logConstraintViolations = true;
     [SerializeField] private bool logEdgeWallGeneration = true;
 
@@ -42,22 +38,9 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     private FieldInfo gridField;
     private FieldInfo goldenPathField;
     private FieldInfo configField;
-    private MethodInfo sampleBiomeNoiseMethod;
-
-    // New generator fields (multi-biome configs + zone-first biome system)
-    private FieldInfo biomeConfigsField;
-    private FieldInfo currentBiomeIndexField;
-
-    // Static zone configuration on RunnerLevelGenerator (private nested enum + static readonly fields)
-    private FieldInfo zoneThresholdsField;
-    private FieldInfo zoneOrderField;
-    private FieldInfo zoneDominantIdField;
-    private FieldInfo zoneDepthCheckField;
-
+    
     // Stats tracking
     private int totalChunksGenerated = 0;
-    private int totalCellsCollapsed = 0;
-    private int totalWFCIterations = 0;
 
     void Awake()
     {
@@ -68,18 +51,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         gridField = typeof(RunnerLevelGenerator).GetField("grid", flags);
         goldenPathField = typeof(RunnerLevelGenerator).GetField("goldenPathSet", flags);
         configField = typeof(RunnerLevelGenerator).GetField("config", flags);
-        sampleBiomeNoiseMethod = typeof(RunnerLevelGenerator).GetMethod("SampleBiomeNoise", flags);
-
-        biomeConfigsField = typeof(RunnerLevelGenerator).GetField("biomeConfigs", flags);
-        currentBiomeIndexField = typeof(RunnerLevelGenerator).GetField("currentBiomeIndex", flags);
-
-        // Zone system lives on the generator as private static fields.
-        // We reflect them so diagnostics stays aligned even if you tweak thresholds / IDs.
-        var sFlags = BindingFlags.NonPublic | BindingFlags.Static;
-        zoneThresholdsField = typeof(RunnerLevelGenerator).GetField("ZoneThresholds", sFlags);
-        zoneOrderField = typeof(RunnerLevelGenerator).GetField("ZoneOrder", sFlags);
-        zoneDominantIdField = typeof(RunnerLevelGenerator).GetField("ZoneDominantID", sFlags);
-        zoneDepthCheckField = typeof(RunnerLevelGenerator).GetField("ZONE_DEPTH_CHECK", sFlags);
     }
 
     // ============================================================
@@ -116,148 +87,15 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         return false;
     }
 
-    private int GetCurrentBiomeIndex()
-    {
-        if (currentBiomeIndexField == null) return -1;
-        try { return (int)currentBiomeIndexField.GetValue(generator); }
-        catch { return -1; }
-    }
-
-    private List<RunnerGenConfig> GetBiomeConfigs()
-    {
-        if (biomeConfigsField == null) return null;
-        try { return biomeConfigsField.GetValue(generator) as List<RunnerGenConfig>; }
-        catch { return null; }
-    }
-
-    // Returns the raw 0..1 noise value for a cell, or -1 if unavailable.
-    private float SampleNoise(int z, int lane)
-    {
-        if (sampleBiomeNoiseMethod == null) return -1f;
-        try { return (float)sampleBiomeNoiseMethod.Invoke(generator, new object[] { z, lane }); }
-        catch { return -1f; }
-    }
-
     // ============================================================
-    // Zone-first biome system helpers (mirrors RunnerLevelGenerator)
+    // Gizmo Rendering
     // ============================================================
-
-    private float[] GetZoneThresholds()
-    {
-        try { return zoneThresholdsField?.GetValue(null) as float[]; }
-        catch { return null; }
-    }
-
-    private object[] GetZoneOrder()
-    {
-        // Array of the generator's private nested enum values.
-        try
-        {
-            var arr = zoneOrderField?.GetValue(null) as Array;
-            if (arr == null) return null;
-            var outArr = new object[arr.Length];
-            for (int i = 0; i < arr.Length; i++) outArr[i] = arr.GetValue(i);
-            return outArr;
-        }
-        catch { return null; }
-    }
-
-    private int GetZoneDepthCheck()
-    {
-        // const int compiles to a literal static field, reflection still works in editor.
-        try
-        {
-            if (zoneDepthCheckField == null) return 2;
-            return (int)zoneDepthCheckField.GetValue(null);
-        }
-        catch { return 2; }
-    }
-
-    private System.Collections.IDictionary GetZoneDominantIdMap()
-    {
-        // Dictionary<TerrainZone, string>
-        try { return zoneDominantIdField?.GetValue(null) as System.Collections.IDictionary; }
-        catch { return null; }
-    }
-
-    private object GetZoneFromNoise(float noise01)
-    {
-        var thresholds = GetZoneThresholds();
-        var order = GetZoneOrder();
-        if (thresholds == null || order == null || thresholds.Length == 0 || order.Length == 0)
-        {
-            // Fallback to the current generator defaults (Forest/Grass/Sandy/Water @ 0.25 steps)
-            float[] t = { 0.25f, 0.50f, 0.75f, 1.0f };
-            string[] z = { "Forest", "Grass", "Sandy", "Water" };
-            for (int i = 0; i < t.Length; i++)
-                if (noise01 < t[i]) return z[i];
-            return z[z.Length - 1];
-        }
-
-        for (int i = 0; i < thresholds.Length && i < order.Length; i++)
-            if (noise01 < thresholds[i]) return order[i];
-        return order[order.Length - 1];
-    }
-
-    private bool IsDeeplyInsideZone(int z, int lane, object zone)
-    {
-        // Mirrors RunnerLevelGenerator.IsDeeplyInsideZone:
-        //  - samples noise only
-        //  - ignores edge lanes
-        var config = GetConfig();
-        if (config == null) return false;
-
-        int depth = Mathf.Max(1, GetZoneDepthCheck());
-        int totalLanes = config.laneCount + 2;
-        for (int dz = -depth; dz <= depth; dz++)
-        {
-            for (int dl = -depth; dl <= depth; dl++)
-            {
-                if (dz == 0 && dl == 0) continue;
-                int nl = lane + dl;
-                if (nl <= 0 || nl >= totalLanes - 1) continue; // ignore edge lanes
-                float n = SampleNoise(z + dz, nl);
-                if (n < 0f) return false;
-                object otherZone = GetZoneFromNoise(n);
-                if (!Equals(zone, otherZone)) return false;
-            }
-        }
-        return true;
-    }
-
-    private string GetDominantSurfaceIdForZone(object zone)
-    {
-        var map = GetZoneDominantIdMap();
-        if (map == null || zone == null) return null;
-        try
-        {
-            // IDictionary uses object keys; the zone object must be the same enum type.
-            if (map.Contains(zone)) return map[zone] as string;
-        }
-        catch { }
-
-        // If we couldn't read the map (or we're in fallback string-zone mode)
-        // use the generator's current defaults.
-        string zn = zone.ToString();
-        return zn switch
-        {
-            "Forest" => "Forest_SUR",
-            "Grass" => "GRASS_SUR",
-            "Sandy" => "Sand_SUR",
-            "Water" => "Water_SUR",
-            _ => null
-        };
-    }
 
     private float LaneToWorldX(int lane, int totalLanes, float laneWidth)
     {
         float centerLane = (totalLanes - 1) * 0.5f;
         return (lane - centerLane) * laneWidth;
     }
-
-    // ============================================================
-    // Gizmo Rendering
-    // ============================================================
 
     void Update()
     {
@@ -310,46 +148,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             {
                 Gizmos.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
                 Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.95f, 0.1f, cellLength * 0.95f));
-            }
-
-            // Noise heat map — replaces old per-cell biome colour.
-            // Blue (0) → Red (1) showing raw DomainWarpedFbm01 value.
-            // Smooth spatial gradients confirm the noise is working correctly.
-            // Zone bands (default): 0-0.25=Forest, 0.25-0.5=Grass, 0.5-0.75=Sandy, 0.75-1=Water
-            if (showNoiseWeights && !cell.isEdgeLane && config.useBiomeSystem)
-            {
-                float noise = SampleNoise(z, lane);
-                if (noise >= 0f)
-                {
-                    // Heat map: blue→cyan→green→yellow→red
-                    Color heatColor = Color.HSVToRGB((1f - noise) * 0.66f, 1f, 1f);
-                    Gizmos.color = new Color(heatColor.r, heatColor.g, heatColor.b, 0.8f);
-                    Gizmos.DrawCube(pos + Vector3.down * 0.05f,
-                        new Vector3(laneWidth * 0.5f, 0.05f, cellLength * 0.5f));
-                }
-            }
-
-            // Terrain Zones overlay — shows the discrete zone assignment derived from noise.
-            if (showTerrainZones && !cell.isEdgeLane && config.useBiomeSystem)
-            {
-                float noise = SampleNoise(z, lane);
-                if (noise >= 0f)
-                {
-                    object zone = GetZoneFromNoise(noise);
-                    // Colours are intentionally distinct and semi-transparent
-                    Color zoneColor = zone.ToString() switch
-                    {
-                        "Forest" => new Color(0.10f, 0.35f, 0.10f, 0.25f),
-                        "Grass" => new Color(0.20f, 0.70f, 0.20f, 0.25f),
-                        "Sandy" => new Color(0.90f, 0.85f, 0.35f, 0.25f),
-                        "Water" => new Color(0.20f, 0.50f, 0.90f, 0.25f),
-                        _ => new Color(0.70f, 0.70f, 0.70f, 0.25f)
-                    };
-
-                    Gizmos.color = zoneColor;
-                    Gizmos.DrawCube(pos + Vector3.up * 0.02f,
-                        new Vector3(laneWidth * 0.92f, 0.02f, cellLength * 0.92f));
-                }
             }
 
             // Surface Types
@@ -435,7 +233,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         allPassed &= VerifyConfiguration();
         allPassed &= VerifyGoldenPathIntegrity();
         allPassed &= VerifyWalkability();
-        allPassed &= VerifyZoneSystemCoherence();
         allPassed &= VerifyConstraintCompliance();
         allPassed &= VerifyEdgeLaneIntegrity();
         allPassed &= VerifyEdgeWallCoverage();
@@ -457,35 +254,18 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         if (config.weightRules == null) { Debug.LogError("✗ WeightRules is null!"); return false; }
         if (config.laneCount < 3) Debug.LogWarning($"⚠ Lane count is very low: {config.laneCount}");
 
-        int biomeIndex = GetCurrentBiomeIndex();
-        var biomes = GetBiomeConfigs();
-        if (biomes != null && biomes.Count > 0)
-        {
-            string activeName = biomeIndex >= 0 && biomeIndex < biomes.Count && biomes[biomeIndex] != null
-                ? biomes[biomeIndex].name
-                : "(unknown)";
-            Debug.Log($"✓ Config valid: {config.laneCount} lanes, buffer={config.bufferRows}, chunk={config.chunkSize} | " +
-                      $"ActiveBiome={biomeIndex}/{biomes.Count - 1} '{activeName}'");
-        }
-        else
-        {
-            Debug.Log($"✓ Config valid: {config.laneCount} lanes, buffer={config.bufferRows}, chunk={config.chunkSize}");
-        }
-        // Print a best-effort snapshot of biome-related fields without hard-binding to any one config version.
-        var sb = new StringBuilder();
-        sb.Append($"  Biome system: {(config.useBiomeSystem ? "ON" : "OFF")}");
+        bool hasNoiseCandidate = config.catalog.Definitions.Any(d => d.Layer == ObjectLayer.Surface && d.isNoiseCandidate && d.noiseChannel != null);
+        if (!hasNoiseCandidate) Debug.LogError("✗ No Surface tile has isNoiseCandidate=true with a valid noiseChannel!");
 
-        if (TryGetConfigValue<float>("biomeNoiseScale", out var noiseScale)) sb.Append($", noiseScale={noiseScale}");
-        if (TryGetConfigValue<int>("biomeOctaves", out var oct)) sb.Append($", octaves={oct}");
-        if (TryGetConfigValue<float>("biomeLacunarity", out var lac)) sb.Append($", lacunarity={lac}");
-        if (TryGetConfigValue<float>("biomeGain", out var gain)) sb.Append($", gain={gain}");
-        if (TryGetConfigValue<float>("biomeWarpStrength", out var warp)) sb.Append($", warpStrength={warp}");
-        if (TryGetConfigValue<float>("biomeWarpScale", out var warpScale)) sb.Append($", warpScale={warpScale}");
-        if (TryGetConfigValue<float>("biomeBlur", out var blur)) sb.Append($", blur={blur}");
-        if (TryGetConfigValue<float>("biomeCollapseBias", out var collapseBias)) sb.Append($", collapseBias={collapseBias}");
+        bool hasSafePath = config.catalog.Definitions.Any(d => d.Layer == ObjectLayer.Surface && d.SurfaceType == SurfaceType.SafePath);
+        if (!hasSafePath) Debug.LogError("✗ No SafePath surface tile found in catalog!");
+
+        // Print a best-effort snapshot without hard-binding to any one config version.
+        var sb = new StringBuilder();
+        sb.Append($"  Noise scale={config.worldNoiseScale}");
 
         Debug.Log(sb.ToString());
-        return true;
+        return hasNoiseCandidate && hasSafePath;
     }
 
     bool VerifyGoldenPathIntegrity()
@@ -556,150 +336,6 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         return false;
     }
 
-    // Zone-first biome system (RunnerLevelGenerator):
-    //   - Noise defines a discrete zone (Forest/Grass/Sandy/Water) via thresholds.
-    //   - "Deep" cells (zone-consistent neighbourhood) are pre-collapsed to the zone's dominant tile.
-    //   - Boundary cells keep many candidates with noise-biased weights, and WFC handles transitions.
-    // We verify:
-    //   1) SampleBiomeNoise returns 0..1
-    //   2) Noise field is reasonably smooth (avg neighbour delta)
-    //   3) Deep-zone cells are mostly stamped with the dominant zone tile
-    bool VerifyZoneSystemCoherence()
-    {
-        Debug.Log("\n--- Zone System Coherence Check ---");
-
-        var config = GetConfig();
-        var grid = GetGrid();
-        if (config == null || grid == null) { Debug.LogWarning("⚠ Missing data"); return true; }
-
-        if (!config.useBiomeSystem)
-        {
-            Debug.Log("○ Biome system disabled — skipping noise check");
-            return true;
-        }
-
-        if (sampleBiomeNoiseMethod == null)
-        {
-            Debug.LogWarning("⚠ SampleBiomeNoise method not found via reflection — " +
-                "ensure it is not renamed and is non-public instance.");
-            return true;
-        }
-
-        // 1. Spot-check noise values are in range
-        int outOfRange = 0;
-        var sampleCells = grid.Where(k => !k.Value.isEdgeLane).Take(200).ToList();
-
-        foreach (var kvp in sampleCells)
-        {
-            float n = SampleNoise(kvp.Key.z, kvp.Key.lane);
-            if (n < 0f || n > 1f) outOfRange++;
-        }
-
-        if (outOfRange > 0)
-            Debug.LogError($"✗ {outOfRange} cells returned noise outside 0..1!");
-        else
-            Debug.Log($"✓ Noise values in valid range across {sampleCells.Count} sampled cells");
-
-        // 2. Check gradient smoothness — adjacent cells should have similar noise values.
-        // High delta variance indicates the noise scale is too small (too noisy/grainy).
-        var playableCells = grid
-            .Where(k => !k.Value.isEdgeLane && k.Value.isCollapsed)
-            .ToDictionary(k => k.Key, k => k.Value);
-
-        float totalDelta = 0f;
-        int comparisons = 0;
-        float maxDelta = 0f;
-
-        foreach (var kvp in playableCells)
-        {
-            (int z, int lane) = kvp.Key;
-            float n0 = SampleNoise(z, lane);
-
-            if (playableCells.ContainsKey((z, lane + 1)))
-            {
-                float delta = Mathf.Abs(n0 - SampleNoise(z, lane + 1));
-                totalDelta += delta;
-                maxDelta = Mathf.Max(maxDelta, delta);
-                comparisons++;
-            }
-            if (playableCells.ContainsKey((z + 1, lane)))
-            {
-                float delta = Mathf.Abs(n0 - SampleNoise(z + 1, lane));
-                totalDelta += delta;
-                maxDelta = Mathf.Max(maxDelta, delta);
-                comparisons++;
-            }
-        }
-
-        if (comparisons > 0)
-        {
-            float avgDelta = totalDelta / comparisons;
-            Debug.Log($"  Noise gradient: avg delta={avgDelta:F4}, max delta={maxDelta:F4}");
-
-            if (avgDelta > 0.15f)
-                Debug.LogWarning($"⚠ High average noise delta ({avgDelta:F4}) — biomeNoiseScale may be too small, " +
-                    "causing noisy terrain patches. Try increasing it.");
-            else
-                Debug.Log("✓ Noise gradients look smooth");
-
-            if (maxDelta > 0.5f)
-                Debug.LogWarning($"⚠ Max noise delta {maxDelta:F4} is very high — " +
-                    "possible warp overshoot. Try lowering biomeWarpStrength.");
-        }
-
-        // 3. Deep-zone stamping check: cells that are deeply inside a zone should
-        // be pre-collapsed to the dominant tile for that zone.
-        int deepChecked = 0;
-        int deepMismatches = 0;
-        int deepNoMapping = 0;
-
-        foreach (var kvp in playableCells.Take(600))
-        {
-            (int z, int lane) = kvp.Key;
-            CellState cell = kvp.Value;
-            if (cell.surfaceDef == null) continue;
-            if (cell.surfaceDef.SurfaceType == SurfaceType.SafePath) continue; // forced, skip
-            if (GetGoldenPath() != null && GetGoldenPath().Contains((z, lane))) continue;
-
-            float noise = SampleNoise(z, lane);
-            if (noise < 0f) continue;
-
-            object zone = GetZoneFromNoise(noise);
-            if (!IsDeeplyInsideZone(z, lane, zone)) continue;
-
-            string dominantId = GetDominantSurfaceIdForZone(zone);
-            if (string.IsNullOrEmpty(dominantId)) { deepNoMapping++; continue; }
-
-            deepChecked++;
-            if (!string.Equals(cell.surfaceDef.ID, dominantId, System.StringComparison.Ordinal))
-            {
-                deepMismatches++;
-                Debug.LogWarning($"⚠ Deep-zone mismatch at ({z},{lane}) zone={zone} noise={noise:F3}: " +
-                    $"expected '{dominantId}', got '{cell.surfaceDef.ID}'");
-            }
-        }
-
-        if (deepChecked > 0)
-        {
-            float mismatchRate = (float)deepMismatches / deepChecked;
-            if (deepMismatches == 0)
-                Debug.Log($"✓ Deep-zone stamping OK ({deepChecked} deep cells checked)");
-            else if (mismatchRate < 0.10f)
-                Debug.LogWarning($"⚠ Deep-zone stamping had {deepMismatches}/{deepChecked} mismatches ({mismatchRate:P0}). " +
-                    "Small rates can happen if WFC forced a legal fix; large rates usually mean ZoneDominantID is out of sync with the catalog.");
-            else
-                Debug.LogError($"✗ Deep-zone stamping had {deepMismatches}/{deepChecked} mismatches ({mismatchRate:P0}). " +
-                    "Update ZoneDominantID in RunnerLevelGenerator or your catalog IDs.");
-        }
-        else
-        {
-            Debug.Log("○ No deep-zone cells detected in sample (this can happen with small chunks, very noisy settings, or biome system off)." +
-                      (deepNoMapping > 0 ? " Dominant ID map missing/unreadable." : string.Empty));
-        }
-
-        return outOfRange == 0 && deepMismatches == 0;
-    }
-
     bool VerifyConstraintCompliance()
     {
         Debug.Log("\n--- Constraint Compliance Check ---");
@@ -714,19 +350,19 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             (int z, int lane) = kvp.Key;
             CellState cell = kvp.Value;
-            if (cell.surfaceDef == null || cell.isEdgeLane) continue;
+            if (cell.occupant == OccupantType.None || cell.occupantDef == null || cell.isEdgeLane) continue;
 
             void Check(int tz, int tl, Direction dir)
             {
                 if (!grid.TryGetValue((tz, tl), out CellState neighbor)) return;
-                if (neighbor.surfaceDef == null || neighbor.isEdgeLane) return;
+                if (neighbor.occupant == OccupantType.None || neighbor.occupantDef == null || neighbor.isEdgeLane) return;
 
-                if (!config.weightRules.IsNeighborAllowed(cell.surfaceDef, neighbor.surfaceDef, dir))
+                if (!config.weightRules.IsNeighborAllowed(cell.occupantDef, neighbor.occupantDef, dir))
                 {
                     violations++;
                     if (logConstraintViolations)
                         Debug.LogWarning($"⚠ Violation ({z},{lane})→({tz},{tl}) [{dir}]: " +
-                            $"{cell.surfaceDef.ID} → {neighbor.surfaceDef.ID}");
+                            $"{cell.occupantDef.ID} → {neighbor.occupantDef.ID}");
                 }
             }
 
@@ -851,8 +487,9 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         var config = GetConfig();
         if (grid == null || config == null) return;
 
-        var allSurfaces = config.catalog.Definitions
-            .Where(d => d.Layer == ObjectLayer.Surface).ToList();
+        var allOccupants = config.catalog.Definitions
+            .Where(d => d.Layer == ObjectLayer.Occupant && d.OccupantType != OccupantType.EdgeWall)
+            .ToList();
 
         Debug.Log("=== DETAILED CONSTRAINT ANALYSIS ===");
 
@@ -860,40 +497,33 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             (int z, int lane) = kvp.Key;
             CellState cell = kvp.Value;
-            if (cell.surfaceDef == null || cell.isEdgeLane) continue;
+            if (cell.occupantDef == null || cell.isEdgeLane) continue;
 
             if (!grid.TryGetValue((z + 1, lane), out CellState forward)) continue;
-            if (forward.surfaceDef == null || forward.isEdgeLane) continue;
+            if (forward.occupantDef == null || forward.isEdgeLane) continue;
 
-            if (config.weightRules.IsNeighborAllowed(cell.surfaceDef, forward.surfaceDef, Direction.Forward))
+            if (config.weightRules.IsNeighborAllowed(cell.occupantDef, forward.occupantDef, Direction.Forward))
                 continue;
 
             Debug.LogError($"\n=== VIOLATION ===");
             Debug.LogError($"Position: ({z},{lane}) → ({z + 1},{lane})");
-            Debug.LogError($"Tiles: {cell.surfaceDef.ID} → {forward.surfaceDef.ID} (Forward)");
+            Debug.LogError($"Occupants: {cell.occupantDef.ID} → {forward.occupantDef.ID} (Forward)");
             Debug.LogError($"Reverse (Backward): " +
-                $"{config.weightRules.IsNeighborAllowed(forward.surfaceDef, cell.surfaceDef, Direction.Backward)}");
+                $"{config.weightRules.IsNeighborAllowed(forward.occupantDef, cell.occupantDef, Direction.Backward)}");
 
             List<float> weights;
             var allowed = config.weightRules.GetAllowedNeighbors(
-                cell.surfaceDef, Direction.Forward, allSurfaces, out weights);
-            Debug.LogError($"{cell.surfaceDef.ID} allowed Forward neighbors: " +
+                cell.occupantDef, Direction.Forward, allOccupants, out weights);
+            Debug.LogError($"{cell.occupantDef.ID} allowed Forward neighbors: " +
                 string.Join(", ", allowed.Select(d => d.ID)));
 
-            // Show noise context for both cells
-            if (config.useBiomeSystem)
-            {
-                Debug.LogError($"Noise at ({z},{lane}): {SampleNoise(z, lane):F4} | " +
-                    $"at ({z + 1},{lane}): {SampleNoise(z + 1, lane):F4}");
-            }
-
             bool found = config.weightRules.TryGetEntry(
-                cell.surfaceDef.ID, cell.surfaceDef.Layer,
+                cell.occupantDef.ID, cell.occupantDef.Layer,
                 out NeighborRulesConfig.NeighborEntry rules);
 
             Debug.LogError(found
-                ? $"Rules for '{cell.surfaceDef.ID}': {rules.allowed.Count} allowed, {rules.denied.Count} denied"
-                : $"NO CACHED RULES found for '{cell.surfaceDef.ID}' — check ID mismatch or missing entry");
+                ? $"Rules for '{cell.occupantDef.ID}': {rules.allowed.Count} allowed, {rules.denied.Count} denied"
+                : $"NO CACHED RULES found for '{cell.occupantDef.ID}' — check ID mismatch or missing entry");
 
             if (rules != null)
                 foreach (var a in rules.allowed)
@@ -916,12 +546,5 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         }
 
         Debug.Log($"Total chunks generated: {totalChunksGenerated}");
-        Debug.Log($"Total cells collapsed: {totalCellsCollapsed}");
-
-        if (totalWFCIterations > 0)
-        {
-            Debug.Log($"Total WFC iterations: {totalWFCIterations}");
-            Debug.Log($"Avg iterations/chunk: {(float)totalWFCIterations / Mathf.Max(1, totalChunksGenerated):F1}");
-        }
     }
 }

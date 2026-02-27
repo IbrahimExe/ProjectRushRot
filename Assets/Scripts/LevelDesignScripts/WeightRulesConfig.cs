@@ -50,15 +50,10 @@ public class NeighborRulesConfig : ScriptableObject
     }
 
     [Header("Constraint Database")]
-    public List<NeighborEntry> surfaceRules = new List<NeighborEntry>();
     public List<NeighborEntry> occupantRules = new List<NeighborEntry>();
-    
-    // Legacy support or just internal
-    // public List<NeighborEntry> entries = new List<NeighborEntry>(); 
 
     // Dictionary cache for fast runtime lookups
     private Dictionary<string, NeighborEntry> _occupantCache;
-    private Dictionary<string, NeighborEntry> _surfaceCache;
     private bool _initialized;
 
     private void OnEnable()
@@ -71,19 +66,6 @@ public class NeighborRulesConfig : ScriptableObject
     public void BuildCache()
     {
         _occupantCache = new Dictionary<string, NeighborEntry>();
-        _surfaceCache = new Dictionary<string, NeighborEntry>();
-
-        foreach (var e in surfaceRules)
-        {
-            var key = Norm(e.selfID);
-            if (string.IsNullOrEmpty(key)) continue;
-
-            if (_surfaceCache.ContainsKey(key))
-                Debug.LogWarning($"NeighborRulesConfig: DUPLICATE surfaceRules entry for selfID '{key}'. Cache will use the LAST one.");
-
-            e.selfID = key; // optional: normalize stored value too
-            _surfaceCache[key] = e;
-        }
 
         foreach (var e in occupantRules)
         {
@@ -116,7 +98,7 @@ public class NeighborRulesConfig : ScriptableObject
         weights = new List<float>();
         
         // 1. Determine which cache to use
-        Dictionary<string, NeighborEntry> cache = (self.Layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        Dictionary<string, NeighborEntry> cache = _occupantCache;
 
         // 2. If no entry for this tile (or self is null), return Unconstrained (Multipliers = 1.0)
         if (self == null || string.IsNullOrEmpty(self.ID) || !cache.TryGetValue(self.ID, out NeighborEntry entry))
@@ -193,7 +175,7 @@ public class NeighborRulesConfig : ScriptableObject
         if (string.IsNullOrEmpty(selfId)) return true;
         if (string.IsNullOrEmpty(neiId)) return true;
 
-        var cache = (self.Layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        var cache = _occupantCache;
         if (!cache.TryGetValue(selfId, out NeighborEntry entry)) return true;
 
         DirectionMask queryMask = DirectionToMask(direction);
@@ -226,7 +208,7 @@ public class NeighborRulesConfig : ScriptableObject
     public bool TryGetEntry(string selfId, ObjectLayer layer, out NeighborEntry entry)
     {
         if (!_initialized) BuildCache();
-        var cache = (layer == ObjectLayer.Occupant) ? _occupantCache : _surfaceCache;
+        var cache = _occupantCache;
         return cache.TryGetValue(Norm(selfId), out entry);
     }
 

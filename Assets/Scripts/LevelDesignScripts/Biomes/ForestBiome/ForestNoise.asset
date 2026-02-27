@@ -10,38 +10,41 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c419f34de84f0d94d9bf763cbfbcbe4a, type: 3}
-  m_Name: NoiseConfig
+  m_Name: ForestNoise
   m_EditorClassIdentifier: Assembly-CSharp::NoiseConfig
-  noiseType: 0
+  noiseType: 2
   spaceMode: 0
-  tilingFrequency: 3
+  tilingFrequency: 7.81
   position:
-    value: {x: 1, y: 1, z: 1}
+    value: {x: 3, y: 3, z: 0}
   rotation:
     value: {x: 0, y: 0, z: 0}
   scale:
     value: {x: 1, y: 1, z: 1}
   wood:
     enabled: 0
-    frequency: 0
-    multiplier: 0
-    blendWeight: 0
+    frequency: 0.81
+    multiplier: 14.2
+    blendWeight: 1
   quantization:
-    enabled: 0
-    totalChannels: 0
-  marble:
     enabled: 1
-    phase: 0
-    frequency: 0
-    frequencyMult: 0
-    amplitudeMult: 0
-    numLayers: 0
-    blendWeight: 0
-  turbulence:
+    totalChannels: 4
+  marble:
     enabled: 0
-    frequency: 0
-    frequencyMult: 0
-    amplitudeMult: 0
-    numLayers: 0
-    maxNoiseVal: 0
-    blendWeight: 0
+    phase: 15.77
+    frequency: 3.58
+    frequencyMult: 2.18
+    amplitudeMult: 1.59
+    numLayers: 2
+    blendWeight: 1
+  turbulence:
+    enabled: 1
+    frequency: 9.9
+    frequencyMult: 0.6
+    amplitudeMult: 1.4
+    numLayers: 5
+    maxNoiseVal: 6.06
+    blendWeight: 0.946
+  invert:
+    enabled: 1
+    blendWeight: 1
