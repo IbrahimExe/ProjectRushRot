@@ -265,10 +265,9 @@ public class NoiseEditorWindow : EditorWindow
 
     void DrawWoodBody(SerializedProperty p)
     {
+        Child(p, "frequency", "Frequency");        
         Child(p, "multiplier", "Multiplier (ring density)");
-        EditorGUILayout.HelpBox(
-            "Try multiplier 8–20. Uses its own frequency via Space settings.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");     
     }
 
     void DrawQuantBody(SerializedProperty p)
@@ -283,9 +282,7 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "phase", "Phase (stripe offset, rad)");
-        EditorGUILayout.HelpBox(
-            "Good defaults: Frequency 0.02, Lacunarity 1.8, Gain 0.35, Layers 5.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");    
     }
 
     void DrawTurbBody(SerializedProperty p)
@@ -295,17 +292,12 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "maxNoiseVal", "Max Noise Val (0 = auto)");
-        EditorGUILayout.HelpBox(
-            "Good defaults: Frequency 0.02, Lacunarity 1.8, Gain 0.35, Layers 5.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");    
     }
 
     void DrawInvertBody(SerializedProperty p)
     {
         Child(p, "blendWeight", "Blend Weight");
-        EditorGUILayout.HelpBox(
-            "Blend Weight 1 = full invert (1 - n). 0.5 = mix toward grey. 0 = no effect.",
-            MessageType.None);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

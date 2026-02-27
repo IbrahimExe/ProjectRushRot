@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c419f34de84f0d94d9bf763cbfbcbe4a, type: 3}
-  m_Name: NoiseConfig
+  m_Name: TestNoice
   m_EditorClassIdentifier: Assembly-CSharp::NoiseConfig
   noiseType: 0
   spaceMode: 0
   tilingFrequency: 3
   position:
-    value: {x: 1, y: 1, z: 1}
+    value: {x: 3, y: 3, z: 0}
   rotation:
     value: {x: 0, y: 0, z: 0}
   scale:
@@ -30,7 +30,7 @@ MonoBehaviour:
     enabled: 0
     totalChannels: 0
   marble:
-    enabled: 1
+    enabled: 0
     phase: 0
     frequency: 0
     frequencyMult: 0
@@ -44,4 +44,7 @@ MonoBehaviour:
     amplitudeMult: 0
     numLayers: 0
     maxNoiseVal: 0
+    blendWeight: 0
+  invert:
+    enabled: 0
     blendWeight: 0
