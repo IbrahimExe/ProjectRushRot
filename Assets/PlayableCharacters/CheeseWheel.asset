@@ -12,16 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa1153e286dba1c42abc554c2dce6766, type: 3}
   m_Name: CheeseWheel
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterData
-  modelPrefab: {fileID: 7827016180753745625, guid: c6fe650128d3a29439818897a926ff3f, type: 3}
-  modelOffset: {x: 0, y: 0, z: 0}
-  modelScale: {x: 1.4727339, y: 4.961874, z: 4.961874}
-  modelRotation: {x: 0, y: 0, z: 0}
-  startMoveSpeed: 5
-  maxMoveSpeed: 50
-  acceleration: 25
+  modelPrefab: {fileID: 919132149155446097, guid: 42c7a1b4ded28fc40b47605d1988b880, type: 3}
+  modelOffset: {x: 0, y: 1, z: 0}
+  modelScale: {x: 100, y: 100, z: 100}
+  modelRotation: {x: 0, y: -90, z: -90}
+  maxMoveSpeed: 70
+  acceleration: 30
   deceleration: 25
-  jumpForce: 125
-  wallJumpUpImpulse: 7.5
-  wallJumpAwayImpulse: 8.5
-  wallRunSpeed: 75
-  wallRunDuration: 4
+  mass: 1
+  rotationSpeed: 100
+  baseGrip: 15
+  turnGrip: 10
+  jumpForce: 25
+  wallRunCooldown: 1
+  wallRunDuration: 2
+  wallRunSpeedMultiplier: 1.25
+  wallJumpUpImpulse: 30
+  wallJumpAwayImpulse: 25
+  dashCooldown: 1.5
+  dashSpeedBoostMultiplier: 1.15
+  dashBoostDuration: 2
+  numOfJumps: 2
+  xpMultiplierOnKill: 2

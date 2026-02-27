@@ -17,23 +17,23 @@ MonoBehaviour:
   - selfID: GRASS_TILE
     allowed:
     - neighborID: GRASS_TILE
-      directions: -1
-      weight: 40
+      directions: 15
+      weight: 70
     - neighborID: SAFE_PATH
-      directions: -1
+      directions: 15
       weight: 0
     - neighborID: WATER_TILE
       directions: -1
-      weight: 5
+      weight: 8
     - neighborID: DESERT_TILE
       directions: -1
-      weight: 10
+      weight: 11
     - neighborID: FOREST_TILE
-      directions: -1
-      weight: 15
+      directions: 15
+      weight: 20
     - neighborID: HOLE
-      directions: -1
-      weight: 5
+      directions: 15
+      weight: 3
     denied:
     - neighborID: LAVA_TILE
       directions: -1
@@ -41,17 +41,14 @@ MonoBehaviour:
     allowed:
     - neighborID: GRASS_TILE
       directions: 15
-      weight: 60
+      weight: 70
     - neighborID: FOREST_TILE
-      directions: -1
-      weight: 30
+      directions: 15
+      weight: 25
     - neighborID: DESERT_TILE
-      directions: -1
-      weight: 10
+      directions: 15
+      weight: 5
     - neighborID: SAFE_PATH
-      directions: -1
-      weight: 0
-    - neighborID: WATER_TILE
       directions: 15
       weight: 0
     denied:
@@ -65,112 +62,90 @@ MonoBehaviour:
     allowed:
     - neighborID: DESERT_TILE
       directions: -1
-      weight: 70
+      weight: 60
     - neighborID: LAVA_TILE
-      directions: 12
-      weight: 30
+      directions: -1
+      weight: 40
     denied:
     - neighborID: GRASS_TILE
-      directions: 15
+      directions: 31
     - neighborID: SAFE_PATH
-      directions: 15
+      directions: 31
     - neighborID: WATER_TILE
       directions: -1
     - neighborID: FOREST_TILE
       directions: -1
   - selfID: WATER_TILE
     allowed:
-    - neighborID: GRASS_TILE
-      directions: -1
-      weight: 35
-    - neighborID: FOREST_TILE
-      directions: -1
-      weight: 25
     - neighborID: WATER_TILE
       directions: -1
+      weight: 50
+    - neighborID: GRASS_TILE
+      directions: 15
       weight: 30
-    - neighborID: SAFE_PATH
-      directions: -1
-      weight: 0
+    - neighborID: FOREST_TILE
+      directions: 15
+      weight: 12
     - neighborID: DESERT_TILE
-      directions: -1
-      weight: 10
+      directions: 15
+      weight: 3
+    - neighborID: SAFE_PATH
+      directions: 15
+      weight: 0
     denied:
     - neighborID: SAFE_PATH
-      directions: 15
+      directions: 31
     - neighborID: LAVA_TILE
-      directions: 15
+      directions: -1
     - neighborID: HOLE
       directions: -1
   - selfID: DESERT_TILE
+    allowed:
+    - neighborID: DESERT_TILE
+      directions: 15
+      weight: 70
+    - neighborID: GRASS_TILE
+      directions: 15
+      weight: 18
+    - neighborID: WATER_TILE
+      directions: 15
+      weight: 5
+    - neighborID: LAVA_TILE
+      directions: 15
+      weight: 7
+    - neighborID: SAFE_PATH
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: FOREST_TILE
+      directions: -1
+  - selfID: FOREST_TILE
     allowed:
     - neighborID: GRASS_TILE
       directions: 15
       weight: 20
     - neighborID: SAFE_PATH
-      directions: 15
+      directions: -1
       weight: 0
-    - neighborID: LAVA_TILE
-      directions: 15
+    - neighborID: WATER_TILE
+      directions: -1
       weight: 5
-    - neighborID: WATER_TILE
-      directions: 15
-      weight: 10
-    - neighborID: DESERT_TILE
-      directions: -1
-      weight: 50
-    denied:
-    - neighborID: FOREST_TILE
-      directions: 13
-    - neighborID: HOLE
-      directions: 15
-  - selfID: FOREST_TILE
-    allowed:
-    - neighborID: GRASS_TILE
-      directions: 15
-      weight: 30
-    - neighborID: SAFE_PATH
-      directions: 15
-      weight: 0
-    - neighborID: WATER_TILE
-      directions: 15
-      weight: 10
-    - neighborID: HOLE
-      directions: -1
-      weight: 10
     - neighborID: FOREST_TILE
       directions: -1
-      weight: 40
+      weight: 70
     denied:
     - neighborID: LAVA_TILE
-      directions: 15
+      directions: 31
     - neighborID: DESERT_TILE
-      directions: 14
+      directions: 31
   - selfID: HOLE
     allowed:
     - neighborID: GRASS_TILE
-      directions: -1
-      weight: 30
-    - neighborID: FOREST_TILE
-      directions: -1
-      weight: 30
-    - neighborID: HOLE
-      directions: 12
-      weight: 40
+      directions: 15
+      weight: 3
     denied:
     - neighborID: SAFE_PATH
-      directions: 15
+      directions: 31
     - neighborID: WATER_TILE
-      directions: -1
-    - neighborID: DESERT_TILE
-      directions: -1
-  occupantRules:
-  - selfID: ENEMY
-    allowed:
-    - neighborID: 
-      directions: 1
-      weight: 1
-    denied: []
-  - selfID: WALL
-    allowed: []
-    denied: []
+      directions: 31
+  occupantRules: []

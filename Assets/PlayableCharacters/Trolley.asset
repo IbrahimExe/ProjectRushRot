@@ -16,12 +16,21 @@ MonoBehaviour:
   modelOffset: {x: 0, y: -2.17, z: 0}
   modelScale: {x: 1, y: 1, z: 1}
   modelRotation: {x: 0, y: -90, z: 0}
-  startMoveSpeed: 5
-  maxMoveSpeed: 50
-  acceleration: 50
+  maxMoveSpeed: 60
+  acceleration: 30
   deceleration: 25
-  jumpForce: 125
-  wallJumpUpImpulse: 7.5
-  wallJumpAwayImpulse: 8.5
-  wallRunSpeed: 75
-  wallRunDuration: 4
+  mass: 1
+  rotationSpeed: 100
+  baseGrip: 10
+  turnGrip: 2.5
+  jumpForce: 25
+  wallRunCooldown: 1
+  wallRunDuration: 2
+  wallRunSpeedMultiplier: 1.1
+  wallJumpUpImpulse: 25
+  wallJumpAwayImpulse: 20
+  dashCooldown: 2
+  dashSpeedBoostMultiplier: 1.15
+  dashBoostDuration: 1.5
+  numOfJumps: 1
+  xpMultiplierOnKill: 1
