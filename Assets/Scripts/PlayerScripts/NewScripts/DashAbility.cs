@@ -114,7 +114,13 @@ public class DashAbility : MonoBehaviour
     private void HandleDashInput()
     {
         if (motor == null) return;
-        if (motor.IsGrounded == false) return;
+
+        bool hasAirSideDash = motor.characterData != null && motor.characterData.canAirSideDash;
+
+        // Block all dashes when grounded check fails, UNLESS the character has canAirSideDash
+        // (in which case only side dashes are allowed in the air)
+        if (!motor.IsGrounded && !hasAirSideDash) return;
+
         if (wallRun != null && wallRun.IsWallRunning) return;
         if (Time.time < nextDashAllowedTime) return;
         if (!Input.GetKeyDown(dashKey)) return;
@@ -140,6 +146,13 @@ public class DashAbility : MonoBehaviour
 
         if (currentDashType == DashType.None) return;
 
+        // If airborne with canAirSideDash, ONLY allow side dashes
+        if (!motor.IsGrounded && hasAirSideDash)
+        {
+            if (currentDashType != DashType.Left && currentDashType != DashType.Right)
+                return;
+        }
+
         // Lateral (side) dash: instantaneous velocity set + optional hop
         if (currentDashType == DashType.Left || currentDashType == DashType.Right)
         {
@@ -150,7 +163,6 @@ public class DashAbility : MonoBehaviour
             sideDashDirectionWorld = rightFlat * sideSign;
 
             float lateralSpeed = (sideDashDuration > 0f) ? sideDashDistance / sideDashDuration : 0f;
-            float upSpeed = GetJumpSpeedForHeight(sideDashUpOffset);
 
             Vector3 vel = RB.linearVelocity;
 
@@ -163,11 +175,16 @@ public class DashAbility : MonoBehaviour
             
             // Add the new lateral velocity
             vel += sideDashDirectionWorld * lateralSpeed;
-            
-            // Add upward hop (replace vertical component for consistency)
-            Vector3 verticalVel = Vector3.Project(vel, up);
-            vel -= verticalVel;
-            vel += up * upSpeed;
+
+            // Only apply the upward hop when grounded; skip it for air side dashes
+            // so we don't mess up the player's existing air trajectory
+            if (motor.IsGrounded)
+            {
+                float upSpeed = GetJumpSpeedForHeight(sideDashUpOffset);
+                Vector3 verticalVel = Vector3.Project(vel, up);
+                vel -= verticalVel;
+                vel += up * upSpeed;
+            }
 
             RB.linearVelocity = vel;
 
@@ -304,6 +321,14 @@ public class DashAbility : MonoBehaviour
 
         dashFlipAngleRemaining = dashFlipAngle * sign;
         isDashFlipping = true;
+    }
+
+    /// <summary>Immediately cancels the visual dash flip roll. Call this when another ability takes over (e.g. wall run).</summary>
+    public void CancelDashFlip()
+    {
+        isDashFlipping = false;
+        dashFlipAngleRemaining = 0f;
+        dashFlipAxisLocal = Vector3.zero;
     }
 
     private void ApplyDashFlipRoll()

@@ -93,10 +93,23 @@ public class WallRunAbility : MonoBehaviour
             return;
         }
 
-        if (dash != null && (dash.IsDashing || dash.IsSideDashing))
+        if (dash != null)
         {
-            StopWallRun(false);
-            return;
+            // Always block wall run while doing a forward/back dash
+            if (dash.IsDashing)
+            {
+                StopWallRun(false);
+                return;
+            }
+
+            // Block wall run during side dash UNLESS the character has canAirSideDash:
+            // in that case, we want a side dash into a wall to transition straight into a wall run
+            bool canSideDashIntoWall = motor.characterData != null && motor.characterData.canAirSideDash;
+            if (dash.IsSideDashing && !canSideDashIntoWall)
+            {
+                StopWallRun(false);
+                return;
+            }
         }
 
         float v = Input.GetAxis("Vertical");
@@ -127,10 +140,13 @@ public class WallRunAbility : MonoBehaviour
                     wallRunEndTime = Time.time + wallRunDuration;
                     wallRunEntryTime = Time.time;
 
+                    // Interrupt side dash flip animation so the wall-run lean takes over
+                    if (dash != null) dash.CancelDashFlip();
+
                     // capture entry momentum
                     wallRunEntrySpeed = Vector3.Dot(planarVel, t);
 
-                    // Speed boost on wallo-run entry
+                    // Speed boost on wall-run entry
                     RB.AddForce(t * wallRunEntryBoost, ForceMode.VelocityChange);
                 }
                 else
