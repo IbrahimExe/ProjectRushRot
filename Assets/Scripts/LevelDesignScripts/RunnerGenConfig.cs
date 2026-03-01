@@ -53,6 +53,11 @@ public class RunnerGenConfig : ScriptableObject
     [Header("Golden Path Wave")]
     public bool useWavePath = true;
 
+    [Tooltip("How many lanes to either side of the safe path are re-evaluated by the WFC " +
+             "surface blend pass. 0 = disabled (safe path appears as a hard edge in the noise). " +
+             "1-3 creates a smooth transition zone between the path and the surrounding noise tiles.")]
+    [Range(0, 8)] public int safePathBlendRadius = 2;
+
     [Tooltip("How strongly the wave influences the golden path (0..1).")]
     [Range(0f, 1f)] public float waveStrength = 1f;
 
@@ -83,7 +88,7 @@ public class RunnerGenConfig : ScriptableObject
 
     public void EnsureReady()
     {
-        if (worldNoiseScale < cellLength * 2f) 
+        if (worldNoiseScale < cellLength * 2f)
             worldNoiseScale = cellLength * 2f; // Safety clamp to avoid precision death
 
         if (catalog != null) catalog.RebuildCache();

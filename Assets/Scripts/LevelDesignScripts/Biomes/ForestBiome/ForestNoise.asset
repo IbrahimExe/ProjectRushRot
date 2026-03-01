@@ -47,4 +47,4 @@ MonoBehaviour:
     blendWeight: 0.946
   invert:
     enabled: 1
-    blendWeight: 1
+    blendWeight: 0

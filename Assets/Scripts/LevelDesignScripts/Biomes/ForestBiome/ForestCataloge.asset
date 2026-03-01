@@ -12,140 +12,106 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
   m_Name: ForestCataloge
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  noiseChannel: {fileID: 11400000, guid: 96ff61f4758baff479be6dce0249dd22, type: 2}
   Definitions:
   - ID: Water_SUR
     Name: water
     Prefabs:
     - {fileID: 2631921935959975402, guid: 2926c78776f3d024d95ef91ea6b5290d, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 0
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 0
-    noiseChannel: {fileID: 11400000, guid: 0510b86f3fafd594096801429286b511, type: 2}
     isNoiseCandidate: 1
-    noiseBlend: 1
   - ID: Sand_SUR
     Name: Sand
     Prefabs:
     - {fileID: 2631921935959975402, guid: 839e85ab62d2ada4eae9c1ebb3848dce, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 0
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 1
-    noiseChannel: {fileID: 11400000, guid: 0510b86f3fafd594096801429286b511, type: 2}
     isNoiseCandidate: 1
-    noiseBlend: 0
   - ID: GRASS_SUR
     Name: grass
     Prefabs:
     - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 0
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 2
-    noiseChannel: {fileID: 11400000, guid: 0510b86f3fafd594096801429286b511, type: 2}
     isNoiseCandidate: 1
-    noiseBlend: 0
   - ID: Forest_SUR
     Name: Forest
     Prefabs:
     - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 0
     OccupantWeight: 0
-    Tags: []
     Cost: 3
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 3
-    noiseChannel: {fileID: 11400000, guid: 0510b86f3fafd594096801429286b511, type: 2}
     isNoiseCandidate: 1
-    noiseBlend: 0.1
   - ID: SAFEPATH
     Name: safe
     Prefabs:
     - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 2
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 1
+    Tags: []
     noiseTier: 0
-    noiseChannel: {fileID: 0}
     isNoiseCandidate: 0
-    noiseBlend: 0
   - ID: WALL_SUR
     Name: WALL
     Prefabs:
     - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
     Layer: 0
     SurfaceType: 4
-    OccupantType: 1
-    Size: {x: 0, y: 0, z: 0}
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 0
-    noiseChannel: {fileID: 0}
-    isNoiseCandidate: 1
-    noiseBlend: 0
-  - ID: WALL_occ
+    isNoiseCandidate: 0
+  - ID: WALL_SUR2
     Name: WALL
     Prefabs:
-    - {fileID: 4541508003340230685, guid: 780aff66b6937d545876ce647395b6e6, type: 3}
-    Layer: 1
-    SurfaceType: 4
-    OccupantType: 5
-    Size: {x: 0, y: 0, z: 0}
+    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    Layer: 0
+    SurfaceType: 3
     OccupantWeight: 0
-    Tags: []
     Cost: 0
-    MinRowGap: 2
-    SizeZ: 2
+    MinRowGap: 0
+    SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 0
-    noiseChannel: {fileID: 0}
-    isNoiseCandidate: 1
-    noiseBlend: 0
+    isNoiseCandidate: 0
   debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugSurfaceDef:
     ID: DEBUGSURFACE
@@ -154,18 +120,16 @@ MonoBehaviour:
     - {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
     Layer: 0
     SurfaceType: 0
-    OccupantType: 0
-    Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 10
-    Tags: []
     Cost: 1
     MinRowGap: 2
     SizeZ: 1
     AllowedSurfaceIDs: []
-    IsWalkable: 0
+    Tags: []
     noiseTier: 0
-    noiseChannel: {fileID: 0}
     isNoiseCandidate: 1
-    noiseBlend: 0
   debugOccupant: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
-  debugEdgeWall: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
+  leftWallPrefabs:
+  - {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
+  rightWallPrefabs:
+  - {fileID: 100000, guid: 31bbda51eeab02f44a8e92a7da2f5ff8, type: 3}

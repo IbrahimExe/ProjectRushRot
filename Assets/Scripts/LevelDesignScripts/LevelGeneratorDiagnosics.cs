@@ -1,11 +1,10 @@
 ﻿// ============================================================
 // Level Generator Diagnostic Tool
-// Add this as a new component to help visualize and verify
-// that your level generator is working correctly
+// Add this as a component alongside RunnerLevelGenerator to
+// visualize and verify that generation is working correctly.
 // ============================================================
 
 using LevelGenerator.Data;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,10 +17,11 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     [Header("Visualization")]
     [SerializeField] private bool showGoldenPath = true;
     [SerializeField] private bool showSurfaceTypes = true;
-    [SerializeField] private bool showWFCState = false;
+    [SerializeField] private bool showBlendZone = true;   // WFC safe-path blend area
+    [SerializeField] private bool showWFCState = false;  // uncollapsed cells
     [SerializeField] private bool showOccupants = true;
     [SerializeField] private bool showEdgeLanes = true;
-    [SerializeField] private bool showEdgeWallSegments = true;
+    [SerializeField] private bool showEdgeWalls = true;   // L / R wall coverage
 
     [Header("Debug Output")]
     [SerializeField] private bool logConstraintViolations = true;
@@ -29,32 +29,44 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
 
     [Header("Performance Monitoring")]
     [SerializeField] private bool trackPerformance = true;
-    [SerializeField] private int maxFrameTimeMs = 16; // 60fps target
+    [SerializeField] private int maxFrameTimeMs = 16;  // 60 fps target
 
     private RunnerLevelGenerator generator;
     private Queue<float> frameTimeHistory = new Queue<float>();
 
-    // Cached reflection handles — computed once in Awake to avoid per-frame overhead
+    // Reflection handles — computed once in Awake
     private FieldInfo gridField;
     private FieldInfo goldenPathField;
     private FieldInfo configField;
-    
-    // Stats tracking
+
+    // Stats
     private int totalChunksGenerated = 0;
+
+    // ============================================================
+    // Lifecycle
+    // ============================================================
 
     void Awake()
     {
         generator = GetComponent<RunnerLevelGenerator>();
-
-        // Cache all reflection handles up front
         var flags = BindingFlags.NonPublic | BindingFlags.Instance;
         gridField = typeof(RunnerLevelGenerator).GetField("grid", flags);
         goldenPathField = typeof(RunnerLevelGenerator).GetField("goldenPathSet", flags);
         configField = typeof(RunnerLevelGenerator).GetField("config", flags);
     }
 
+    void Update()
+    {
+        if (!trackPerformance) return;
+        float ft = Time.deltaTime * 1000f;
+        frameTimeHistory.Enqueue(ft);
+        if (frameTimeHistory.Count > 60) frameTimeHistory.Dequeue();
+        if (ft > maxFrameTimeMs)
+            Debug.LogWarning($"[Performance] Frame spike: {ft:F1}ms (target: {maxFrameTimeMs}ms)");
+    }
+
     // ============================================================
-    // Helpers — typed accessors over the cached reflection handles
+    // Typed accessors
     // ============================================================
 
     private Dictionary<(int z, int lane), CellState> GetGrid() =>
@@ -66,49 +78,36 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
     private RunnerGenConfig GetConfig() =>
         configField?.GetValue(generator) as RunnerGenConfig;
 
-    // Safe optional reads from RunnerGenConfig so diagnostics doesn't break when configs evolve.
     private bool TryGetConfigValue<T>(string memberName, out T value)
     {
         value = default;
         var cfg = GetConfig();
         if (cfg == null) return false;
-
         var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
         try
         {
             var f = typeof(RunnerGenConfig).GetField(memberName, flags);
             if (f != null && f.GetValue(cfg) is T fv) { value = fv; return true; }
-
             var p = typeof(RunnerGenConfig).GetProperty(memberName, flags);
             if (p != null && p.GetValue(cfg) is T pv) { value = pv; return true; }
         }
         catch { }
-
         return false;
     }
 
     // ============================================================
-    // Gizmo Rendering
+    // Gizmo helpers
     // ============================================================
 
     private float LaneToWorldX(int lane, int totalLanes, float laneWidth)
     {
-        float centerLane = (totalLanes - 1) * 0.5f;
-        return (lane - centerLane) * laneWidth;
+        float center = (totalLanes - 1) * 0.5f;
+        return (lane - center) * laneWidth;
     }
 
-    void Update()
-    {
-        if (trackPerformance)
-        {
-            float frameTime = Time.deltaTime * 1000f;
-            frameTimeHistory.Enqueue(frameTime);
-            if (frameTimeHistory.Count > 60) frameTimeHistory.Dequeue();
-
-            if (frameTime > maxFrameTimeMs)
-                Debug.LogWarning($"[Performance] Frame time spike: {frameTime:F1}ms (target: {maxFrameTimeMs}ms)");
-        }
-    }
+    // ============================================================
+    // OnDrawGizmos
+    // ============================================================
 
     void OnDrawGizmos()
     {
@@ -117,12 +116,25 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         var grid = GetGrid();
         var goldenPath = GetGoldenPath();
         var config = GetConfig();
-
         if (grid == null || config == null) return;
 
         float laneWidth = config.laneWidth;
         float cellLength = config.cellLength;
         int totalLanes = config.laneCount + 2;
+
+        // Blend zone: lanes within safePathBlendRadius of a golden-path cell
+        var blendZone = new HashSet<(int, int)>();
+        if (showBlendZone && goldenPath != null && config.safePathBlendRadius > 0)
+        {
+            foreach (var gp in goldenPath)
+            {
+                for (int off = 1; off <= config.safePathBlendRadius; off++)
+                {
+                    blendZone.Add((gp.z, gp.lane - off));
+                    blendZone.Add((gp.z, gp.lane + off));
+                }
+            }
+        }
 
         foreach (var kvp in grid)
         {
@@ -132,10 +144,9 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Vector3 pos = new Vector3(
                 LaneToWorldX(lane, totalLanes, laneWidth),
                 0.1f,
-                z * cellLength
-            );
+                z * cellLength);
 
-            // Golden Path
+            // ── Golden path ───────────────────────────────────────────────────
             if (showGoldenPath && goldenPath != null && goldenPath.Contains((z, lane)))
             {
                 Gizmos.color = Color.yellow;
@@ -143,85 +154,94 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
                     new Vector3(laneWidth * 0.9f, 1f, cellLength * 0.9f));
             }
 
-            // Edge Lanes
+            // ── Safe-path WFC blend zone ──────────────────────────────────────
+            if (showBlendZone && blendZone.Contains((z, lane)) && !cell.isEdgeLane)
+            {
+                Gizmos.color = new Color(0f, 1f, 0.5f, 0.25f);
+                Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.85f, 0.08f, cellLength * 0.85f));
+            }
+
+            // ── Edge lanes ────────────────────────────────────────────────────
             if (showEdgeLanes && cell.isEdgeLane)
             {
-                Gizmos.color = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+                // Left = dark blue, Right = dark red
+                bool isLeft = lane == 0;
+                Gizmos.color = isLeft
+                    ? new Color(0.1f, 0.1f, 0.6f, 0.5f)
+                    : new Color(0.6f, 0.1f, 0.1f, 0.5f);
                 Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.95f, 0.1f, cellLength * 0.95f));
             }
 
-            // Surface Types
-            if (showSurfaceTypes)
+            // ── Surface types ─────────────────────────────────────────────────
+            if (showSurfaceTypes && !cell.isEdgeLane)
             {
                 Color surfaceColor = cell.surface switch
                 {
-                    SurfaceType.Solid => Color.white,
+                    SurfaceType.Normal => Color.white,
                     SurfaceType.Hole => Color.black,
-                    SurfaceType.Bridge => Color.cyan,
                     SurfaceType.SafePath => Color.green,
-                    SurfaceType.Edge => Color.red,
-                    _ => Color.white
+                    SurfaceType.EdgeL => new Color(0.2f, 0.2f, 0.8f),
+                    SurfaceType.EdgeR => new Color(0.8f, 0.2f, 0.2f),
+                    _ => Color.grey
                 };
+
+                // Tint by noise tier if available
+                if (cell.surfaceDef != null && cell.surfaceDef.noiseTier > 0)
+                {
+                    float t = Mathf.Clamp01(cell.surfaceDef.noiseTier / 8f);
+                    surfaceColor = Color.Lerp(surfaceColor, Color.cyan, t * 0.3f);
+                }
 
                 Gizmos.color = new Color(surfaceColor.r, surfaceColor.g, surfaceColor.b, 0.5f);
                 Gizmos.DrawCube(pos, new Vector3(laneWidth * 0.7f, 0.05f, cellLength * 0.7f));
             }
 
-            // WFC State — uncollapsed cells shown as magenta spheres
+            // ── WFC state — uncollapsed cells ─────────────────────────────────
             if (showWFCState && !cell.isCollapsed)
             {
                 Gizmos.color = Color.magenta;
                 Gizmos.DrawWireSphere(pos + Vector3.up * 0.5f, 0.2f);
             }
 
-            // Occupants
-            if (showOccupants && cell.occupant != OccupantType.None)
+            // ── Occupants ─────────────────────────────────────────────────────
+            if (showOccupants && cell.hasOccupant && !cell.isEdgeLane)
             {
-                Color occupantColor = cell.occupant switch
+                // Color by tag if available, otherwise use a neutral orange
+                Color occupantColor = new Color(1f, 0.5f, 0f); // default: orange
+                if (cell.occupantDef != null)
                 {
-                    OccupantType.Wall => Color.red,
-                    OccupantType.Obstacle => new Color(1f, 0.5f, 0f),
-                    OccupantType.Collectible => Color.yellow,
-                    OccupantType.Enemy => Color.magenta,
-                    OccupantType.EdgeWall => new Color(0.5f, 0f, 0.5f),
-                    _ => Color.white
-                };
+                    if (cell.occupantDef.HasTag("wall")) occupantColor = Color.red;
+                    else if (cell.occupantDef.HasTag("collectible")) occupantColor = Color.yellow;
+                    else if (cell.occupantDef.HasTag("enemy")) occupantColor = Color.magenta;
+                    else if (cell.occupantDef.HasTag("walkable")) occupantColor = new Color(0.5f, 1f, 0.5f);
+                }
 
                 Gizmos.color = occupantColor;
                 Gizmos.DrawSphere(pos + Vector3.up * 0.5f, 0.3f);
             }
 
-            // Edge Wall Segments — draw entire multi-row extents from origin cell only
-            if (showEdgeWallSegments && cell.occupant == OccupantType.EdgeWall && cell.occupantDef != null)
+            // ── Edge walls (L / R) ────────────────────────────────────────────
+            if (showEdgeWalls && cell.isEdgeLane && cell.hasOccupant)
             {
-                bool isOrigin = true;
-                if (grid.TryGetValue((z - 1, lane), out CellState prevCell))
-                {
-                    if (prevCell.occupant == OccupantType.EdgeWall &&
-                        prevCell.occupantDef == cell.occupantDef)
-                        isOrigin = false;
-                }
-
-                if (isOrigin)
-                {
-                    int sizeZ = cell.occupantDef.SizeZ;
-                    float segmentLength = cellLength * sizeZ;
-                    Vector3 segmentCenter = pos + Vector3.forward * (segmentLength - cellLength) * 0.5f;
-
-                    Gizmos.color = new Color(0.8f, 0f, 0.8f, 0.8f);
-                    Gizmos.DrawWireCube(segmentCenter + Vector3.up * 0.5f,
-                        new Vector3(laneWidth * 0.9f, 1f, segmentLength * 0.95f));
-
-                    Gizmos.color = new Color(0.5f, 0f, 0.5f, 0.3f);
-                    Gizmos.DrawCube(segmentCenter,
-                        new Vector3(laneWidth * 0.8f, 0.1f, segmentLength * 0.9f));
-                }
+                bool isLeft = lane == 0;
+                Gizmos.color = isLeft
+                    ? new Color(0.3f, 0.3f, 1f, 0.8f)
+                    : new Color(1f, 0.3f, 0.3f, 0.8f);
+                Gizmos.DrawWireCube(pos + Vector3.up * 0.5f,
+                    new Vector3(laneWidth * 0.9f, 1f, cellLength * 0.95f));
+                Gizmos.color = new Color(
+                    isLeft ? 0.2f : 0.8f,
+                    0.2f,
+                    isLeft ? 0.8f : 0.2f,
+                    0.2f);
+                Gizmos.DrawCube(pos,
+                    new Vector3(laneWidth * 0.8f, 0.1f, cellLength * 0.9f));
             }
         }
     }
 
     // ============================================================
-    // Verification Suite
+    // Verification suite
     // ============================================================
 
     [ContextMenu("Run Full System Verification")]
@@ -236,13 +256,16 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         allPassed &= VerifyConstraintCompliance();
         allPassed &= VerifyEdgeLaneIntegrity();
         allPassed &= VerifyEdgeWallCoverage();
+        allPassed &= VerifySafePathDef();
 
         Debug.Log(allPassed
             ? "<color=green>✓ ALL VERIFICATION CHECKS PASSED</color>"
-            : "<color=red>✗ SOME VERIFICATION CHECKS FAILED - See above for details</color>");
+            : "<color=red>✗ SOME VERIFICATION CHECKS FAILED — see above for details</color>");
 
         PrintStatistics();
     }
+
+    // ── Configuration ─────────────────────────────────────────────────────────
 
     bool VerifyConfiguration()
     {
@@ -254,19 +277,64 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         if (config.weightRules == null) { Debug.LogError("✗ WeightRules is null!"); return false; }
         if (config.laneCount < 3) Debug.LogWarning($"⚠ Lane count is very low: {config.laneCount}");
 
-        bool hasNoiseCandidate = config.catalog.Definitions.Any(d => d.Layer == ObjectLayer.Surface && d.isNoiseCandidate && d.noiseChannel != null);
-        if (!hasNoiseCandidate) Debug.LogError("✗ No Surface tile has isNoiseCandidate=true with a valid noiseChannel!");
+        // noiseChannel is now on the catalog, not per-def
+        if (config.catalog.noiseChannel == null)
+            Debug.LogWarning("⚠ Catalog has no noiseChannel — surfaces will use fallback only.");
 
-        bool hasSafePath = config.catalog.Definitions.Any(d => d.Layer == ObjectLayer.Surface && d.SurfaceType == SurfaceType.SafePath);
-        if (!hasSafePath) Debug.LogError("✗ No SafePath surface tile found in catalog!");
+        bool hasNoiseCandidate = config.catalog.Definitions
+            .Any(d => d.Layer == ObjectLayer.Surface && d.isNoiseCandidate);
+        if (!hasNoiseCandidate)
+            Debug.LogError("✗ No surface tile has isNoiseCandidate=true!");
 
-        // Print a best-effort snapshot without hard-binding to any one config version.
+        bool hasSafePath = config.catalog.Definitions
+            .Any(d => d.Layer == ObjectLayer.Surface && d.SurfaceType == SurfaceType.SafePath);
+        if (!hasSafePath)
+            Debug.LogError("✗ No SafePath surface tile found in catalog!");
+
+        bool hasLeftWalls = config.catalog.leftWallPrefabs != null && config.catalog.leftWallPrefabs.Count > 0;
+        bool hasRightWalls = config.catalog.rightWallPrefabs != null && config.catalog.rightWallPrefabs.Count > 0;
+        if (!hasLeftWalls) Debug.LogWarning("⚠ catalog.leftWallPrefabs is empty — left edge will have no walls.");
+        if (!hasRightWalls) Debug.LogWarning("⚠ catalog.rightWallPrefabs is empty — right edge will have no walls.");
+
         var sb = new StringBuilder();
-        sb.Append($"  Noise scale={config.worldNoiseScale}");
-
+        sb.Append($"  noiseScale={config.worldNoiseScale}  ");
+        sb.Append($"safePathBlendRadius={config.safePathBlendRadius}  ");
+        sb.Append($"lanes={config.laneCount}  chunkSize={config.chunkSize}");
         Debug.Log(sb.ToString());
+
         return hasNoiseCandidate && hasSafePath;
     }
+
+    // ── Safe-path def ─────────────────────────────────────────────────────────
+
+    bool VerifySafePathDef()
+    {
+        Debug.Log("\n--- Safe Path Def Check ---");
+
+        var config = GetConfig();
+        if (config?.catalog == null) { Debug.LogWarning("⚠ Missing config/catalog"); return true; }
+
+        var safePathDef = config.catalog.Definitions
+            .FirstOrDefault(d => d.Layer == ObjectLayer.Surface && d.SurfaceType == SurfaceType.SafePath);
+
+        if (safePathDef == null)
+        {
+            Debug.LogWarning("⚠ No SafePath PrefabDef in catalog — generator will use debugSafePath fallback.");
+            if (config.catalog.debugSafePath == null)
+                Debug.LogError("✗ debugSafePath fallback is also null — safe path will be invisible!");
+            return false;
+        }
+
+        bool hasPrefabs = safePathDef.Prefabs != null && safePathDef.Prefabs.Count > 0;
+        if (!hasPrefabs)
+            Debug.LogWarning($"⚠ SafePath def '{safePathDef.ID}' has no prefabs assigned.");
+        else
+            Debug.Log($"✓ SafePath def '{safePathDef.ID}' with {safePathDef.Prefabs.Count} prefab variant(s).");
+
+        return hasPrefabs;
+    }
+
+    // ── Golden path integrity ─────────────────────────────────────────────────
 
     bool VerifyGoldenPathIntegrity()
     {
@@ -275,19 +343,19 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         var goldenPath = GetGoldenPath();
         if (goldenPath == null || goldenPath.Count == 0)
         {
-            Debug.LogWarning("⚠ Golden path is empty - has generation started?");
+            Debug.LogWarning("⚠ Golden path is empty — has generation started?");
             return true;
         }
 
-        var sortedPath = goldenPath.OrderBy(p => p.z).ToList();
+        var sorted = goldenPath.OrderBy(p => p.z).ToList();
         int gaps = 0;
 
-        for (int i = 1; i < sortedPath.Count; i++)
+        for (int i = 1; i < sorted.Count; i++)
         {
-            if (sortedPath[i].z - sortedPath[i - 1].z > 1)
+            if (sorted[i].z - sorted[i - 1].z > 1)
             {
                 gaps++;
-                Debug.LogWarning($"⚠ Gap: Z {sortedPath[i - 1].z} → {sortedPath[i].z}");
+                Debug.LogWarning($"⚠ Path gap: Z {sorted[i - 1].z} → {sorted[i].z}");
             }
         }
 
@@ -296,10 +364,11 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.Log($"✓ Golden path continuous: {goldenPath.Count} cells");
             return true;
         }
-
-        Debug.LogError($"✗ Golden path has {gaps} gaps!");
+        Debug.LogError($"✗ Golden path has {gaps} gap(s)!");
         return false;
     }
+
+    // ── Walkability ───────────────────────────────────────────────────────────
 
     bool VerifyWalkability()
     {
@@ -314,10 +383,12 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
 
         foreach (var row in rows)
         {
+            // A row is walkable if at least one non-edge, non-hole cell has no blocking occupant
             bool hasWalkable = row.Any(c =>
                 !c.Value.isEdgeLane &&
                 c.Value.surface != SurfaceType.Hole &&
-                (c.Value.occupant == OccupantType.None || c.Value.occupant == OccupantType.Collectible));
+                (!c.Value.hasOccupant ||
+                 (c.Value.occupantDef != null && c.Value.occupantDef.HasTag("walkable"))));
 
             if (!hasWalkable)
             {
@@ -331,10 +402,11 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.Log($"✓ All {rows.Count()} rows have at least one walkable lane");
             return true;
         }
-
         Debug.LogError($"✗ {blockedRows} rows are completely blocked!");
         return false;
     }
+
+    // ── Constraint compliance (occupants) ─────────────────────────────────────
 
     bool VerifyConstraintCompliance()
     {
@@ -350,18 +422,20 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             (int z, int lane) = kvp.Key;
             CellState cell = kvp.Value;
-            if (cell.occupant == OccupantType.None || cell.occupantDef == null || cell.isEdgeLane) continue;
+
+            // Only check cells with real occupant defs
+            if (!cell.hasOccupant || cell.occupantDef == null || cell.isEdgeLane) continue;
 
             void Check(int tz, int tl, Direction dir)
             {
                 if (!grid.TryGetValue((tz, tl), out CellState neighbor)) return;
-                if (neighbor.occupant == OccupantType.None || neighbor.occupantDef == null || neighbor.isEdgeLane) return;
+                if (!neighbor.hasOccupant || neighbor.occupantDef == null || neighbor.isEdgeLane) return;
 
                 if (!config.weightRules.IsNeighborAllowed(cell.occupantDef, neighbor.occupantDef, dir))
                 {
                     violations++;
                     if (logConstraintViolations)
-                        Debug.LogWarning($"⚠ Violation ({z},{lane})→({tz},{tl}) [{dir}]: " +
+                        Debug.LogWarning($"⚠ Occupant violation ({z},{lane})→({tz},{tl}) [{dir}]: " +
                             $"{cell.occupantDef.ID} → {neighbor.occupantDef.ID}");
                 }
             }
@@ -370,15 +444,12 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Check(z, lane + 1, Direction.Right);
         }
 
-        if (violations == 0)
-        {
-            Debug.Log("✓ No constraint violations detected");
-            return true;
-        }
-
-        Debug.LogError($"✗ {violations} constraint violations found!");
+        if (violations == 0) { Debug.Log("✓ No occupant constraint violations detected"); return true; }
+        Debug.LogError($"✗ {violations} occupant constraint violation(s) found!");
         return false;
     }
+
+    // ── Edge lane integrity ───────────────────────────────────────────────────
 
     bool VerifyEdgeLaneIntegrity()
     {
@@ -395,21 +466,33 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             int lane = kvp.Key.lane;
             CellState cell = kvp.Value;
+
             bool shouldBeEdge = lane == 0 || lane == totalLanes - 1;
 
             if (shouldBeEdge && !cell.isEdgeLane)
-            { violations++; Debug.LogError($"✗ Lane {lane} should be edge but isn't!"); }
+            { violations++; Debug.LogError($"✗ Lane {lane} should be edge but isEdgeLane=false!"); }
 
             if (!shouldBeEdge && cell.isEdgeLane)
             { violations++; Debug.LogError($"✗ Lane {lane} is marked edge but shouldn't be!"); }
 
-            if (cell.isEdgeLane && cell.surface != SurfaceType.Edge)
-            { violations++; Debug.LogError($"✗ Edge lane at ({kvp.Key.z},{lane}) has wrong surface: {cell.surface}"); }
+            // Edge lanes must have EdgeL or EdgeR surface type
+            if (cell.isEdgeLane && cell.surface != SurfaceType.EdgeL && cell.surface != SurfaceType.EdgeR)
+            { violations++; Debug.LogError($"✗ Edge lane ({kvp.Key.z},{lane}) has unexpected surface: {cell.surface}"); }
+
+            // Lane 0 must be EdgeL, last lane must be EdgeR
+            if (lane == 0 && cell.isEdgeLane && cell.surface != SurfaceType.EdgeL)
+                Debug.LogWarning($"⚠ Left edge lane has surface {cell.surface} instead of EdgeL");
+
+            if (lane == totalLanes - 1 && cell.isEdgeLane && cell.surface != SurfaceType.EdgeR)
+                Debug.LogWarning($"⚠ Right edge lane has surface {cell.surface} instead of EdgeR");
         }
 
         if (violations == 0) { Debug.Log("✓ Edge lanes correctly configured"); return true; }
-        Debug.LogError($"✗ {violations} edge lane violations!"); return false;
+        Debug.LogError($"✗ {violations} edge lane violation(s)!");
+        return false;
     }
+
+    // ── Edge wall coverage ────────────────────────────────────────────────────
 
     bool VerifyEdgeWallCoverage()
     {
@@ -424,60 +507,38 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         int leftLane = 0;
         int rightLane = totalLanes - 1;
 
-        AnalyzeEdgeLane(grid, leftLane, config.cellLength, "Left");
-        AnalyzeEdgeLane(grid, rightLane, config.cellLength, "Right");
+        int leftWalls = AnalyzeEdgeLane(grid, leftLane, "Left");
+        int rightWalls = AnalyzeEdgeLane(grid, rightLane, "Right");
 
-        int leftSegments = CountWallSegments(grid, leftLane);
-        int rightSegments = CountWallSegments(grid, rightLane);
+        // Check catalog lists
+        if (config.catalog.leftWallPrefabs == null || config.catalog.leftWallPrefabs.Count == 0)
+            Debug.LogWarning("⚠ catalog.leftWallPrefabs is empty — left wall won't spawn anything.");
+        if (config.catalog.rightWallPrefabs == null || config.catalog.rightWallPrefabs.Count == 0)
+            Debug.LogWarning("⚠ catalog.rightWallPrefabs is empty — right wall won't spawn anything.");
 
-        Debug.Log($"Wall segments: Left={leftSegments}, Right={rightSegments}");
-
-        if (leftSegments <= 1 || rightSegments <= 1)
+        if (leftWalls == 0 && rightWalls == 0)
         {
-            Debug.LogError("✗ Very few wall segments — edge walls may only be spawning once per chunk.");
+            Debug.LogError("✗ No wall occupants found in either edge lane — edge walls may not be generating.");
             return false;
         }
 
-        Debug.Log("✓ Multiple wall segments in both lanes"); return true;
+        Debug.Log($"✓ Edge wall cells: Left={leftWalls}, Right={rightWalls}");
+        return true;
     }
 
-    private void AnalyzeEdgeLane(Dictionary<(int z, int lane), CellState> grid, int lane,
-        float cellLength, string label)
+    /// Returns count of edge-lane cells that have hasOccupant=true.
+    private int AnalyzeEdgeLane(Dictionary<(int z, int lane), CellState> grid, int lane, string label)
     {
         var cells = grid.Where(k => k.Key.lane == lane).OrderBy(k => k.Key.z).ToList();
-        int walls = cells.Count(c => c.Value.occupant == OccupantType.EdgeWall);
-        int empty = cells.Count(c => c.Value.occupant == OccupantType.None);
+        int walls = cells.Count(c => c.Value.hasOccupant);
+        int empty = cells.Count(c => !c.Value.hasOccupant);
 
-        Debug.Log($"{label} lane: {walls} wall cells, {empty} empty, {cells.Count} total");
-
-        var bySize = cells
-            .Where(c => c.Value.occupant == OccupantType.EdgeWall && c.Value.occupantDef != null)
-            .GroupBy(c => c.Value.occupantDef.SizeZ)
-            .OrderBy(g => g.Key);
-
-        foreach (var g in bySize)
-            Debug.Log($"  SizeZ={g.Key}: {g.Count()} cells");
-    }
-
-    private int CountWallSegments(Dictionary<(int z, int lane), CellState> grid, int lane)
-    {
-        var cells = grid.Where(k => k.Key.lane == lane).OrderBy(k => k.Key.z).ToList();
-        int segments = 0;
-
-        for (int i = 0; i < cells.Count; i++)
-        {
-            if (cells[i].Value.occupant != OccupantType.EdgeWall) continue;
-            bool isOrigin = i == 0 ||
-                cells[i - 1].Value.occupant != OccupantType.EdgeWall ||
-                cells[i - 1].Value.occupantDef != cells[i].Value.occupantDef;
-            if (isOrigin) segments++;
-        }
-
-        return segments;
+        Debug.Log($"{label} edge: {walls} wall cells, {empty} empty, {cells.Count} total");
+        return walls;
     }
 
     // ============================================================
-    // Detailed Violation Debugger
+    // Detailed violation debugger
     // ============================================================
 
     [ContextMenu("Debug Specific Violation")]
@@ -487,9 +548,7 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         var config = GetConfig();
         if (grid == null || config == null) return;
 
-        var allOccupants = config.catalog.Definitions
-            .Where(d => d.Layer == ObjectLayer.Occupant && d.OccupantType != OccupantType.EdgeWall)
-            .ToList();
+        var allOccupants = config.catalog.GetAllOccupants();
 
         Debug.Log("=== DETAILED CONSTRAINT ANALYSIS ===");
 
@@ -497,10 +556,10 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
         {
             (int z, int lane) = kvp.Key;
             CellState cell = kvp.Value;
-            if (cell.occupantDef == null || cell.isEdgeLane) continue;
+            if (!cell.hasOccupant || cell.occupantDef == null || cell.isEdgeLane) continue;
 
             if (!grid.TryGetValue((z + 1, lane), out CellState forward)) continue;
-            if (forward.occupantDef == null || forward.isEdgeLane) continue;
+            if (!forward.hasOccupant || forward.occupantDef == null || forward.isEdgeLane) continue;
 
             if (config.weightRules.IsNeighborAllowed(cell.occupantDef, forward.occupantDef, Direction.Forward))
                 continue;
@@ -508,7 +567,7 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.LogError($"\n=== VIOLATION ===");
             Debug.LogError($"Position: ({z},{lane}) → ({z + 1},{lane})");
             Debug.LogError($"Occupants: {cell.occupantDef.ID} → {forward.occupantDef.ID} (Forward)");
-            Debug.LogError($"Reverse (Backward): " +
+            Debug.LogError($"Reverse check (Backward allowed?): " +
                 $"{config.weightRules.IsNeighborAllowed(forward.occupantDef, cell.occupantDef, Direction.Backward)}");
 
             List<float> weights;
@@ -517,34 +576,38 @@ public class LevelGeneratorDiagnostics : MonoBehaviour
             Debug.LogError($"{cell.occupantDef.ID} allowed Forward neighbors: " +
                 string.Join(", ", allowed.Select(d => d.ID)));
 
-            bool found = config.weightRules.TryGetEntry(
-                cell.occupantDef.ID, cell.occupantDef.Layer,
-                out NeighborRulesConfig.NeighborEntry rules);
-
-            Debug.LogError(found
-                ? $"Rules for '{cell.occupantDef.ID}': {rules.allowed.Count} allowed, {rules.denied.Count} denied"
-                : $"NO CACHED RULES found for '{cell.occupantDef.ID}' — check ID mismatch or missing entry");
-
-            if (rules != null)
-                foreach (var a in rules.allowed)
-                    Debug.LogError($"  → {a.neighborID} (directions: {a.directions})");
+            // Inspect rules directly from the cache
+            // (TryGetEntry removed — iterate occupantRules list instead)
+            var rule = config.weightRules.occupantRules
+                .FirstOrDefault(r => r.selfID == cell.occupantDef.ID);
+            if (rule == null)
+                Debug.LogError($"NO rule entry for '{cell.occupantDef.ID}' — check ID mismatch or missing entry");
+            else
+            {
+                Debug.LogError($"Rules for '{cell.occupantDef.ID}': " +
+                    $"{rule.allowed.Count} allowed, {rule.denied.Count} denied");
+                foreach (var a in rule.allowed)
+                    Debug.LogError($"  → allowed: {a.neighborID} ({a.directions})");
+                foreach (var d in rule.denied)
+                    Debug.LogError($"  ✗ denied: {d.neighborID} ({d.directions})");
+            }
 
             return; // Stop at first violation
         }
 
-        Debug.Log("No violations found!");
+        Debug.Log("No occupant violations found.");
     }
+
+    // ============================================================
+    // Statistics
+    // ============================================================
 
     void PrintStatistics()
     {
         Debug.Log("\n--- Performance Statistics ---");
-
         if (frameTimeHistory.Count > 0)
-        {
             Debug.Log($"Frame time: Avg={frameTimeHistory.Average():F1}ms, " +
                 $"Max={frameTimeHistory.Max():F1}ms, Target={maxFrameTimeMs}ms");
-        }
-
         Debug.Log($"Total chunks generated: {totalChunksGenerated}");
     }
 }

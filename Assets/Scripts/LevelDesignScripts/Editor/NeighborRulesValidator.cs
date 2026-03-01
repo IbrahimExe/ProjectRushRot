@@ -215,8 +215,7 @@ public class NeighborRulesValidator : EditorWindow
                             reverseConstraint = new NeighborRulesConfig.NeighborConstraint
                             {
                                 neighborID = rule.selfID,
-                                directions = reverseDir,
-                                weight = allowed.weight
+                                directions = reverseDir
                             };
                             neighborRule.allowed.Add(reverseConstraint);
                             added++;
@@ -289,7 +288,7 @@ public class NeighborRulesValidator : EditorWindow
                 EditorGUI.indentLevel++;
                 foreach (var a in rule.allowed)
                 {
-                    EditorGUILayout.LabelField($"→ {a.neighborID} ({a.directions}) weight={a.weight}");
+                    EditorGUILayout.LabelField($"→ {a.neighborID} ({a.directions})");
                 }
                 EditorGUI.indentLevel--;
             }
