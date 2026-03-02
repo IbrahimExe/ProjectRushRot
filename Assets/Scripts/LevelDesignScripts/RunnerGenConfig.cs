@@ -53,8 +53,14 @@ public class RunnerGenConfig : ScriptableObject
     [Header("Golden Path Wave")]
     public bool useWavePath = true;
 
-    [Tooltip("How many lanes to either side of the safe path are re-evaluated by the WFC " +
-             "surface blend pass. 0 = disabled (safe path appears as a hard edge in the noise). " +
+    [Tooltip("How many lanes wide the safe path is. The path cell itself is always 1 lane; " +
+             "setting this to 2 means 1 extra lane on each side is also forced to SafePath before " +
+             "the WFC blend starts. Useful for wider tracks or split-lane paths. " +
+             "0 or 1 = single-lane path (default).")]
+    [Range(1, 6)] public int safePathWidth = 1;
+
+    [Tooltip("How many lanes to either side of the safe path (after width expansion) are " +
+             "re-evaluated by the WFC surface blend pass. 0 = disabled. " +
              "1-3 creates a smooth transition zone between the path and the surrounding noise tiles.")]
     [Range(0, 8)] public int safePathBlendRadius = 2;
 

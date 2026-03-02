@@ -27,7 +27,7 @@ MonoBehaviour:
     multiplier: 14.2
     blendWeight: 1
   quantization:
-    enabled: 1
+    enabled: 0
     totalChannels: 4
   marble:
     enabled: 0
@@ -44,7 +44,7 @@ MonoBehaviour:
     amplitudeMult: 1.4
     numLayers: 5
     maxNoiseVal: 6.06
-    blendWeight: 0.946
+    blendWeight: 1
   invert:
     enabled: 1
-    blendWeight: 0
+    blendWeight: 1

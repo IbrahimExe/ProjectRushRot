@@ -67,7 +67,7 @@ public class DeathWall : MonoBehaviour
 
         transform.position += dir * moveSpeed * Time.deltaTime;
 
-        Debug.Log($"DeathWall | distance: {distance:F2} | moveSpeed: {moveSpeed:F2} | currentSpeed: {currentSpeed:F2}");
+        //Debug.Log($"DeathWall | distance: {distance:F2} | moveSpeed: {moveSpeed:F2} | currentSpeed: {currentSpeed:F2}");
     }
 
     private float GetPlayerSpeed()

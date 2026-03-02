@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
   m_Name: ForestCataloge
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
-  noiseChannel: {fileID: 11400000, guid: 96ff61f4758baff479be6dce0249dd22, type: 2}
+  noiseChannel: {fileID: 11400000, guid: 0510b86f3fafd594096801429286b511, type: 2}
   Definitions:
   - ID: Water_SUR
     Name: water
@@ -26,7 +26,7 @@ MonoBehaviour:
     SizeZ: 0
     AllowedSurfaceIDs: []
     Tags: []
-    noiseTier: 0
+    noiseTier: 1
     isNoiseCandidate: 1
   - ID: Sand_SUR
     Name: Sand
@@ -109,6 +109,36 @@ MonoBehaviour:
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: ANIMAL
+    Name: deer
+    Prefabs:
+    - {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 50
+    Cost: 5
+    MinRowGap: 0
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - GRASS_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: TREE
+    Name: tree
+    Prefabs:
+    - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 50
+    Cost: 5
+    MinRowGap: 0
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - Forest_SUR
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0

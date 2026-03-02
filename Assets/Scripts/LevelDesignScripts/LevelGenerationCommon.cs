@@ -132,7 +132,7 @@ namespace LevelGenerator.Data
         [Range(0, 20)] public int MinRowGap = 2;
 
         [Tooltip("How many rows this occupant occupies in Z. Cells ahead are reserved to prevent overlap.")]
-        [Range(1, 5)] public int SizeZ = 1;
+        [Range(1, 20)] public int SizeZ = 1;
 
         [Tooltip("Surface IDs this occupant is allowed to spawn on. Empty = allowed on any surface.")]
         public List<string> AllowedSurfaceIDs = new List<string>();

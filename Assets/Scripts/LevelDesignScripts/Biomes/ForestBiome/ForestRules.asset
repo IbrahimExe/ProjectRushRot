@@ -95,4 +95,24 @@ MonoBehaviour:
       directions: -1
     - neighborID: Forest_SUR
       directions: 31
-  occupantRules: []
+  - selfID: WALL_SUR
+    allowed: []
+    denied: []
+  - selfID: WALL_SUR2
+    allowed: []
+    denied: []
+  occupantRules:
+  - selfID: ANIMAL
+    allowed:
+    - neighborID: ANIMAL
+      directions: -1
+      weight: 0
+    denied:
+    - neighborID: 
+      directions: 15
+  - selfID: TREE
+    allowed:
+    - neighborID: TREE
+      directions: -1
+      weight: 0
+    denied: []

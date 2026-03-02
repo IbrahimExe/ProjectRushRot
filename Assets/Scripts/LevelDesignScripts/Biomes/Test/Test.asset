@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c27130811e49a2541b8f0117a8bc94f6, type: 3}
+  m_Name: Test
+  m_EditorClassIdentifier: Assembly-CSharp::NeighborRulesConfig
+  catalog: {fileID: 11400000, guid: 97e87868aea41e242b661ed29cdcf7a0, type: 2}
+  surfaceRules:
+  - selfID: water
+    allowed:
+    - neighborID: water
+      directions: -1
+      weight: 0
+    - neighborID: Grass
+      directions: -1
+      weight: 0
+    denied:
+    - neighborID: Dessert
+      directions: -1
+  - selfID: Grass
+    allowed:
+    - neighborID: water
+      directions: 31
+      weight: 1
+    - neighborID: Grass
+      directions: -1
+      weight: 1
+    - neighborID: Dessert
+      directions: -1
+      weight: 1
+    denied: []
+  - selfID: Dessert
+    allowed:
+    - neighborID: Grass
+      directions: -1
+      weight: 1
+    - neighborID: Dessert
+      directions: -1
+      weight: 1
+    denied:
+    - neighborID: water
+      directions: 31
+  occupantRules:
+  - selfID: Enemy
+    allowed:
+    - neighborID: 
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: 
+      directions: 15

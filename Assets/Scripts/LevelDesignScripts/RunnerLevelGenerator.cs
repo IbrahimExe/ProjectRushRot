@@ -320,9 +320,16 @@ public class RunnerLevelGenerator : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────────────
     // PlaceSurfaceFromNoise — first pass: every cell gets a noise-driven tile.
     // Edge lanes get EdgeL / EdgeR. Safe-path cells get SafePath.
+    // safePathWidth expands the path by (width-1)/2 lanes on each side so
+    // the WFC blend starts from a wider flat zone rather than a single lane.
     // ─────────────────────────────────────────────────────────────────────────
     private void PlaceSurfaceFromNoise(int z)
     {
+        // Pre-compute the widened path footprint for this row.
+        // goldenPathSet contains the spine (single-lane center).
+        // We expand it by half-width on each side.
+        int halfWidth = Mathf.Max(0, (config.safePathWidth - 1) / 2);
+
         for (int lane = 0; lane < TotalLaneCount; lane++)
         {
             // ── Left edge ─────────────────────────────────────────────────────
@@ -343,12 +350,21 @@ public class RunnerLevelGenerator : MonoBehaviour
                 continue;
             }
 
-            // ── Safe path ─────────────────────────────────────────────────────
-            if (goldenPathSet.Contains((z, lane)))
+            // ── Safe path (spine + width expansion) ───────────────────────────
+            bool isPathCell = goldenPathSet.Contains((z, lane));
+            if (!isPathCell && halfWidth > 0)
             {
-                // Use the catalog's dedicated safe-path def if it exists.
-                // The catalog field is config.catalog.debugSafePath (GameObject) for the
-                // actual prefab; cachedSafePathDef is a PrefabDef entry in Definitions.
+                // Check if any path spine cell in this row is within halfWidth
+                for (int offset = 1; offset <= halfWidth; offset++)
+                {
+                    if (goldenPathSet.Contains((z, lane - offset)) ||
+                        goldenPathSet.Contains((z, lane + offset)))
+                    { isPathCell = true; break; }
+                }
+            }
+
+            if (isPathCell)
+            {
                 var c = new CellState(SurfaceType.SafePath);
                 c.surfaceDef = cachedSafePathDef;
                 c.isCollapsed = true;
@@ -366,35 +382,18 @@ public class RunnerLevelGenerator : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // BlendSafePathWithWFC
+    // BlendSafePathWithWFC — second pass after PlaceSurfaceFromNoise.
     //
-    // Second pass after PlaceSurfaceFromNoise.
-    // Re-resolves lanes within safePathBlendRadius of any safe-path cell so
-    // the scenery transitions smoothly into the path (e.g. a shore tile appears
-    // between water and the path, not water directly adjacent).
+    // Re-resolves cells within safePathBlendRadius of the path using
+    // outside-in WFC so each blend cell has TWO anchors:
+    //   outer: raw noise tile (never un-collapsed)
+    //   inner: SafePath tile (detected by surface == SafePath in grid,
+    //          which includes width-expanded path cells from PlaceSurfaceFromNoise)
     //
-    // WHY the old left-to-right pass didn't work:
-    //   When processing a blend cell, its inner neighbor (closer to the path)
-    //   was still uncollapsed — it had been un-collapsed but not yet resolved.
-    //   So the WFC had no inner anchor, just the outer noise tile, and couldn't
-    //   bridge the gap. The result was incoherent, context-free placement.
-    //
-    // Fix — OUTSIDE-IN ring processing:
-    //
-    //   [noise]─ offset 3 ─ offset 2 ─ offset 1 ─[SafePath]
-    //    anchor   resolved   resolved   resolved    anchor
-    //
-    //   Ring at offset 3 is resolved first. Its outer neighbor is the original
-    //   noise tile (collapsed anchor) and its inner neighbor is the path or a
-    //   previously resolved ring.  Every cell therefore has TWO anchors when it
-    //   is solved and can pick a tile that genuinely bridges both sides.
-    //
-    //   Within each ring, rows are processed in Z order so forward/backward
-    //   Z-neighbors resolved earlier in the same ring also constrain the cell.
-    //
-    // Fallback: if adjacency rules over-constrain a cell to zero candidates,
-    //   pick the noise candidate whose tier midpoint is closest to the raw noise
-    //   value at that position — degrades gracefully without snapping randomly.
+    // Cross-chunk correctness: scan the FULL grid for SafePath cells so that
+    // path cells from adjacent already-generated chunks also seed blend zones
+    // that overlap into this chunk's rows. Only un-collapse / re-resolve cells
+    // whose z is inside [startZ, endZ) — never clobber other chunks.
     // ─────────────────────────────────────────────────────────────────────────
     private void BlendSafePathWithWFC(int startZ, int endZ)
     {
@@ -406,35 +405,40 @@ public class RunnerLevelGenerator : MonoBehaviour
         int radius = config.safePathBlendRadius;
 
         // ── Build per-offset rings ────────────────────────────────────────────
-        // blendByOffset[o] = all (z,lane) cells at lateral offset o from the path.
+        // Iterate the full grid to catch SafePath cells from previous chunks.
+        // A SafePath cell at z < startZ can still have blend-zone neighbors
+        // at z >= startZ if the path curves into this chunk at its start edge.
         var blendByOffset = new Dictionary<int, HashSet<(int z, int lane)>>();
         for (int o = 1; o <= radius; o++)
             blendByOffset[o] = new HashSet<(int z, int lane)>();
 
-        for (int z = startZ; z < endZ; z++)
+        foreach (var kvp in grid)
         {
-            for (int lane = 1; lane < TotalLaneCount - 1; lane++)
-            {
-                if (!goldenPathSet.Contains((z, lane))) continue;
+            var (pz, plane) = kvp.Key;
+            if (kvp.Value.surface != SurfaceType.SafePath) continue;
 
-                for (int o = 1; o <= radius; o++)
+            for (int o = 1; o <= radius; o++)
+            {
+                for (int side = -1; side <= 1; side += 2)
                 {
-                    int lL = lane - o;
-                    int lR = lane + o;
-                    if (lL >= 1 && !goldenPathSet.Contains((z, lL)) && !IsEdgeLane(lL))
-                        blendByOffset[o].Add((z, lL));
-                    if (lR < TotalLaneCount - 1 && !goldenPathSet.Contains((z, lR)) && !IsEdgeLane(lR))
-                        blendByOffset[o].Add((z, lR));
+                    int tl = plane + side * o;
+                    if (tl < 1 || tl >= TotalLaneCount - 1 || IsEdgeLane(tl)) continue;
+
+                    // Only emit blend cells inside this chunk's Z window —
+                    // never touch cells belonging to other chunks.
+                    if (pz < startZ || pz >= endZ) continue;
+
+                    var target = getCell(pz, tl);
+                    if (target.surface == SurfaceType.SafePath) continue; // already path
+
+                    blendByOffset[o].Add((pz, tl));
                 }
             }
         }
 
         if (!blendByOffset.Values.Any(s => s.Count > 0)) return;
 
-        // ── Un-collapse all blend cells ───────────────────────────────────────
-        // We un-collapse every ring including the outermost.  The cells one step
-        // BEYOND the outermost ring are still the original noise tiles and act as
-        // the outer anchor automatically — we never touch them.
+        // ── Un-collapse blend cells ───────────────────────────────────────────
         for (int o = 1; o <= radius; o++)
         {
             foreach (var key in blendByOffset[o])
@@ -446,14 +450,18 @@ public class RunnerLevelGenerator : MonoBehaviour
             }
         }
 
-        // ── Collapse outside-in, one ring at a time ───────────────────────────
+        // SafePath constraint def — used as the inner anchor when a neighbor
+        // is a SafePath cell whose surfaceDef is null (debug-only fallback paths).
+        PrefabDef safePathConstraintDef = cachedSafePathDef
+            ?? config.catalog.Definitions.FirstOrDefault(
+                d => d.Layer == ObjectLayer.Surface && d.HasTag("path"));
+
+        // ── Collapse OUTSIDE-IN ───────────────────────────────────────────────
         for (int o = radius; o >= 1; o--)
         {
             var ring = blendByOffset[o];
             if (ring.Count == 0) continue;
 
-            // Z-order within the ring so forward/backward Z-neighbors already
-            // resolved in this ring can propagate.
             var ordered = ring.OrderBy(k => k.z).ThenBy(k => k.lane).ToList();
 
             foreach (var key in ordered)
@@ -463,10 +471,6 @@ public class RunnerLevelGenerator : MonoBehaviour
 
                 List<PrefabDef> candidates = new List<PrefabDef>(allNoiseCandidates);
 
-                // Constrain against each cardinal neighbor that is already collapsed.
-                // Outer ring (o+1, or raw noise): anchors to the biome.
-                // Inner ring (o-1, or SafePath):  anchors to the path.
-                // Same-ring Z-neighbors:           enforces Z continuity.
                 foreach (Direction dir in new[] {
                     Direction.Left, Direction.Right,
                     Direction.Forward, Direction.Backward })
@@ -475,22 +479,30 @@ public class RunnerLevelGenerator : MonoBehaviour
                     if (nl < 0 || nl >= TotalLaneCount) continue;
 
                     var neighbor = getCell(nz, nl);
-                    if (!neighbor.isCollapsed) continue;
 
-                    // SafePath with no assigned surfaceDef (debug-only fallback):
-                    // skip rather than hard-blocking everything from that side.
-                    if (neighbor.surface == SurfaceType.SafePath && neighbor.surfaceDef == null)
+                    PrefabDef constraintDef;
+                    if (neighbor.surface == SurfaceType.SafePath)
+                    {
+                        // Path is always an anchor regardless of surfaceDef being null.
+                        constraintDef = neighbor.surfaceDef ?? safePathConstraintDef;
+                        if (constraintDef == null) continue;
+                    }
+                    else if (neighbor.isCollapsed && neighbor.surfaceDef != null)
+                    {
+                        constraintDef = neighbor.surfaceDef;
+                    }
+                    else
+                    {
                         continue;
-
-                    if (neighbor.surfaceDef == null) continue;
+                    }
 
                     candidates = config.weightRules.GetAllowedSurfaceNeighbors(
-                        neighbor.surfaceDef, OppositeDir(dir), candidates);
+                        constraintDef, OppositeDir(dir), candidates);
                 }
 
-                // Graceful fallback: pick closest-tier candidate to raw noise value.
                 if (candidates.Count == 0)
-                    candidates = new List<PrefabDef> { ClosestNoiseTierDef(key.z, key.lane, allNoiseCandidates) };
+                    candidates = new List<PrefabDef>
+                        { ClosestNoiseTierDef(key.z, key.lane, allNoiseCandidates) };
 
                 PrefabDef chosen = WeightedRandom(candidates);
 
@@ -534,19 +546,118 @@ public class RunnerLevelGenerator : MonoBehaviour
     // Occupant generation
     // =========================================================================
 
+    // ── Debug ─────────────────────────────────────────────────────────────────
+    // Enable in the Inspector to log why every occupant def was rejected each
+    // chunk, grouped by rejection reason.  Disable in production.
+    [Header("Occupant Debug")]
+    [Tooltip("Log per-def rejection counts every chunk. Disable in production.")]
+    [SerializeField] private bool debugOccupantSpawning = false;
+
+    [Tooltip("Only log rejections for this def ID. Leave empty to log all defs.")]
+    [SerializeField] private string debugOccupantID = "";
+
+    // Rejection reason keys — kept as constants so typos are compile errors.
+    private const string REJ_NOT_IN_CATALOG = "not in GetAllOccupants()";
+    private const string REJ_BUDGET = "cost > rowBudget";
+    private const string REJ_SURFACE = "surface affinity mismatch";
+    private const string REJ_SURFACE_NULL = "cell.surfaceDef is null (has AllowedSurfaceIDs)";
+    private const string REJ_LAST_WALKABLE = "would block last walkable lane";
+    private const string REJ_GAP = "MinRowGap not met";
+    private const string REJ_NEIGHBOR = "neighbor constraint (OccupantFitsNeighbors)";
+    private const string REJ_CELL_PATH = "cell is SafePath";
+    private const string REJ_CELL_HOLE = "cell is Hole";
+    private const string REJ_CELL_OCCUPIED = "cell already has occupant";
+    private const string REJ_SPAWN_CHANCE = "globalSpawnChance roll failed";
+    private const string REJ_LANE_COOLDOWN = "laneNextAllowedZ cooldown";
+
+    // Accumulated across a chunk, printed at end.
+    private Dictionary<string, Dictionary<string, int>> _occupantRejections; // defID → (reason → count)
+    private Dictionary<string, int> _occupantSpawnCounts;                    // defID → spawns
+
+    private void OccupantDebugReject(string defID, string reason)
+    {
+        if (!debugOccupantSpawning) return;
+        if (!string.IsNullOrEmpty(debugOccupantID) && defID != debugOccupantID) return;
+        if (!_occupantRejections.TryGetValue(defID, out var reasons))
+        {
+            reasons = new Dictionary<string, int>();
+            _occupantRejections[defID] = reasons;
+        }
+        reasons[reason] = reasons.TryGetValue(reason, out int n) ? n + 1 : 1;
+    }
+
+    private void OccupantDebugSpawned(string defID)
+    {
+        if (!debugOccupantSpawning) return;
+        if (!string.IsNullOrEmpty(debugOccupantID) && defID != debugOccupantID) return;
+        _occupantSpawnCounts[defID] = _occupantSpawnCounts.TryGetValue(defID, out int n) ? n + 1 : 1;
+    }
+
+    private void OccupantDebugPrint(int startZ, int endZ)
+    {
+        if (!debugOccupantSpawning) return;
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"[OccupantDebug] Chunk z={startZ}..{endZ}");
+
+        // Defs that never appeared in allOccupants at all
+        var allOccupants = config.catalog.GetAllOccupants();
+        var allIDs = new HashSet<string>(allOccupants.Select(d => d.ID));
+        foreach (var def in config.catalog.Definitions)
+        {
+            if (def.Layer != ObjectLayer.Occupant) continue;
+            if (string.IsNullOrEmpty(def.ID)) continue;
+            if (!string.IsNullOrEmpty(debugOccupantID) && def.ID != debugOccupantID) continue;
+            if (!allIDs.Contains(def.ID))
+                sb.AppendLine($"  {def.ID}: {REJ_NOT_IN_CATALOG} — check Layer == Occupant and catalog.GetAllOccupants()");
+        }
+
+        // Merge all touched def IDs
+        var allTracked = new HashSet<string>(_occupantRejections.Keys);
+        foreach (var id in _occupantSpawnCounts.Keys) allTracked.Add(id);
+
+        foreach (var defID in allTracked.OrderBy(x => x))
+        {
+            int spawns = _occupantSpawnCounts.TryGetValue(defID, out int s) ? s : 0;
+            sb.AppendLine($"  [{defID}]  spawned={spawns}");
+            if (_occupantRejections.TryGetValue(defID, out var reasons))
+                foreach (var kvp in reasons.OrderByDescending(x => x.Value))
+                    sb.AppendLine($"    rejected {kvp.Value}x — {kvp.Key}");
+        }
+
+        Debug.Log(sb.ToString(), this);
+    }
+
     private void GenerateOccupantsForChunk(int startZ, int endZ)
     {
         var allOccupants = config.catalog.GetAllOccupants();
         if (allOccupants.Count == 0) return;
 
-        int remainingBudget = config.densityBudget;
+        if (debugOccupantSpawning)
+        {
+            _occupantRejections = new Dictionary<string, Dictionary<string, int>>();
+            _occupantSpawnCounts = new Dictionary<string, int>();
+        }
+
+        // Budget is distributed per-row so early rows can't starve later ones.
+        int chunkSize = endZ - startZ;
+        float budgetPerRow = (float)config.densityBudget / Mathf.Max(1, chunkSize);
+        float budgetCarry = 0f;
 
         for (int z = startZ; z < endZ; z++)
         {
-            // Count walkable lanes for safety guarantee
+            budgetCarry += budgetPerRow;
+            int rowBudget = Mathf.FloorToInt(budgetCarry);
+            budgetCarry -= rowBudget;
+
+            if (rowBudget <= 0) continue;
+
             int walkableLanes = 0;
             for (int l = 1; l < TotalLaneCount - 1; l++)
+            {
+                if (goldenPathSet.Contains((z, l))) continue;
                 if (IsCellWalkable(z, l)) walkableLanes++;
+            }
 
             var lanes = Enumerable.Range(1, TotalLaneCount - 2)
                                   .OrderBy(_ => rng.Next())
@@ -554,35 +665,76 @@ public class RunnerLevelGenerator : MonoBehaviour
 
             foreach (int lane in lanes)
             {
-                if (laneNextAllowedZ.TryGetValue(lane, out int nextAllowed) && z < nextAllowed) continue;
+                if (rowBudget <= 0) break;
+
+                // ── Cell-level gates (not per-def) ────────────────────────────
+                if (laneNextAllowedZ.TryGetValue(lane, out int nextAllowed) && z < nextAllowed)
+                {
+                    // Log once per occupant def that is interested in this cell
+                    if (debugOccupantSpawning)
+                        foreach (var d in allOccupants)
+                            OccupantDebugReject(d.ID, REJ_LANE_COOLDOWN);
+                    continue;
+                }
 
                 CellState c = getCell(z, lane);
-                if (c.surface == SurfaceType.Hole) continue;
-                if (c.hasOccupant) continue;
-                if (rng.NextDouble() > config.globalSpawnChance) continue;
 
+                if (c.surface == SurfaceType.Hole)
+                {
+                    if (debugOccupantSpawning)
+                        foreach (var d in allOccupants) OccupantDebugReject(d.ID, REJ_CELL_HOLE);
+                    continue;
+                }
+                if (c.hasOccupant)
+                {
+                    if (debugOccupantSpawning)
+                        foreach (var d in allOccupants) OccupantDebugReject(d.ID, REJ_CELL_OCCUPIED);
+                    continue;
+                }
+                if (c.surface == SurfaceType.SafePath)
+                {
+                    if (debugOccupantSpawning)
+                        foreach (var d in allOccupants) OccupantDebugReject(d.ID, REJ_CELL_PATH);
+                    continue;
+                }
+
+                // ── Per-def candidate filtering ───────────────────────────────
                 var candidates = new List<PrefabDef>();
                 foreach (var def in allOccupants)
                 {
-                    if (remainingBudget - def.Cost < 0) continue;
+                    if (def.Cost > rowBudget)
+                    { OccupantDebugReject(def.ID, REJ_BUDGET); continue; }
+
                     if (def.AllowedSurfaceIDs != null && def.AllowedSurfaceIDs.Count > 0)
                     {
-                        if (c.surfaceDef == null) continue;
-                        if (!def.AllowedSurfaceIDs.Contains(c.surfaceDef.ID)) continue;
+                        if (c.surfaceDef == null)
+                        { OccupantDebugReject(def.ID, REJ_SURFACE_NULL); continue; }
+                        if (!def.AllowedSurfaceIDs.Contains(c.surfaceDef.ID))
+                        { OccupantDebugReject(def.ID, $"{REJ_SURFACE} (cell={c.surfaceDef.ID})"); continue; }
                     }
-                    // Safe path cells: only allow walkable-tagged occupants
-                    if (goldenPathSet.Contains((z, lane)) && !def.HasTag("walkable")) continue;
-                    // Don't block last walkable lane
-                    if (!def.HasTag("walkable") && walkableLanes <= 1) continue;
 
-                    // Per-def gap check
+                    if (!def.HasTag("walkable") && walkableLanes <= 1)
+                    { OccupantDebugReject(def.ID, REJ_LAST_WALKABLE); continue; }
+
                     if (lastSpawnedZ.TryGetValue((lane, def.ID), out int lastZ))
-                        if (z - lastZ < Mathf.Max(def.MinRowGap, def.SizeZ)) continue;
+                        if (z - lastZ < Mathf.Max(def.MinRowGap, def.SizeZ))
+                        { OccupantDebugReject(def.ID, $"{REJ_GAP} (need {Mathf.Max(def.MinRowGap, def.SizeZ)}, gap={z - lastZ})"); continue; }
+
+                    if (!OccupantFitsNeighbors(def, z, lane))
+                    { OccupantDebugReject(def.ID, REJ_NEIGHBOR); continue; }
 
                     candidates.Add(def);
                 }
 
                 if (candidates.Count == 0) continue;
+
+                // ── Spawn chance roll ─────────────────────────────────────────
+                if (rng.NextDouble() > config.globalSpawnChance)
+                {
+                    if (debugOccupantSpawning)
+                        foreach (var d in candidates) OccupantDebugReject(d.ID, REJ_SPAWN_CHANCE);
+                    continue;
+                }
 
                 PrefabDef selected = WeightedRandom(candidates);
                 if (selected == null) continue;
@@ -590,17 +742,42 @@ public class RunnerLevelGenerator : MonoBehaviour
                 c.hasOccupant = true;
                 c.occupantDef = selected;
                 SetCell(z, lane, c);
+                OccupantDebugSpawned(selected.ID);
 
-                remainingBudget -= selected.Cost;
+                rowBudget -= selected.Cost;
                 lastSpawnedZ[(lane, selected.ID)] = z;
                 if (!selected.HasTag("walkable")) walkableLanes--;
                 laneNextAllowedZ[lane] = z + Mathf.Max(1, selected.SizeZ);
-
-                if (remainingBudget <= 0) break;
             }
-
-            if (remainingBudget <= 0) break;
         }
+
+        if (debugOccupantSpawning) OccupantDebugPrint(startZ, endZ);
+    }
+
+    // Returns true if def is allowed next to all already-placed occupant
+    // neighbors of (z, lane) according to NeighborRulesConfig.occupantRules.
+    // Only checks placed (hasOccupant) cells — empty cells are unconstrained.
+    private bool OccupantFitsNeighbors(PrefabDef def, int z, int lane)
+    {
+        foreach (Direction dir in new[] {
+            Direction.Left, Direction.Right,
+            Direction.Forward, Direction.Backward })
+        {
+            var (nz, nl) = NeighborCoord(z, lane, dir);
+            if (nl < 1 || nl >= TotalLaneCount - 1) continue;
+
+            var neighbor = getCell(nz, nl);
+            if (!neighbor.hasOccupant || neighbor.occupantDef == null) continue;
+
+            // Check: is def allowed to have neighbor.occupantDef in direction dir?
+            if (!config.weightRules.IsNeighborAllowed(def, neighbor.occupantDef, dir))
+                return false;
+
+            // Check the reverse: does neighbor allow def in the opposite direction?
+            if (!config.weightRules.IsNeighborAllowed(neighbor.occupantDef, def, OppositeDir(dir)))
+                return false;
+        }
+        return true;
     }
 
     // =========================================================================
