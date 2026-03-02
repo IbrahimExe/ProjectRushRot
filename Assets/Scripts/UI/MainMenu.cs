@@ -1,15 +1,31 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
-    public void StartGame()
+    [SerializeField] private Button _startButton;
+    [SerializeField] private Button _quitButton;
+
+    private const string GameplaySceneName = "IbrahimScene";
+
+    private void Start()
     {
-        SceneManager.LoadScene(1);
+        SystemLoader.CallOnComplete(Initialize);
     }
 
-    public void QuitGame()
+    private void Initialize()
+    {
+        _startButton.onClick.AddListener(OnStartClicked);
+        _quitButton.onClick.AddListener(OnQuitClicked);
+    }
+
+    public void OnStartClicked()
+    {
+        SceneManager.LoadScene(GameplaySceneName);
+    }
+
+    public void OnQuitClicked()
     {
         Application.Quit();
     }
