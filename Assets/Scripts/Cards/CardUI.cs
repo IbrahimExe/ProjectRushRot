@@ -12,12 +12,8 @@ public class CardUI : MonoBehaviour
 
     public void Initialize(CardSO card, UpgradeStats upgrade)
     {
-        // Debug.Log("Initializing card: " + card.name);
-
         data = card;
         upgradeStats = upgrade ?? FindFirstObjectByType<UpgradeStats>();
-
-        // Debug.Log($"CardUI.Initialize: card={card?.name} upgradeStats={(upgradeStats != null)}");
 
         if (cardImage != null && card != null)
             cardImage.sprite = card.cardImage;
@@ -28,75 +24,68 @@ public class CardUI : MonoBehaviour
 
     public void ApplyCardEffect()
     {
-        if (data == null)
-        {
-            // Debug.LogError("CardUI.ApplyCardEffect called but data is null on " + gameObject.name);
-            return;
-        }
+        if (data == null) return;
 
         if (upgradeStats == null)
         {
-            // last-resort fallback so you don't crash — still log so you can fix properly
             upgradeStats = FindFirstObjectByType<UpgradeStats>();
             if (upgradeStats == null)
             {
-                // Debug.LogError("CardUI.ApplyCardEffect: UpgradeStats not found. Cannot apply " + data.name);
+                Debug.LogError("CardUI.ApplyCardEffect: UpgradeStats not found. Cannot apply " + data.name);
                 return;
             }
         }
 
-        // Debug.Log("Applying card effect: " + data.name + " effect=" + data.cardEffect + " value=" + data.effectValue);
+        Debug.Log($"Applying: {data.name} | Effect: {data.cardEffect} | V1: {data.effectValue} | V2: {data.effectValue2}");
 
         switch (data.cardEffect)
         {
+            // ?? Max Speed ??????????????????????????????????????????????????
             case CardEffect.CommonMaxSpeedUpgrade:
-                upgradeStats.UpgradeMaxSpeedPercent(data.effectValue);
-                Debug.Log("Applied CommonMaxSpeedUpgrade: " + data.effectValue);
-                break;
             case CardEffect.RareMaxSpeedUpgrade:
-                upgradeStats.UpgradeMaxSpeedPercent(data.effectValue);
-                Debug.Log("Applied RareMaxSpeedUpgrade: " + data.effectValue);
-                break;
             case CardEffect.LegendaryMaxSpeedUpgrade:
                 upgradeStats.UpgradeMaxSpeedPercent(data.effectValue);
-                Debug.Log("Applied LegendaryMaxSpeedUpgrade: " + data.effectValue);
                 break;
 
+            // ?? Acceleration ???????????????????????????????????????????????
             case CardEffect.CommonAccelerationUpgrade:
-                upgradeStats.UpgradeAccelerationPercent(data.effectValue);
-                Debug.Log("Applied CommonAccelerationUpgrade: " + data.effectValue);
-                break;
             case CardEffect.RareAccelerationUpgrade:
-                upgradeStats.UpgradeAccelerationPercent(data.effectValue);
-                Debug.Log("Applied RareAccelerationUpgrade: " + data.effectValue);
-                break;
             case CardEffect.LegendaryAccelerationUpgrade:
                 upgradeStats.UpgradeAccelerationPercent(data.effectValue);
-                Debug.Log("Applied LegendaryAccelerationUpgrade: " + data.effectValue);
-                break;
-            case CardEffect.CommonJumpHeightUpgrade:
-                upgradeStats.UpgradeJumpForcePercent(data.effectValue);
-                Debug.Log("Applied CommonJumpHeightUpgrade: " + data.effectValue);
-                break;
-            case CardEffect.RareJumpHeightUpgrade:
-                upgradeStats.UpgradeJumpForcePercent(data.effectValue);
-                Debug.Log("Applied RareJumpHeightUpgrade: " + data.effectValue);
-                break;
-            case CardEffect.LegendaryJumpHeightUpgrade:
-                upgradeStats.UpgradeJumpForcePercent(data.effectValue);
-                Debug.Log("Applied LegendaryJumpHeightUpgrade: " + data.effectValue);
                 break;
 
-            case CardEffect.CommonWallRun:
-                //upgradeStats.UpgradeWallRunDuration(data.effectValue);
+            // ?? Jump ???????????????????????????????????????????????????????
+            case CardEffect.CommonJumpUpgrade:
+            case CardEffect.RareJumpUpgrade:
+            case CardEffect.LegendaryJumpUpgrade:
+                upgradeStats.UpgradeJumpForcePercent(data.effectValue);
                 break;
-            case CardEffect.RareWallRun:
-                //upgradeStats.UpgradeWallRunDuration(data.effectValue);
-                //upgradeStats.UpgradeWallRunSpeed(data.effectValue);
+
+            // ?? Wall Run (Duration + Speed — paired) ???????????????????????
+            // effectValue  = seconds added to wallRunDuration
+            // effectValue2 = amount added to wallRunSpeedMultiplier
+            case CardEffect.CommonWallRunUpgrade:
+            case CardEffect.RareWallRunUpgrade:
+            case CardEffect.LegendaryWallRunUpgrade:
+                upgradeStats.UpgradeWallRun(data.effectValue, data.effectValue2);
                 break;
-            case CardEffect.LegendaryWallRun:
-                //upgradeStats.UpgradeWallJumpAwayImpulse(data.effectValue);
-                //upgradeStats.UpgradeWallJumpUpwardImpulse(data.effectValue);
+
+            // ?? Wall Jump (Up + Away — paired) ?????????????????????????????
+            // effectValue  = flat added to wallJumpUpImpulse
+            // effectValue2 = flat added to wallJumpAwayImpulse
+            case CardEffect.CommonWallJumpUpgrade:
+            case CardEffect.RareWallJumpUpgrade:
+            case CardEffect.LegendaryWallJumpUpgrade:
+                upgradeStats.UpgradeWallJump(data.effectValue, data.effectValue2);
+                break;
+
+            // ?? Dash Kill (Window + Kill Cap — paired) ?????????????????????
+            // effectValue  = flat seconds added to hitWindowAfterDash
+            // effectValue2 = flat int added to dashKillCap
+            case CardEffect.CommonDashKillUpgrade:
+            case CardEffect.RareDashKillUpgrade:
+            case CardEffect.LegendaryDashKillUpgrade:
+                upgradeStats.UpgradeDashKill(data.effectValue, (int)data.effectValue2);
                 break;
 
             default:

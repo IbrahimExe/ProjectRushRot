@@ -6,6 +6,12 @@ public class AltExpManager : MonoBehaviour
 {
     public static AltExpManager Instance { get; private set; }
 
+    [Header("XP System Toggle")]
+    [Tooltip("Master switch — disable to freeze all XP gain and level-ups. " +
+             "Controlled automatically by XPSystemController based on scene name, " +
+             "or manually via XPSystemController.Instance.EnableXPSystem() / DisableXPSystem().")]
+    public bool xpSystemEnabled = false;
+
     [Header("XP Curve")]
     [Tooltip("Base XP required for level 1")]
     public int baseXP = 50;
@@ -22,10 +28,10 @@ public class AltExpManager : MonoBehaviour
 
     public enum SpeedSource
     {
-        Auto,           // try Rigidbody -> CharacterController -> custom component
+        Auto,               // try Rigidbody -> CharacterController -> custom component
         Rigidbody3D,
         CharacterController,
-        CustomComponent // use customComponentTypeName + customSpeedFieldName
+        CustomComponent     // use customComponentTypeName + customSpeedFieldName
     }
 
     [Tooltip("Which component to use for reading player speed. Auto tries common components in order.")]
@@ -49,25 +55,25 @@ public class AltExpManager : MonoBehaviour
     [Tooltip("Scale applied to the powered normalized speed. Bigger = stronger effect.")]
     public float multiplierScale = 1.5f;
     [Tooltip("Exponent applied to normalized speed")]
-    public float speedExponent = 1.3f; //  >1 emphasizes higher speeds.
+    public float speedExponent = 1.3f; // >1 emphasizes higher speeds.
     [Tooltip("Final Speed Multiplier Cap")]
-    public float maxSpeedMultiplierCap = 4f; // Hard cap for the final speed multiplier (safety).
+    public float maxSpeedMultiplierCap = 4f;
 
     [Header("UI References")]
     [SerializeField] private LevelUpCardSelector levelUpUI;
 
-    [HideInInspector] public float xp; // current XP (float to allow smooth fill)
+    [HideInInspector] public float xp;
     [HideInInspector] public int level = 1;
 
     // External multipliers (set from other systems)
-    [HideInInspector] public float speedMultiplier = 1f; // public read of current multiplier
-    [HideInInspector] public float globalMultiplier = 1f; // other buffs
-    [HideInInspector] public float dashKillMultiplier = 1f; // set by DashAbility
+    [HideInInspector] public float speedMultiplier = 1f;
+    [HideInInspector] public float globalMultiplier = 1f;
+    [HideInInspector] public float dashKillMultiplier = 1f;
 
     // Events
-    public event Action<int> OnLevelUp; // passes new level
+    public event Action<int> OnLevelUp;
 
-    // internal
+    // Internal
     private float targetSpeedMultiplier = 1f;
 
     public bool IsLevelReset = false;
@@ -82,27 +88,23 @@ public class AltExpManager : MonoBehaviour
     [Header("Debug")]
     public bool debugLog = true;
 
-   [SerializeField] public AltXPBarUI xpBar;
-   [SerializeField] public LevelUpCardSelector levelUpCardSelector;
-   [SerializeField] public CharacterSelector cs;
-   [SerializeField] public CharacterSelector cs2;
-   [SerializeField] public CharacterSelector cs3;
+    [SerializeField] public AltXPBarUI xpBar;
+    [SerializeField] public LevelUpCardSelector levelUpCardSelector;
+    [SerializeField] public CharacterSelector cs;
+    [SerializeField] public CharacterSelector cs2;
+    [SerializeField] public CharacterSelector cs3;
 
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
 
-        // Subscribe level-up event to the UI — no FindObjectOfType
         OnLevelUp += HandleLevelUp;
-
-        // Try to cache components if player already assigned in inspector
         CachePlayerComponents();
     }
 
     private void OnValidate()
     {
-        // Keep inspector changes reflected at edit time
         CachePlayerComponents();
     }
 
@@ -124,7 +126,6 @@ public class AltExpManager : MonoBehaviour
 
         if (speedSource == SpeedSource.CustomComponent || (speedSource == SpeedSource.Auto && cachedRb == null && cachedChar == null))
         {
-            // find by type name among MonoBehaviours on the player
             var comps = player.GetComponents<MonoBehaviour>();
             foreach (var c in comps)
             {
@@ -142,51 +143,34 @@ public class AltExpManager : MonoBehaviour
                 var t = cachedCustomComp.GetType();
                 cachedCustomField = t.GetField(customSpeedFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 if (cachedCustomField == null)
-                {
                     cachedCustomProp = t.GetProperty(customSpeedFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                }
             }
         }
 
         if (debugLog)
-        {
-            Debug.Log($"[ExperienceManager] Cached components - Rigidbody:{cachedRb != null}, CharacterController:{cachedChar != null}, Custom:{cachedCustomComp != null}");
-        }
+            Debug.Log($"[ExperienceManager] Cached — Rigidbody:{cachedRb != null}, CharacterController:{cachedChar != null}, Custom:{cachedCustomComp != null}");
     }
 
     private void Update()
     {
-        // If a player is assigned, sample their speed and compute a target speedMultiplier.
-        if (player != null)
+        // ── Master gate ──────────────────────────────────────
+        // Everything below is skipped when the system is disabled.
+        // Speed sampling still runs so the multiplier doesn't snap
+        // when the system is re-enabled mid-session.
+        if (!xpSystemEnabled)
         {
-            float currentSpeed = GetPlayerSpeed();
-
-            // Allow normalized to exceed 1 so >referenceSpeed increases multiplier further
-            float normalized = (referenceSpeed > 0f) ? (currentSpeed / referenceSpeed) : 0f;
-
-            // Apply exponent and scaling to emphasize higher speeds
-            float powered = Mathf.Pow(Mathf.Max(0f, normalized), speedExponent);
-            float raw = multiplierBase + powered * multiplierScale;
-
-            // Clamp to a safe cap
-            targetSpeedMultiplier = Mathf.Min(raw, maxSpeedMultiplierCap);
-
-            // Smoothly move public speedMultiplier toward target so XP doesn't jitter
-            speedMultiplier = Mathf.Lerp(speedMultiplier, targetSpeedMultiplier, Time.deltaTime * Mathf.Max(1f, speedMultiplierSmoothing));
-
-            //if (debugLog)
-            //{
-            //    Debug.Log($"[ExperienceManager] playerSpeed={currentSpeed:F2}, " +
-            //        $"normalized={normalized:F3}, powered={powered:F3}, " +
-            //        $"targetMult={targetSpeedMultiplier:F3}, smoothed={speedMultiplier:F3}");
-            //}
+            // Keep speed multiplier ticking so there's no jolt on re-enable
+            if (player != null) SampleSpeed();
+            return;
         }
+        // ─────────────────────────────────────────────────────
 
-        // accumulate XP based on base + multipliers
+        if (player != null) SampleSpeed();
+
         float xpThisFrame = baseXPPerSecond * Time.deltaTime * speedMultiplier * globalMultiplier * dashKillMultiplier;
         AddXP(xpThisFrame);
 
-      if(IsLevelReset == true)
+        if (IsLevelReset)
         {
             ResetLevel();
             xpBar.ResetXPBar();
@@ -194,28 +178,27 @@ public class AltExpManager : MonoBehaviour
         }
     }
 
+    // Extracted so it can run regardless of xpSystemEnabled (avoids multiplier snap on re-enable)
+    private void SampleSpeed()
+    {
+        float currentSpeed = GetPlayerSpeed();
+        float normalized = (referenceSpeed > 0f) ? (currentSpeed / referenceSpeed) : 0f;
+        float powered = Mathf.Pow(Mathf.Max(0f, normalized), speedExponent);
+        float raw = multiplierBase + powered * multiplierScale;
+        targetSpeedMultiplier = Mathf.Min(raw, maxSpeedMultiplierCap);
+        speedMultiplier = Mathf.Lerp(speedMultiplier, targetSpeedMultiplier, Time.deltaTime * Mathf.Max(1f, speedMultiplierSmoothing));
+    }
+
     private float GetPlayerSpeed()
     {
-        // 3D Rigidbody first
         if (cachedRb != null) return cachedRb.linearVelocity.magnitude;
 
-        // CharacterController (if present)
         if (cachedChar != null)
         {
-            // CharacterController doesn't expose velocity directly before Unity 2020; attempt to get via property if available
-            // Fallback: estimate via difference in position (not implemented here) — so try 'velocity' property if exists.
-            try
-            {
-                return cachedChar.velocity.magnitude;
-            }
-            catch
-            {
-                // if not available, return 0
-                return 0f;
-            }
+            try { return cachedChar.velocity.magnitude; }
+            catch { return 0f; }
         }
 
-        // Custom component field / property
         if (cachedCustomComp != null)
         {
             if (cachedCustomField != null)
@@ -235,7 +218,6 @@ public class AltExpManager : MonoBehaviour
                 if (val is Vector3 v) return v.magnitude;
             }
 
-            // last-resort: look for common property names
             var t = cachedCustomComp.GetType();
             var p = t.GetProperty("currentMoveSpeed") ?? t.GetProperty("currentSpeed") ?? t.GetProperty("speed") ?? t.GetProperty("Velocity");
             if (p != null)
@@ -246,7 +228,6 @@ public class AltExpManager : MonoBehaviour
             }
         }
 
-        // Nothing found
         return 0f;
     }
 
@@ -257,6 +238,9 @@ public class AltExpManager : MonoBehaviour
 
     public void AddXP(float amount)
     {
+        // Honour the gate even if AddXP is called externally
+        if (!xpSystemEnabled) return;
+
         xp += amount;
         while (xp >= XPRequiredForLevel(level))
         {
@@ -284,9 +268,7 @@ public class AltExpManager : MonoBehaviour
         xpBar.ResetXPBar();
     }
 
-    // Utility: set speed multiplier from other scripts manually (overrides automatic sampling for one frame)
     public void SetSpeedMultiplier(float m) => speedMultiplier = m;
     public void AddGlobalMultiplier(float m) => globalMultiplier *= m;
     public void SetDashKillMultiplier(float m) => dashKillMultiplier = Mathf.Max(1f, m);
-
 }
