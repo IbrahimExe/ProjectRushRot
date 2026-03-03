@@ -92,6 +92,8 @@ public class PlayerControllerBase : MonoBehaviour
     public float baseWallRunDuration = 4f;
     public float baseWallRunSpeed = 45f;
 
+    [Header("Air Jumps")]
+    public int currentJumps = 0;
     void Start()
     {
         Cursor.visible = false;
