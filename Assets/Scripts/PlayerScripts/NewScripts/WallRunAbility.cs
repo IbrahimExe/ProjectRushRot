@@ -17,9 +17,9 @@ public class WallRunAbility : MonoBehaviour
     public float wallRunSpeedMultiplier = 1.1f;
     public float wallRunDuration = 4f;
     public float wallRunMinHeight = 1.1f;
-    public float wallRunMinForwardDot = 0.05f; // decreased from 0.2f so you don't detach when looking slightly away
+    public float wallRunMinForwardDot = 0.2f;
     public float wallRunCooldown = 1f;
-    public float wallRunStick = 25f; // increased from 0.5f to actively pull the player into the wall
+    public float wallRunStick = 10f;
     private float wallRunLockUntil = 0f;
 
     [Header("Wall Run Vertical")]
