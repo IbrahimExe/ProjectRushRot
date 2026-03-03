@@ -3,154 +3,102 @@ using UnityEngine;
 
 namespace LevelGenerator.Data
 {
-    // distinct layers to separate the ground from what sits on top of it
+    // --- Layers ---------------------------------------------------------------
+
     public enum ObjectLayer
     {
-        Surface,    // the floor or base
+        Surface,    // the floor / base tile
         Occupant    // objects that sit on the surface
     }
 
-    // types of surface elements
+    // --- Surface types --------------------------------------------------------
+    //
+    // Solid and Bridge removed - normal floor tiles are identified by their
+    // PrefabDef (noise-driven), not a hard enum value.
+    // EdgeL / EdgeR replace the old single Edge: the generator uses them to
+    // distinguish left-wall lanes from right-wall lanes so each side can have
+    // its own prefab list in the catalog and its own surface rules.
+
     public enum SurfaceType
     {
-        Solid,
-        Hole,
-        Bridge,
-        SafePath,
-        Edge        // The two boundary lanes that flank the playable area.
-                    // Always non-walkable. WFC and occupant system never touch these.
+        Normal,     // noise-placed floor tile (generic catch-all)
+        Hole,       // gap - player falls through
+        SafePath,   // guaranteed walkable golden path tile
+        EdgeL,      // left boundary lane (lane 0) - never walkable
+        EdgeR       // right boundary lane (lane TotalLaneCount-1) - never walkable
     }
 
-    // types of objects that occupy the surface
-    public enum OccupantType
-    {
-        None,
-        Wall,
-        Obstacle,
-        Collectible,
-        Enemy,
-        EdgeWall      // Walls that keep player in bounds on edge lanes
-    }
+    // --- Directions -----------------------------------------------------------
 
-    // NEW: Biome types for regional coherence
-    public enum BiomeType
-    {
-        Default,      // Neutral/mixed (no preference)
-        Grassy,       // Green, natural, soft surfaces
-        Rocky,        // Stone, hard, grey surfaces
-        Sandy,        // Desert, warm, beige surfaces
-        Crystalline,  // Magical, glowing, fantasy surfaces
-        Swampy,       // Water, murky, dark green surfaces
-        Volcanic      // Fire, lava, red/orange surfaces
-    }
-
-    // Directions for neighbor lookup
     public enum Direction
     {
-        Forward,          // Z + 1, Lane
-        Backward,         // Z - 1, Lane
-        Left,             // Z, Lane - 1
-        Right,            // Z, Lane + 1
-        ForwardLeft,      // Z + 1, Lane - 1
-        ForwardRight,     // Z + 1, Lane + 1
-        BackwardLeft,     // Z - 1, Lane - 1
-        BackwardRight     // Z - 1, Lane + 1
+        Forward,        // Z + 1
+        Backward,       // Z - 1
+        Left,           // Lane - 1
+        Right,          // Lane + 1
+        ForwardLeft,
+        ForwardRight,
+        BackwardLeft,
+        BackwardRight
     }
 
-
-    //Cell state in the grid
+    // --- Cell state -----------------------------------------------------------
 
     [System.Serializable]
     public class CellState
     {
         public SurfaceType surface;
-        public OccupantType occupant;
+
+        // hasOccupant replaces the old OccupantType enum on CellState.
+        // The actual def is always in occupantDef.
+        public bool hasOccupant;
+
         public PrefabDef surfaceDef;
         public PrefabDef occupantDef;
 
         // True for the two boundary lanes outside the playable area.
-        // Set once at initialization, never changed.
+        // Set once at init, never changed.
         public bool isEdgeLane;
 
-        // WFC Fields
+        // WFC fields (used for safe-path blend pass and future occupant WFC)
         public bool isCollapsed;
-        public List<PrefabDef> surfaceCandidates;
+        public List<PrefabDef> surfaceCandidates;   // WFC candidate pool for surface
+        public List<PrefabDef> occupantCandidates;
         public Dictionary<PrefabDef, float> candidateWeights;
         public float entropy;
 
-        // Constructor
-        public CellState(SurfaceType s, OccupantType o, PrefabDef surfaceP = null, PrefabDef occupantP = null, bool edgeLane = false)
+        public CellState(SurfaceType s, bool occupied = false,
+                         PrefabDef surfaceP = null, PrefabDef occupantP = null,
+                         bool edgeLane = false)
         {
             surface = s;
-            occupant = o;
+            hasOccupant = occupied;
             surfaceDef = surfaceP;
             occupantDef = occupantP;
             isEdgeLane = edgeLane;
             isCollapsed = false;
             surfaceCandidates = null;
+            occupantCandidates = null;
             candidateWeights = null;
             entropy = 0f;
         }
 
-        // Default constructor for class
         public CellState()
         {
-            surface = SurfaceType.Solid;
-            occupant = OccupantType.None;
+            surface = SurfaceType.Normal;
+            hasOccupant = false;
             surfaceDef = null;
             occupantDef = null;
             isEdgeLane = false;
             isCollapsed = false;
             surfaceCandidates = null;
+            occupantCandidates = null;
             candidateWeights = null;
             entropy = 0f;
         }
     }
 
-    /// Context information for weight calculations
-    /// Contains all data needed to make informed placement decisions
-    public struct PlacementContext
-    {
-        public (int z, int lane) position;
-        public SurfaceType currentSurface;
-        public OccupantType currentOccupant;
-
-        // References to grid data
-        public System.Func<int, int, CellState> GetCell;
-        public System.Func<(int, int), bool> IsOnGoldenPath;
-
-        // Grid metadata
-        public int laneCount;       // playable lane count (does NOT include the 2 edge lanes)
-        public int playerZIndex;
-
-        // True when this cell is one of the two structural boundary lanes.
-        public bool isEdgeLane;
-
-        // Helper methods
-        public bool IsEdgeLane => isEdgeLane;
-        public bool IsCenterLane => position.lane == (laneCount - 1) / 2;
-        public float NormalizedLanePosition => (float)position.lane / (laneCount - 1);
-
-        public int DistanceToGoldenPath
-        {
-            get
-            {
-                if (IsOnGoldenPath(position)) return 0;
-
-                // Find nearest golden path cell in same row
-                int minDist = int.MaxValue;
-                for (int lane = 0; lane < laneCount; lane++)
-                {
-                    if (IsOnGoldenPath((position.z, lane)))
-                    {
-                        int dist = Mathf.Abs(position.lane - lane);
-                        if (dist < minDist) minDist = dist;
-                    }
-                }
-                return minDist;
-            }
-        }
-    }
+    // --- Prefab definition ----------------------------------------------------
 
     [System.Serializable]
     public class PrefabDef
@@ -161,73 +109,47 @@ namespace LevelGenerator.Data
         [Tooltip("Display Name / Editor Name")]
         public string Name;
 
-        [Tooltip("List of prefab variants. One will be picked randomly.")]
+        [Tooltip("List of prefab variants. One will be picked randomly at spawn time.")]
         public List<GameObject> Prefabs = new List<GameObject>();
 
+        // -- Classification ----------------------------------------------------
         [Header("Classification")]
         public ObjectLayer Layer = ObjectLayer.Occupant;
-        public SurfaceType SurfaceType = SurfaceType.Solid;
-        public OccupantType OccupantType = OccupantType.None;
 
-        [Header("Dimensions")]
-        public Vector3Int Size = new Vector3Int(1, 1, 1);
+        [Tooltip("Only relevant for Surface layer entries.")]
+        public SurfaceType SurfaceType = SurfaceType.Normal;
 
-        [Tooltip("Used ONLY if Layer == Occupant. Ignored for Surfaces (WFC uses constraints).")]
+        // -- Budget system -----------------------------------------------------
+        // OccupantWeight and Tags moved here from the old scattered locations.
+        [Header("Budget System")]
+        [Tooltip("Selection weight for occupant placement. Higher = more likely to be chosen.")]
         [Range(0f, 100f)] public float OccupantWeight = 10f;
 
-        public List<string> Tags = new List<string>();
-
-        public bool HasTag(string tag) => Tags?.Contains(tag) ?? false;
-
-        [Header("Budget System")]
-        [Tooltip("Cost to spawn this occupant (for density budget).")]
+        [Tooltip("Cost to spawn this occupant (consumed from the chunk density budget).")]
         public int Cost = 1;
 
-        [Tooltip("Minimum number of rows between two spawns of this type in the same lane. 0 = no restriction.")]
+        [Tooltip("Minimum number of rows between two spawns of this exact def in the same lane. 0 = no gap.")]
         [Range(0, 20)] public int MinRowGap = 2;
 
-        [Tooltip("How many rows this occupant occupies in Z. Cells ahead are reserved to prevent overlap. 1 = single cell.")]
-        [Range(1, 5)] public int SizeZ = 1;
+        [Tooltip("How many rows this occupant occupies in Z. Cells ahead are reserved to prevent overlap.")]
+        [Range(1, 20)] public int SizeZ = 1;
 
-        [Tooltip("List of Surface IDs this occupant is allowed to spawn on. If empty, allowed on any.")]
+        [Tooltip("Surface IDs this occupant is allowed to spawn on. Empty = allowed on any surface.")]
         public List<string> AllowedSurfaceIDs = new List<string>();
 
-        [Tooltip("Can the player walk through this object?")]
-        public bool IsWalkable = false;
+        public List<string> Tags = new List<string>();
+        public bool HasTag(string tag) => Tags?.Contains(tag) ?? false;
 
-        [Tooltip("If true, Wave Function Collapse / procedural selection may use this entry. " +
-                 "When false, the tile still participates in neighbor rules (so adjacencies are legal) " +
-                 "but WFC will never choose it as a collapse result.")]
-        public bool AllowWFC = true;
+        // -- Noise hierarchy ---------------------------------------------------
+        // noiseChannel is now a single field on the PrefabCatalog, not per-def.
+        // Each def just declares its tier (rank within the noise range).
+        [Header("Noise Hierarchy")]
+        [Tooltip("Rank within the noise channel's [0,1] range. " +
+                 "0 = lowest value band, higher numbers = higher value bands. " +
+                 "The range is divided equally among all noise candidates sorted by this tier.")]
+        public int noiseTier = 0;
 
-        [Header("Biome System")]
-        [Tooltip("How strongly this tile prefers each biome. Higher = more likely. Leave empty for neutral (1.0).")]
-        public Dictionary<BiomeType, float> BiomeAffinities = new Dictionary<BiomeType, float>();
-
-        /// Gets the biome affinity weight for a specific biome.
-        /// Returns 1.0 (neutral) if no affinity is defined.
-        [System.Serializable]
-        public struct BiomeAffinity
-        {
-            public BiomeType biome;
-            public float weight; // multiplier (0..whatever)
-        }
-
-        [Header("Biome System")]
-        [Tooltip("Biome weight multipliers. 1 = neutral, >1 prefers, <1 avoids.")]
-        public List<BiomeAffinity> biomeAffinities = new List<BiomeAffinity>();
-
-        public float GetBiomeAffinity(BiomeType biome)
-        {
-            if (biomeAffinities == null) return 1f;
-
-            for (int i = 0; i < biomeAffinities.Count; i++)
-            {
-                if (biomeAffinities[i].biome == biome)
-                    return Mathf.Max(0f, biomeAffinities[i].weight);
-            }
-            return 1f;
-        }
+        [Tooltip("Whether this def participates in noise-driven surface placement.")]
+        public bool isNoiseCandidate = true;
     }
-
 }

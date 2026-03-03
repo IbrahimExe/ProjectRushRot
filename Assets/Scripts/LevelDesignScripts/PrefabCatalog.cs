@@ -1,156 +1,169 @@
 using System.Collections.Generic;
 using UnityEngine;
+using LevelGenerator.Data;
 
-namespace LevelGenerator.Data
+[CreateAssetMenu(fileName = "PrefabCatalog", menuName = "Runner/Prefab Catalog")]
+public class PrefabCatalog : ScriptableObject
 {
-    [CreateAssetMenu(fileName = "PrefabCatalog", menuName = "Runner/Prefab Catalog")]
-    public class PrefabCatalog : ScriptableObject
+    // -- Noise channel ---------------------------------------------------------
+    // One channel for the whole catalog. All noise-candidate surface defs
+    // compete within this single channel's [0,1] range, ranked by noiseTier.
+    [Header("Noise")]
+    [Tooltip("The noise config used to drive surface tile placement for all entries in this catalog.")]
+    public NoiseConfig noiseChannel;
+
+    // -- Registered prefabs ----------------------------------------------------
+    [Header("Registered Prefabs")]
+    public List<PrefabDef> Definitions = new List<PrefabDef>();
+
+    // -- Debug / Fallbacks -----------------------------------------------------
+    [Header("Debug / Fallbacks")]
+
+    [Tooltip("Fallback surface for the golden/safe path if no SafePath surface def exists in Definitions.")]
+    public GameObject debugSafePath;
+
+    [Tooltip("Fallback solid surface used when noise placement finds no matching tile. " +
+             "Assign a real Surface PrefabDef from your catalog.")]
+    public PrefabDef debugSurfaceDef;
+
+    [Tooltip("Fallback occupant spawned when an occupant is required but no candidate is found.")]
+    public GameObject debugOccupant;
+
+    [Tooltip("Required: prefab variants for the LEFT edge wall (lane 0). " +
+             "One is picked at random each row.")]
+    public List<PrefabDef> leftWallPrefabs = new List<PrefabDef>();
+
+    [Tooltip("When enabled, the right wall uses the same PrefabDefs as the left wall " +
+             "but instantiated with a 180° Y rotation. " +
+             "The rightWallPrefabs list is ignored.")]
+    public bool mirrorRightFromLeft = false;
+
+    [Tooltip("Prefab variants for the RIGHT edge wall (last lane). " +
+             "Ignored when Mirror Right From Left is enabled.")]
+    public List<PrefabDef> rightWallPrefabs = new List<PrefabDef>();
+
+    // -- Fast lookup caches ----------------------------------------------------
+    private Dictionary<SurfaceType, List<PrefabDef>> _surfaceCache;
+    private Dictionary<string, PrefabDef> _idIndex;
+    private bool _initialized;
+
+    // -------------------------------------------------------------------------
+
+    private void OnEnable() => RebuildCache();
+    private void OnValidate() { ValidateDefinitions(); _initialized = false; }
+
+    // -- Validation ------------------------------------------------------------
+
+    private void ValidateDefinitions()
     {
-        [Header("Registered Prefabs")]
-        public List<PrefabDef> Definitions = new List<PrefabDef>();
+        if (Definitions == null) return;
 
-        [Header("Debug / Fallbacks")]
-        [Tooltip("Used for the Golden Path/Safe Path if no specific tile is defined.")]
-        public GameObject debugSafePath;
+        var validSurfaceIDs = new HashSet<string>();
 
-        [Tooltip("Used for generic solid surface if WFC hits a contradiction. Assign a real Surface PrefabDef from your catalog.")]
-        public PrefabDef debugSurfaceDef;
-
-        [Tooltip("Used if an occupant is required but no candidate found.")]
-        public GameObject debugOccupant;
-
-        [Tooltip("Used for edge lane walls if no EdgeWall PrefabDef is defined in the catalog.")]
-        public GameObject debugEdgeWall;
-
-        // Fast lookup caches
-        private Dictionary<OccupantType, List<PrefabDef>> _occupantCache;
-        private Dictionary<SurfaceType, List<PrefabDef>> _surfaceCache;
-        private Dictionary<string, PrefabDef> _idIndex;
-        private bool _initialized;
-
-        private void OnEnable() => RebuildCache();
-
-        private void OnValidate()
+        // Pass 1: auto-generate IDs, collect surface IDs
+        foreach (var def in Definitions)
         {
-            // Ensure stable IDs + validate occupant AllowedSurfaceIDs references
-            if (Definitions != null)
+            if (def == null) continue;
+            if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
+                def.ID = def.Name.ToUpperInvariant().Replace(" ", "_");
+            if (def.Layer == ObjectLayer.Surface && !string.IsNullOrEmpty(def.ID))
+                validSurfaceIDs.Add(def.ID);
+        }
+
+        // Pass 2: warn on unknown AllowedSurfaceIDs
+        foreach (var def in Definitions)
+        {
+            if (def == null || def.Layer != ObjectLayer.Occupant) continue;
+            if (def.AllowedSurfaceIDs == null || def.AllowedSurfaceIDs.Count == 0) continue;
+
+            for (int i = def.AllowedSurfaceIDs.Count - 1; i >= 0; i--)
             {
-                var validSurfaceIDs = new HashSet<string>();
-
-                // First pass: generate IDs (if needed) + gather surface IDs
-                foreach (var def in Definitions)
-                {
-                    if (def == null) continue;
-
-                    if (string.IsNullOrEmpty(def.ID) && !string.IsNullOrEmpty(def.Name))
-                        def.ID = def.Name.ToUpperInvariant().Replace(" ", "_");
-
-                    if (def.Layer == ObjectLayer.Surface && !string.IsNullOrEmpty(def.ID))
-                        validSurfaceIDs.Add(def.ID);
-                }
-
-                // Second pass: validate occupant allowed surfaces
-                foreach (var def in Definitions)
-                {
-                    if (def == null) continue;
-                    if (def.Layer != ObjectLayer.Occupant) continue;
-                    if (def.AllowedSurfaceIDs == null || def.AllowedSurfaceIDs.Count == 0) continue;
-
-                    for (int i = def.AllowedSurfaceIDs.Count - 1; i >= 0; i--)
-                    {
-                        string surfaceID = def.AllowedSurfaceIDs[i];
-
-                        // Strip empty entries
-                        if (string.IsNullOrEmpty(surfaceID))
-                        {
-                            def.AllowedSurfaceIDs.RemoveAt(i);
-                            continue;
-                        }
-
-                        // Warn on unknown IDs (don’t auto-remove: you may be mid-edit)
-                        if (!validSurfaceIDs.Contains(surfaceID))
-                        {
-                            Debug.LogWarning(
-                                $"[PrefabCatalog] Occupant '{def.Name}' references unknown surface ID '{surfaceID}'.",
-                                this
-                            );
-                        }
-                    }
-                }
+                string sid = def.AllowedSurfaceIDs[i];
+                if (string.IsNullOrEmpty(sid)) { def.AllowedSurfaceIDs.RemoveAt(i); continue; }
+                if (!validSurfaceIDs.Contains(sid))
+                    Debug.LogWarning($"[PrefabCatalog] Occupant '{def.Name}' references unknown surface ID '{sid}'.", this);
             }
-
-            _initialized = false;
         }
 
-        // Rebuilds lookup dictionaries
-        public void RebuildCache()
-        {
-            _occupantCache = new Dictionary<OccupantType, List<PrefabDef>>();
-            _surfaceCache = new Dictionary<SurfaceType, List<PrefabDef>>();
-            _idIndex = new Dictionary<string, PrefabDef>();
-            _initialized = false;
-
-            // Initialize enum buckets so GetCandidates never needs allocations for known types
-            foreach (OccupantType t in System.Enum.GetValues(typeof(OccupantType)))
-                _occupantCache[t] = new List<PrefabDef>();
-
-            foreach (SurfaceType t in System.Enum.GetValues(typeof(SurfaceType)))
-                _surfaceCache[t] = new List<PrefabDef>();
-
-            if (Definitions == null)
-            {
-                _initialized = true;
-                return;
-            }
-
-            foreach (var def in Definitions)
-            {
-                if (def == null) continue;
-                if (string.IsNullOrEmpty(def.ID)) continue;
-
-                // Index by ID (first wins to avoid silent overwrites)
-                if (!_idIndex.ContainsKey(def.ID))
-                    _idIndex[def.ID] = def;
-
-                // Bucket by layer/type
-                if (def.Layer == ObjectLayer.Surface)
-                {
-                    _surfaceCache[def.SurfaceType].Add(def);
-                }
-                else if (def.Layer == ObjectLayer.Occupant)
-                {
-                    _occupantCache[def.OccupantType].Add(def);
-                }
-            }
-
-            _initialized = true;
-        }
-
-        private void EnsureCache()
-        {
-            if (!_initialized || _occupantCache == null || _surfaceCache == null || _idIndex == null)
-                RebuildCache();
-        }
-
-        // --- Retrieval Methods (used by RunnerLevelGenerator) ---
-
-        public PrefabDef GetByID(string id)
-        {
-            EnsureCache();
-            return (!string.IsNullOrEmpty(id) && _idIndex.TryGetValue(id, out var def)) ? def : null;
-        }
-
-        // Use OccupantType.EdgeWall to get edge wall variants
-        public List<PrefabDef> GetCandidates(OccupantType type)
-        {
-            EnsureCache();
-            return _occupantCache.TryGetValue(type, out var list) ? list : new List<PrefabDef>();
-        }
-
-        public List<PrefabDef> GetCandidates(SurfaceType type)
-        {
-            EnsureCache();
-            return _surfaceCache.TryGetValue(type, out var list) ? list : new List<PrefabDef>();
-        }
+        // Warn if edge wall lists are empty
+        if (leftWallPrefabs == null || leftWallPrefabs.Count == 0)
+            Debug.LogWarning("[PrefabCatalog] leftWallPrefabs is empty - left edge lane will spawn nothing.", this);
+        if (!mirrorRightFromLeft && (rightWallPrefabs == null || rightWallPrefabs.Count == 0))
+            Debug.LogWarning("[PrefabCatalog] rightWallPrefabs is empty and Mirror Right From Left is off - right edge lane will spawn nothing.", this);
     }
+
+    // -- Cache -----------------------------------------------------------------
+
+    public void RebuildCache()
+    {
+        _surfaceCache = new Dictionary<SurfaceType, List<PrefabDef>>();
+        _idIndex = new Dictionary<string, PrefabDef>();
+        _initialized = false;
+
+        foreach (SurfaceType t in System.Enum.GetValues(typeof(SurfaceType)))
+            _surfaceCache[t] = new List<PrefabDef>();
+
+        if (Definitions == null) { _initialized = true; return; }
+
+        foreach (var def in Definitions)
+        {
+            if (def == null || string.IsNullOrEmpty(def.ID)) continue;
+
+            if (!_idIndex.ContainsKey(def.ID))
+                _idIndex[def.ID] = def;
+
+            if (def.Layer == ObjectLayer.Surface)
+                _surfaceCache[def.SurfaceType].Add(def);
+        }
+
+        _initialized = true;
+    }
+
+    private void EnsureCache()
+    {
+        if (!_initialized || _surfaceCache == null || _idIndex == null)
+            RebuildCache();
+    }
+
+    // -- Retrieval -------------------------------------------------------------
+
+    public PrefabDef GetByID(string id)
+    {
+        EnsureCache();
+        return (!string.IsNullOrEmpty(id) && _idIndex.TryGetValue(id, out var def)) ? def : null;
+    }
+
+    public List<PrefabDef> GetSurfaceCandidates(SurfaceType type)
+    {
+        EnsureCache();
+        return _surfaceCache.TryGetValue(type, out var list) ? list : new List<PrefabDef>();
+    }
+
+    /// Returns all occupant-layer defs (filtering done by caller).
+    public List<PrefabDef> GetAllOccupants()
+    {
+        EnsureCache();
+        var result = new List<PrefabDef>();
+        foreach (var def in Definitions)
+            if (def != null && def.Layer == ObjectLayer.Occupant)
+                result.Add(def);
+        return result;
+    }
+
+    /// Returns all surface defs that are noise candidates (isNoiseCandidate = true).
+    public List<PrefabDef> GetNoiseCandidates()
+    {
+        EnsureCache();
+        var result = new List<PrefabDef>();
+        foreach (var def in Definitions)
+            if (def != null && def.Layer == ObjectLayer.Surface && def.isNoiseCandidate)
+                result.Add(def);
+        return result;
+    }
+
+    /// Returns the effective right-wall def list.
+    /// When mirrorRightFromLeft is true, returns leftWallPrefabs so the generator
+    /// picks from the same set; SpawnRowVisuals applies the 180° Y flip at spawn time.
+    public List<PrefabDef> GetRightWallDefs() =>
+        mirrorRightFromLeft ? leftWallPrefabs : rightWallPrefabs;
 }

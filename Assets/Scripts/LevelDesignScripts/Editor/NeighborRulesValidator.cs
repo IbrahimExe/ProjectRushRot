@@ -75,8 +75,8 @@ public class NeighborRulesValidator : EditorWindow
         int warnings = 0;
         int errors = 0;
 
-        // Check each surface rule
-        foreach (var rule in rulesConfig.surfaceRules)
+        // Check each occupant rule
+        foreach (var rule in rulesConfig.occupantRules)
         {
             if (string.IsNullOrEmpty(rule.selfID))
             {
@@ -125,7 +125,7 @@ public class NeighborRulesValidator : EditorWindow
                         var reverseDir = GetReverseDirection(dir);
 
                         // Find rule for neighbor
-                        var neighborRule = rulesConfig.surfaceRules.FirstOrDefault(r => r.selfID == allowed.neighborID);
+                        var neighborRule = rulesConfig.occupantRules.FirstOrDefault(r => r.selfID == allowed.neighborID);
                         if (neighborRule != null)
                         {
                             // Check if neighbor allows self in reverse direction
@@ -176,20 +176,20 @@ public class NeighborRulesValidator : EditorWindow
         int added = 0;
 
         // For each rule
-        foreach (var rule in rulesConfig.surfaceRules)
+        foreach (var rule in rulesConfig.occupantRules)
         {
             foreach (var allowed in rule.allowed)
             {
                 if (string.IsNullOrEmpty(allowed.neighborID)) continue;
 
                 // Find the neighbor's rule
-                var neighborRule = rulesConfig.surfaceRules.FirstOrDefault(r => r.selfID == allowed.neighborID);
+                var neighborRule = rulesConfig.occupantRules.FirstOrDefault(r => r.selfID == allowed.neighborID);
 
                 if (neighborRule == null)
                 {
                     // Create new rule for neighbor
                     neighborRule = new NeighborRulesConfig.NeighborEntry { selfID = allowed.neighborID };
-                    rulesConfig.surfaceRules.Add(neighborRule);
+                    rulesConfig.occupantRules.Add(neighborRule);
                 }
 
                 // Check each direction
@@ -215,8 +215,7 @@ public class NeighborRulesValidator : EditorWindow
                             reverseConstraint = new NeighborRulesConfig.NeighborConstraint
                             {
                                 neighborID = rule.selfID,
-                                directions = reverseDir,
-                                weight = allowed.weight
+                                directions = reverseDir
                             };
                             neighborRule.allowed.Add(reverseConstraint);
                             added++;
@@ -248,7 +247,7 @@ public class NeighborRulesValidator : EditorWindow
 
         Undo.RecordObject(rulesConfig, "Make Rules Symmetric");
 
-        foreach (var rule in rulesConfig.surfaceRules)
+        foreach (var rule in rulesConfig.occupantRules)
         {
             foreach (var allowed in rule.allowed)
             {
@@ -276,9 +275,9 @@ public class NeighborRulesValidator : EditorWindow
 
     void ShowRuleDetails()
     {
-        EditorGUILayout.LabelField("Surface Rules:", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Occupant Rules:", EditorStyles.boldLabel);
 
-        foreach (var rule in rulesConfig.surfaceRules)
+        foreach (var rule in rulesConfig.occupantRules)
         {
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField($"Self: {rule.selfID}", EditorStyles.boldLabel);
@@ -289,7 +288,7 @@ public class NeighborRulesValidator : EditorWindow
                 EditorGUI.indentLevel++;
                 foreach (var a in rule.allowed)
                 {
-                    EditorGUILayout.LabelField($"→ {a.neighborID} ({a.directions}) weight={a.weight}");
+                    EditorGUILayout.LabelField($"→ {a.neighborID} ({a.directions})");
                 }
                 EditorGUI.indentLevel--;
             }
