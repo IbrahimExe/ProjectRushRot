@@ -7,10 +7,12 @@ public class UpgradeStats : MonoBehaviour
     private void Awake()
     {
         if (player == null)
-        {
             player = GetComponent<PlayerControllerBase>();
-        }
     }
+
+    // ─────────────────────────────────────────────
+    //  SINGLE STAT UPGRADES
+    // ─────────────────────────────────────────────
 
     public void UpgradeMaxSpeedPercent(float percent)
     {
@@ -33,26 +35,47 @@ public class UpgradeStats : MonoBehaviour
         Debug.Log($"Upgraded Jump Force by {amount}");
     }
 
-    //public void UpgradeWallJumpAwayImpulse(float percent)
-    //{
-    //    float amount = player.baseJumpAwayImpulse * percent;
-    //    player.addWallJumpAwayImpulse(amount);
-    //}
+    // ─────────────────────────────────────────────
+    //  PAIRED UPGRADE: Wall Run (Duration + Speed)
+    // ─────────────────────────────────────────────
 
-    //public void UpgradeWallJumpUpwardImpulse(float percent)
-    //{
-    //    float amount = player.baseJumpUpImpulse * percent;
-    //    player.addWallJumpUpImpulse(amount);
-    //}
+    /// effectValue  = flat seconds added to wallRunDuration.
+    /// effectValue2 = flat amount added to wallRunSpeedMultiplier.
+ 
+    public void UpgradeWallRun(float durationFlat, float speedMultiplierFlat)
+    {
+        player.addWallRunDuration(durationFlat);
+        player.addWallRunSpeed(speedMultiplierFlat);
+        Debug.Log($"Upgraded Wall Run — Duration +{durationFlat}s, SpeedMultiplier +{speedMultiplierFlat}");
+    }
 
-    //public void UpgradeWallRunDuration(float percent)
-    //{
-    //    float amount = player.baseWallRunDuration * percent;
-    //    player.addWallRunDuration(amount);
-    //}
-    //public void UpgradeWallRunSpeed(float percent)
-    //{
-    //    float amount = player.baseWallRunSpeed * percent;
-    //    player.addWallRunSpeed(amount);
-    //}
+    public void UpgradeWallRun(float flat) => UpgradeWallRun(flat, flat);
+
+    // ─────────────────────────────────────────────
+    //  PAIRED UPGRADE: Wall Jump (Up + Away Impulse)
+    // ─────────────────────────────────────────────
+
+    /// effectValue  = flat units added to wallJumpUpImpulse.
+    /// effectValue2 = flat units added to wallJumpAwayImpulse.
+    public void UpgradeWallJump(float upFlat, float awayFlat)
+    {
+        player.addWallJumpUpImpulse(upFlat);
+        player.addWallJumpAwayImpulse(awayFlat);
+        Debug.Log($"Upgraded Wall Jump — Up +{upFlat}, Away +{awayFlat}");
+    }
+
+    public void UpgradeWallJump(float flat) => UpgradeWallJump(flat, flat);
+
+    // ─────────────────────────────────────────────
+    //  PAIRED UPGRADE: Dash Kill (Window + Kill Cap)
+    // ─────────────────────────────────────────────
+
+    /// effectValue  = flat seconds added to hitWindowAfterDash.
+    /// effectValue2 = flat integer added to dashKillCap.
+    public void UpgradeDashKill(float windowFlat, int killCapFlat)
+    {
+        player.addDashKillWindow(windowFlat);
+        player.addDashKillCount(killCapFlat);
+        Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
+    }
 }
