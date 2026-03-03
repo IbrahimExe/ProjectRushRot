@@ -76,8 +76,6 @@ public class AltExpManager : MonoBehaviour
     // Internal
     private float targetSpeedMultiplier = 1f;
 
-    public bool IsLevelReset = false;
-
     // Cached references for performance
     private Rigidbody cachedRb;
     private CharacterController cachedChar;
@@ -90,9 +88,6 @@ public class AltExpManager : MonoBehaviour
 
     [SerializeField] public AltXPBarUI xpBar;
     [SerializeField] public LevelUpCardSelector levelUpCardSelector;
-    [SerializeField] public CharacterSelector cs;
-    [SerializeField] public CharacterSelector cs2;
-    [SerializeField] public CharacterSelector cs3;
 
     private void Awake()
     {
@@ -153,29 +148,21 @@ public class AltExpManager : MonoBehaviour
 
     private void Update()
     {
-        // ── Master gate ──────────────────────────────────────
+        // ── Master gate ──────────────────────────────────────────────
         // Everything below is skipped when the system is disabled.
         // Speed sampling still runs so the multiplier doesn't snap
         // when the system is re-enabled mid-session.
         if (!xpSystemEnabled)
         {
-            // Keep speed multiplier ticking so there's no jolt on re-enable
             if (player != null) SampleSpeed();
             return;
         }
-        // ─────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────────
 
         if (player != null) SampleSpeed();
 
         float xpThisFrame = baseXPPerSecond * Time.deltaTime * speedMultiplier * globalMultiplier * dashKillMultiplier;
         AddXP(xpThisFrame);
-
-        if (IsLevelReset)
-        {
-            ResetLevel();
-            xpBar.ResetXPBar();
-            IsLevelReset = false;
-        }
     }
 
     // Extracted so it can run regardless of xpSystemEnabled (avoids multiplier snap on re-enable)

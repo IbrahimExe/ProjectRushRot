@@ -62,7 +62,6 @@ public struct SpaceChannel
 [Serializable]
 public struct WoodSettings
 {
-    public float frequency;
     public bool enabled;
     [Tooltip("Base sampling frequency. Controls zoom of the underlying noise. Try 0.5–5.")]
     public float frequency;

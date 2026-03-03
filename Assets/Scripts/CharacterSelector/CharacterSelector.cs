@@ -18,13 +18,12 @@ public class CharacterSelector : MonoBehaviour
     [SerializeField] private KeyCode interactKey = KeyCode.E;
 
 
-    [SerializeField] AltXPBarUI xpBarUI;
-    [SerializeField] AltExpManager expManager;
+    // No direct references needed — uses AltExpManager.Instance
 
     private GameObject currentModel;
     private Vector3 baseLocalPos;
     private float bobTimer;
-   
+
 
     private PlayerControllerBase playerInside;
 
@@ -43,9 +42,13 @@ public class CharacterSelector : MonoBehaviour
         if (playerInside != null && Input.GetKeyDown(interactKey))
         {
             playerInside.ChangeCharacter(characterData);
-            expManager.IsLevelReset= true;
+
+            // Reset XP and level via the singleton — no inspector wiring needed,
+            // works for any number of CharacterSelector platforms in the scene.
+            if (AltExpManager.Instance != null)
+                AltExpManager.Instance.ResetLevel();
         }
-        
+
     }
     public void SpawnModel()
     {
@@ -58,7 +61,7 @@ public class CharacterSelector : MonoBehaviour
         {
             Destroy(currentModel);
         }
-       
+
 
         currentModel = Instantiate(characterData.modelPrefab, modelRoot);
 
