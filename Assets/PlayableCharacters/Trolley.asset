@@ -24,7 +24,7 @@ MonoBehaviour:
   baseGrip: 10
   turnGrip: 2.5
   jumpForce: 25
-  wallRunCooldown: 1
+  wallRunCooldown: 0.01
   wallRunDuration: 2
   wallRunSpeedMultiplier: 1.1
   wallJumpUpImpulse: 25
@@ -34,3 +34,4 @@ MonoBehaviour:
   dashBoostDuration: 1.5
   numOfJumps: 1
   xpMultiplierOnKill: 1
+  canAirSideDash: 0
