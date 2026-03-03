@@ -61,6 +61,7 @@ public struct SpaceChannel
 [Serializable]
 public struct WoodSettings
 {
+    public float frequency;
     public bool enabled;
     [Tooltip("Grain ring density — higher = more rings. Try 8–20.")]
     public float multiplier;
