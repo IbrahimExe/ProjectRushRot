@@ -15,8 +15,8 @@ MonoBehaviour:
   cardImage: {fileID: 21300000, guid: 89d0460b008ff56408f68dae1019686c, type: 3}
   cardText: Common Wall Jump Upgrade
   cardEffect: 12
-  effectValue: 0.05
-  effectValue2: 0.05
+  effectValue: 0.5
+  effectValue2: 0.5
   rarity: 0
   isUnique: 0
   unlockLevel: 0

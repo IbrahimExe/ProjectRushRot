@@ -15,8 +15,8 @@ MonoBehaviour:
   cardImage: {fileID: 21300000, guid: 89d0460b008ff56408f68dae1019686c, type: 3}
   cardText: Rare Wall Jump Upgrade
   cardEffect: 13
-  effectValue: 0.1
-  effectValue2: 0.1
+  effectValue: 0.75
+  effectValue2: 0.75
   rarity: 1
   isUnique: 0
   unlockLevel: 0

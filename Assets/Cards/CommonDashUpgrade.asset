@@ -16,7 +16,7 @@ MonoBehaviour:
   cardText: Common Dash Upgrade
   cardEffect: 15
   effectValue: 0.05
-  effectValue2: 1
+  effectValue2: 0.5
   rarity: 0
   isUnique: 0
   unlockLevel: 0
