@@ -32,33 +32,23 @@ public static class NoiseSampler
         // Space-scaled coordinate — used by base noise
         Vector2 p = ApplySpace(cfg, px);
 
-        float n;
+        // Always start with base noise
+        float n = BaseNoise(cfg.noiseType, p);
 
-        // ── Patterns that fully replace the base noise ─────────────────────────
-        // Priority: Wood → Marble → Turbulence (last enabled one wins, like a stack)
-        // Quantization always post-processes.
+        // Patterns blend into the result via blendWeight.
+        // blendWeight = 1 fully overwrites, 0 = no effect, in-between mixes.
+        if (cfg.wood.enabled)
+            n = Mathf.Lerp(n, WoodPattern(px, cfg.wood, cfg.noiseType), cfg.wood.blendWeight);
 
-        bool hasPattern = cfg.wood.enabled || cfg.marble.enabled || cfg.turbulence.enabled;
+        if (cfg.marble.enabled)
+            n = Mathf.Lerp(n, MarblePattern(px, cfg.marble, cfg.noiseType), cfg.marble.blendWeight);
 
-        if (!hasPattern)
-        {
-            // Pure base noise
-            n = BaseNoise(cfg.noiseType, p);
-        }
-        else
-        {
-            // Start with base noise as the foundation; patterns override sequentially
-            n = BaseNoise(cfg.noiseType, p);
+        if (cfg.turbulence.enabled)
+            n = Mathf.Lerp(n, TurbulencePattern(px, cfg.turbulence, cfg.noiseType), cfg.turbulence.blendWeight);
 
-            if (cfg.wood.enabled)
-                n = WoodPattern(px, cfg.wood);
-
-            if (cfg.marble.enabled)
-                n = MarblePattern(px, cfg.marble);
-
-            if (cfg.turbulence.enabled)
-                n = TurbulencePattern(px, cfg.turbulence);
-        }
+        // Invert: lerp toward (1 - n)
+        if (cfg.invert.enabled)
+            n = Mathf.Lerp(n, 1f - n, cfg.invert.blendWeight);
 
         // Quantization always post-processes (it doesn't replace, it posterises)
         if (cfg.quantization.enabled && cfg.quantization.totalChannels >= 2)
@@ -183,19 +173,19 @@ public static class NoiseSampler
     // WOOD
     // Reference:  g = noise(Vec2f(i,j) * frequency) * multiplier;
     //             result = g - (int)g;      // i.e. frac(g)
-    static float WoodPattern(Vector2 px, WoodSettings s)
+    static float WoodPattern(Vector2 px, WoodSettings s, NoiseType noiseType)
     {
-        // frequency drives how "zoomed in" the underlying noise is
         Vector2 pNoise = px * s.frequency * 0.01f;
-        float g = ValueNoise(pNoise) * s.multiplier;
+        float g = BaseNoise(noiseType, pNoise) * s.multiplier;
         return g - Mathf.Floor(g);
     }
 
     // MARBLE
     // Reference:  pNoise = Vec2f(i,j) * frequency;
     //             for layers: noiseValue += noise(pNoise) * amplitude; pNoise *= freqMult; amp *= ampMult;
-    //             result = (sin( (i + noiseValue*100) * 2π/200 + phase ) + 1) / 2
-    static float MarblePattern(Vector2 px, MarbleSettings s)
+    //             result = (sin( (i + j + noiseValue*100) * 2π/200 + phase ) + 1) / 2
+    // px.x + px.y gives diagonal veins; noiseValue perturbs the phase of those stripes.
+    static float MarblePattern(Vector2 px, MarbleSettings s, NoiseType noiseType)
     {
         Vector2 pNoise = px * s.frequency * 0.01f;
         float amplitude = 1f;
@@ -203,13 +193,12 @@ public static class NoiseSampler
 
         for (int l = 0; l < (int)s.numLayers; l++)
         {
-            noiseVal += ValueNoise(pNoise) * amplitude;
+            noiseVal += BaseNoise(noiseType, pNoise) * amplitude;
             pNoise *= s.frequencyMult;
             amplitude *= s.amplitudeMult;
         }
 
-        // px.x plays the role of 'i' in the reference formula
-        float arg = (px.x + noiseVal * 100f) * (2f * Mathf.PI / 200f) + s.phase;
+        float arg = (px.x + px.y + noiseVal * 100f) * (2f * Mathf.PI / 200f) + s.phase;
         return (Mathf.Sin(arg) + 1f) * 0.5f;
     }
 
@@ -218,7 +207,7 @@ public static class NoiseSampler
     //             for layers: noiseMap += fabs(2*noise(pNoise) - 1) * amplitude;
     //             pNoise *= freqMult; amp *= ampMult;
     //             normalise by maxNoiseVal at the end.
-    static float TurbulencePattern(Vector2 px, TurbulenceSettings s)
+    static float TurbulencePattern(Vector2 px, TurbulenceSettings s, NoiseType noiseType)
     {
         Vector2 pNoise = px * s.frequency * 0.01f;
         float amplitude = 1f;
@@ -227,8 +216,7 @@ public static class NoiseSampler
 
         for (int l = 0; l < (int)s.numLayers; l++)
         {
-            // fabs(2*noise - 1): convert [0,1] → signed [-1,1] then abs → [0,1] bumps
-            float n = Mathf.Abs(2f * ValueNoise(pNoise) - 1f);
+            float n = Mathf.Abs(2f * BaseNoise(noiseType, pNoise) - 1f);
             sum += n * amplitude;
             maxAmp += amplitude;
             pNoise *= s.frequencyMult;

@@ -13,14 +13,20 @@ public class NoiseEditorWindow : EditorWindow
     SerializedObject _so;
 
     Texture2D _preview;
-    int _resolution = 256;
+    int _resolution = 128;   // lower default — user can raise it
     bool _dirty = true;
+
+    // Debounce: only rebuild preview this many seconds after the last change
+    const double k_DebounceSeconds = 0.35;
+    double _lastChangeTime = 0;
+    bool _rebuildScheduled = false;
 
     // Pattern foldouts — default CLOSED so user sees checkbox clearly first
     bool _foldWood = false;
     bool _foldQuant = false;
     bool _foldMar = false;
     bool _foldTurb = false;
+    bool _foldInvert = false;
 
     Vector2 _scroll;
 
@@ -48,8 +54,28 @@ public class NoiseEditorWindow : EditorWindow
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    void OnEnable() => _dirty = true;
-    void OnDisable() => DestroyPreview();
+    void OnEnable()
+    {
+        _dirty = true;
+        EditorApplication.update += OnEditorUpdate;
+    }
+
+    void OnDisable()
+    {
+        EditorApplication.update -= OnEditorUpdate;
+        DestroyPreview();
+    }
+
+    // Runs every editor tick — fires the rebuild once debounce delay has passed
+    void OnEditorUpdate()
+    {
+        if (!_rebuildScheduled) return;
+        if (EditorApplication.timeSinceStartup - _lastChangeTime < k_DebounceSeconds) return;
+
+        _rebuildScheduled = false;
+        RebuildPreview();
+        Repaint();
+    }
 
     // ─── GUI ──────────────────────────────────────────────────────────────────
 
@@ -120,7 +146,7 @@ public class NoiseEditorWindow : EditorWindow
         Separator("Preview");
         EditorGUI.BeginChangeCheck();
         _resolution = EditorGUILayout.IntSlider("Resolution", _resolution, 32, 512);
-        if (EditorGUI.EndChangeCheck()) _dirty = true;
+        if (EditorGUI.EndChangeCheck()) MarkDirty();
 
         // ── Custom Patterns ───────────────────────────────────────────────────
         Separator("Custom Patterns");
@@ -141,26 +167,38 @@ public class NoiseEditorWindow : EditorWindow
             ref _foldTurb, "turbulence", DrawTurbBody,
             "Absolute value of signed layered noise — fire, smoke, cloud texture.");
 
+        DrawPattern("Invert",
+            ref _foldInvert, "invert", DrawInvertBody,
+            "Flips the output: white becomes black, black becomes white.");
+
         if (_so.ApplyModifiedProperties())
         {
-            _dirty = true;
+            MarkDirty();
             EditorUtility.SetDirty(_config);
         }
 
         // ── Preview image ─────────────────────────────────────────────────────
         EditorGUILayout.Space(8);
-        if (_dirty) RebuildPreview();
 
+        // Show a subtle "pending" tint while waiting for debounce
+        if (_rebuildScheduled)
+        {
+            var tintStyle = new GUIStyle(EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField("⏳ Preview updating…", tintStyle);
+        }
+
+        // was looking for "sameline" or "inline" to align picture with the top
+        // other option is a new "Begin"/"end" for imgui where you add this section to and it will draw in a separate window
         if (_preview != null)
         {
-            float sz = Mathf.Min(position.width - 24f, _resolution);
+            float sz = Mathf.Min(position.width - 24f, _preview.width);
             Rect rect = GUILayoutUtility.GetRect(sz, sz, GUILayout.ExpandWidth(false));
             EditorGUI.DrawPreviewTexture(rect, _preview, null, ScaleMode.ScaleToFit);
         }
 
         EditorGUILayout.Space(4);
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Refresh")) { _dirty = true; Repaint(); }
+        if (GUILayout.Button("Refresh")) { RebuildPreview(); Repaint(); }
         if (GUILayout.Button("Save Asset")) AssetDatabase.SaveAssets();
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.Space(8);
@@ -199,7 +237,7 @@ public class NoiseEditorWindow : EditorWindow
             EditorGUILayout.LabelField("Enabled", GUILayout.Width(52));
             EditorGUI.BeginChangeCheck();
             enabled.boolValue = EditorGUILayout.Toggle(enabled.boolValue, GUILayout.Width(16));
-            if (EditorGUI.EndChangeCheck()) _dirty = true;
+            if (EditorGUI.EndChangeCheck()) MarkDirty();
         }
         finally { EditorGUILayout.EndHorizontal(); }
 
@@ -229,10 +267,9 @@ public class NoiseEditorWindow : EditorWindow
 
     void DrawWoodBody(SerializedProperty p)
     {
+        Child(p, "frequency", "Frequency");        
         Child(p, "multiplier", "Multiplier (ring density)");
-        EditorGUILayout.HelpBox(
-            "Try multiplier 8–20. Uses its own frequency via Space settings.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");     
     }
 
     void DrawQuantBody(SerializedProperty p)
@@ -247,9 +284,7 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "phase", "Phase (stripe offset, rad)");
-        EditorGUILayout.HelpBox(
-            "Good defaults: Frequency 0.02, Lacunarity 1.8, Gain 0.35, Layers 5.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");    
     }
 
     void DrawTurbBody(SerializedProperty p)
@@ -259,20 +294,30 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "maxNoiseVal", "Max Noise Val (0 = auto)");
-        EditorGUILayout.HelpBox(
-            "Good defaults: Frequency 0.02, Lacunarity 1.8, Gain 0.35, Layers 5.",
-            MessageType.None);
+        Child(p, "blendWeight", "Blend Weight");    
+    }
+
+    void DrawInvertBody(SerializedProperty p)
+    {
+        Child(p, "blendWeight", "Blend Weight");
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     SerializedProperty Prop(string name) => _so.FindProperty(name);
 
+    // Call when any value changes — schedules a debounced preview rebuild
+    void MarkDirty()
+    {
+        _lastChangeTime = EditorApplication.timeSinceStartup;
+        _rebuildScheduled = true;
+    }
+
     void Changed(System.Action draw)
     {
         EditorGUI.BeginChangeCheck();
         draw();
-        if (EditorGUI.EndChangeCheck()) _dirty = true;
+        if (EditorGUI.EndChangeCheck()) MarkDirty();
     }
 
     void DrawVector3(string structProp, string label)
@@ -302,7 +347,7 @@ public class NoiseEditorWindow : EditorWindow
     {
         _config = cfg;
         _so = cfg != null ? new SerializedObject(cfg) : null;
-        _dirty = true;
+        MarkDirty();
         Repaint();
     }
 
@@ -310,7 +355,6 @@ public class NoiseEditorWindow : EditorWindow
 
     void RebuildPreview()
     {
-        _dirty = false;
         if (_config == null) return;
 
         int sz = Mathf.Max(_resolution, 1);
