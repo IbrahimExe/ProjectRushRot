@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
+  m_Name: FairCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  Definitions:
+  - ID: SafePath
+    Name: SafePath
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    AllowWFC: 0
+    biomeAffinities: []
+  debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugSurfaceDef:
+    ID: 
+    Name: 
+    Prefabs: []
+    Layer: 1
+    SurfaceType: 0
+    OccupantType: 0
+    Size: {x: 1, y: 1, z: 1}
+    OccupantWeight: 10
+    Tags: []
+    Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    AllowWFC: 1
+    biomeAffinities: []
+  debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
+  debugEdgeWall: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
