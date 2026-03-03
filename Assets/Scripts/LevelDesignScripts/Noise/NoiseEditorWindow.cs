@@ -187,6 +187,8 @@ public class NoiseEditorWindow : EditorWindow
             EditorGUILayout.LabelField("⏳ Preview updating…", tintStyle);
         }
 
+        // was looking for "sameline" or "inline" to align picture with the top
+        // other option is a new "Begin"/"end" for imgui where you add this section to and it will draw in a separate window
         if (_preview != null)
         {
             float sz = Mathf.Min(position.width - 24f, _preview.width);

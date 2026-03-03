@@ -786,48 +786,75 @@ public class RunnerLevelGenerator : MonoBehaviour
 
     private void GenerateEdgeWalls(int startZ, int endZ)
     {
-        var leftPrefabs = config.catalog.leftWallPrefabs;
-        var rightPrefabs = config.catalog.rightWallPrefabs;
+        var leftDefs = config.catalog.leftWallPrefabs;
+        var rightDefs = config.catalog.GetRightWallDefs();
 
         bool warnedL = false, warnedR = false;
 
         for (int z = startZ; z < endZ; z++)
         {
-            // Left wall (lane 0)
+            // ── Left wall (lane 0) ────────────────────────────────────────────
             int leftLane = 0;
             if (!laneNextAllowedZ.TryGetValue(leftLane, out int nextL) || z >= nextL)
             {
-                if (leftPrefabs != null && leftPrefabs.Count > 0)
+                if (leftDefs != null && leftDefs.Count > 0)
                 {
-                    var cell = getCell(z, leftLane);
-                    cell.hasOccupant = true;
-                    // Store chosen prefab index in a wrapper def — spawning reads directly
-                    cell.occupantDef = null; // raw prefab, spawned below via leftWallPrefabs
-                    SetCell(z, leftLane, cell);
-                    laneNextAllowedZ[leftLane] = z + 1;
+                    var def = WeightedRandom(leftDefs);
+                    if (def != null)
+                    {
+                        var cell = getCell(z, leftLane);
+                        cell.hasOccupant = true;
+                        cell.occupantDef = def;
+                        SetCell(z, leftLane, cell);
+
+                        int cooldown = Mathf.Max(def.SizeZ, def.MinRowGap);
+                        laneNextAllowedZ[leftLane] = z + Mathf.Max(1, cooldown);
+
+                        for (int dz = 1; dz < def.SizeZ && (z + dz) < endZ; dz++)
+                        {
+                            var cont = getCell(z + dz, leftLane);
+                            cont.hasOccupant = true;
+                            cont.occupantDef = def;
+                            SetCell(z + dz, leftLane, cont);
+                        }
+                    }
                 }
                 else if (!warnedL)
                 {
-                    Debug.LogWarning("[EdgeWalls] leftWallPrefabs is empty — assign prefabs in the catalog.", this);
+                    Debug.LogWarning("[EdgeWalls] leftWallPrefabs is empty — assign PrefabDefs in the catalog.", this);
                     warnedL = true;
                 }
             }
 
-            // Right wall (last lane)
+            // ── Right wall (last lane) ────────────────────────────────────────
             int rightLane = TotalLaneCount - 1;
             if (!laneNextAllowedZ.TryGetValue(rightLane, out int nextR) || z >= nextR)
             {
-                if (rightPrefabs != null && rightPrefabs.Count > 0)
+                if (rightDefs != null && rightDefs.Count > 0)
                 {
-                    var cell = getCell(z, rightLane);
-                    cell.hasOccupant = true;
-                    cell.occupantDef = null;
-                    SetCell(z, rightLane, cell);
-                    laneNextAllowedZ[rightLane] = z + 1;
+                    var def = WeightedRandom(rightDefs);
+                    if (def != null)
+                    {
+                        var cell = getCell(z, rightLane);
+                        cell.hasOccupant = true;
+                        cell.occupantDef = def;
+                        SetCell(z, rightLane, cell);
+
+                        int cooldown = Mathf.Max(def.SizeZ, def.MinRowGap);
+                        laneNextAllowedZ[rightLane] = z + Mathf.Max(1, cooldown);
+
+                        for (int dz = 1; dz < def.SizeZ && (z + dz) < endZ; dz++)
+                        {
+                            var cont = getCell(z + dz, rightLane);
+                            cont.hasOccupant = true;
+                            cont.occupantDef = def;
+                            SetCell(z + dz, rightLane, cont);
+                        }
+                    }
                 }
                 else if (!warnedR)
                 {
-                    Debug.LogWarning("[EdgeWalls] rightWallPrefabs is empty — assign prefabs in the catalog.", this);
+                    Debug.LogWarning("[EdgeWalls] rightWallPrefabs is empty — assign PrefabDefs in the catalog.", this);
                     warnedR = true;
                 }
             }
@@ -877,25 +904,35 @@ public class RunnerLevelGenerator : MonoBehaviour
             // ── Edge lanes ────────────────────────────────────────────────────
             if (IsEdgeLane(lane))
             {
-                // Surface tile for edge lane (EdgeL or EdgeR surface type)
+                // Surface tile
                 var edgeSurfaces = config.catalog.GetSurfaceCandidates(cell.surface);
                 if (edgeSurfaces.Count > 0)
-                {
-                    var def = edgeSurfaces[rng.Next(edgeSurfaces.Count)];
-                    SpawnSurface(z, lane, def, worldPos);
-                }
+                    SpawnSurface(z, lane, edgeSurfaces[rng.Next(edgeSurfaces.Count)], worldPos);
 
-                // Edge wall prefab (L or R)
-                var wallList = IsLeftEdge(lane)
-                    ? config.catalog.leftWallPrefabs
-                    : config.catalog.rightWallPrefabs;
-
-                if (wallList != null && wallList.Count > 0)
+                // Wall occupant — GenerateEdgeWalls stored the chosen PrefabDef in
+                // cell.occupantDef; only instantiate from the origin row.
+                if (cell.hasOccupant && cell.occupantDef != null)
                 {
-                    var wall = wallList[rng.Next(wallList.Count)];
-                    if (wall != null)
+                    bool isOrigin = true;
+                    if (cell.occupantDef.SizeZ > 1)
                     {
-                        var obj = Instantiate(wall, worldPos, Quaternion.identity, transform);
+                        var prev = getCell(z - 1, lane);
+                        if (prev.hasOccupant && prev.occupantDef?.ID == cell.occupantDef.ID)
+                            isOrigin = false;
+                    }
+
+                    if (isOrigin && cell.occupantDef.Prefabs.Count > 0)
+                    {
+                        // Right wall: rotate 180° around Y when mirroring is enabled,
+                        // so the prefab faces inward symmetrically with the left wall.
+                        bool flipForRight = IsRightEdge(lane) && config.catalog.mirrorRightFromLeft;
+                        var rotation = flipForRight
+                            ? Quaternion.Euler(0f, 180f, 0f)
+                            : Quaternion.identity;
+
+                        var obj = Instantiate(
+                            cell.occupantDef.Prefabs[rng.Next(cell.occupantDef.Prefabs.Count)],
+                            worldPos, rotation, transform);
                         spawnedOccupant[(z, lane)] = obj;
                     }
                 }

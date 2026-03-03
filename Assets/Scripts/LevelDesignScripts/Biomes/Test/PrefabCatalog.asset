@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
+  m_Name: PrefabCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::PrefabCatalog
+  noiseChannel: {fileID: 0}
+  Definitions:
+  - ID: 
+    Name: 
+    Prefabs: []
+    Layer: 0
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  debugSafePath: {fileID: 0}
+  debugSurfaceDef:
+    ID: 
+    Name: 
+    Prefabs: []
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 10
+    Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 1
+  debugOccupant: {fileID: 0}
+  leftWallPrefabs: []
+  mirrorRightFromLeft: 0
+  rightWallPrefabs: []

@@ -84,10 +84,10 @@ MonoBehaviour:
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
-  - ID: WALL_SUR
+  - ID: WALL_R
     Name: WALL
     Prefabs:
-    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
     Layer: 0
     SurfaceType: 4
     OccupantWeight: 0
@@ -98,10 +98,10 @@ MonoBehaviour:
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
-  - ID: WALL_SUR2
+  - ID: WALL_L
     Name: WALL
     Prefabs:
-    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
     Layer: 0
     SurfaceType: 3
     OccupantWeight: 0
@@ -160,6 +160,20 @@ MonoBehaviour:
     isNoiseCandidate: 1
   debugOccupant: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
   leftWallPrefabs:
-  - {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
-  rightWallPrefabs:
-  - {fileID: 100000, guid: 31bbda51eeab02f44a8e92a7da2f5ff8, type: 3}
+  - ID: WallL
+    Name: ROCKWALL
+    Prefabs:
+    - {fileID: 5063625048952669867, guid: b23f607a2926fcc4d86681b026db97fc, type: 3}
+    - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 4
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  mirrorRightFromLeft: 1
+  rightWallPrefabs: []

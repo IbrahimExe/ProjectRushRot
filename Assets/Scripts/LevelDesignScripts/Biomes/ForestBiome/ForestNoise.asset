@@ -27,7 +27,7 @@ MonoBehaviour:
     multiplier: 14.2
     blendWeight: 1
   quantization:
-    enabled: 0
+    enabled: 1
     totalChannels: 4
   marble:
     enabled: 0

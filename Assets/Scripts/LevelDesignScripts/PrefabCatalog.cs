@@ -30,12 +30,17 @@ public class PrefabCatalog : ScriptableObject
     public GameObject debugOccupant;
 
     [Tooltip("Required: prefab variants for the LEFT edge wall (lane 0). " +
-             "One is picked at random each row. These replace the old debugEdgeWall single field.")]
-    public List<GameObject> leftWallPrefabs = new List<GameObject>();
-
-    [Tooltip("Required: prefab variants for the RIGHT edge wall (last lane). " +
              "One is picked at random each row.")]
-    public List<GameObject> rightWallPrefabs = new List<GameObject>();
+    public List<PrefabDef> leftWallPrefabs = new List<PrefabDef>();
+
+    [Tooltip("When enabled, the right wall uses the same PrefabDefs as the left wall " +
+             "but instantiated with a 180° Y rotation. " +
+             "The rightWallPrefabs list is ignored.")]
+    public bool mirrorRightFromLeft = false;
+
+    [Tooltip("Prefab variants for the RIGHT edge wall (last lane). " +
+             "Ignored when Mirror Right From Left is enabled.")]
+    public List<PrefabDef> rightWallPrefabs = new List<PrefabDef>();
 
     // -- Fast lookup caches ----------------------------------------------------
     private Dictionary<SurfaceType, List<PrefabDef>> _surfaceCache;
@@ -83,8 +88,8 @@ public class PrefabCatalog : ScriptableObject
         // Warn if edge wall lists are empty
         if (leftWallPrefabs == null || leftWallPrefabs.Count == 0)
             Debug.LogWarning("[PrefabCatalog] leftWallPrefabs is empty - left edge lane will spawn nothing.", this);
-        if (rightWallPrefabs == null || rightWallPrefabs.Count == 0)
-            Debug.LogWarning("[PrefabCatalog] rightWallPrefabs is empty - right edge lane will spawn nothing.", this);
+        if (!mirrorRightFromLeft && (rightWallPrefabs == null || rightWallPrefabs.Count == 0))
+            Debug.LogWarning("[PrefabCatalog] rightWallPrefabs is empty and Mirror Right From Left is off - right edge lane will spawn nothing.", this);
     }
 
     // -- Cache -----------------------------------------------------------------
@@ -155,4 +160,10 @@ public class PrefabCatalog : ScriptableObject
                 result.Add(def);
         return result;
     }
+
+    /// Returns the effective right-wall def list.
+    /// When mirrorRightFromLeft is true, returns leftWallPrefabs so the generator
+    /// picks from the same set; SpawnRowVisuals applies the 180° Y flip at spawn time.
+    public List<PrefabDef> GetRightWallDefs() =>
+        mirrorRightFromLeft ? leftWallPrefabs : rightWallPrefabs;
 }

@@ -12,19 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 682566fe71566a64182f00a5bf3e109e, type: 3}
   m_Name: RunnerConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
-  catalog: {fileID: 11400000, guid: 97e87868aea41e242b661ed29cdcf7a0, type: 2}
-  weightRules: {fileID: 11400000, guid: 16a029992960548458674a4939e1cb3b, type: 2}
+  catalog: {fileID: 0}
+  weightRules: {fileID: 0}
   laneCount: 30
-  laneWidth: 9
-  cellLength: 9
+  laneWidth: 10
+  cellLength: 10
   bufferRows: 30
   keepRowsBehind: 20
   chunkSize: 10
-  contextRows: 3
+  contextRows: 1
   densityBudget: 60
-  globalSpawnChance: 0.03
-  worldNoiseScale: 500
+  globalSpawnChance: 0.5
+  worldNoiseScale: 5000
   useWavePath: 1
+  safePathWidth: 1
   safePathBlendRadius: 2
   waveStrength: 1
   waveAmplitudeLanes: 23
