@@ -116,3 +116,9 @@ MonoBehaviour:
       directions: -1
       weight: 0
     denied: []
+  - selfID: Rock
+    allowed:
+    - neighborID: Rock
+      directions: -1
+      weight: 0
+    denied: []

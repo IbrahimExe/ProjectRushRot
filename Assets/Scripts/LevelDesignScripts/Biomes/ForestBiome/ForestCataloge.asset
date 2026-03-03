@@ -127,7 +127,24 @@ MonoBehaviour:
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
-  - ID: TREE
+  - ID: ROCK_OCC
+    Name: Rock
+    Prefabs:
+    - {fileID: 7952636126433885707, guid: c98c66f24b5d84a408d37b11824266f6, type: 3}
+    - {fileID: 2052224328857356354, guid: 21091730ddc153c4d83e7f3189033484, type: 3}
+    - {fileID: 6382724045599630178, guid: 202032cc34d2ead4ea116af620025396, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 50
+    Cost: 5
+    MinRowGap: 0
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - Sand_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: TREE_OCC
     Name: tree
     Prefabs:
     - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}

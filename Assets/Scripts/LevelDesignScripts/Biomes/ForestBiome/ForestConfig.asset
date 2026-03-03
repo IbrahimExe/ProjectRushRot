@@ -15,8 +15,8 @@ MonoBehaviour:
   catalog: {fileID: 11400000, guid: 9a0ebdb4554dede4c9bd197f4610ebb1, type: 2}
   weightRules: {fileID: 11400000, guid: 9424e3ee151887547ab3d2d13cbeb86a, type: 2}
   laneCount: 30
-  laneWidth: 10
-  cellLength: 10
+  laneWidth: 9
+  cellLength: 9
   bufferRows: 100
   keepRowsBehind: 20
   chunkSize: 10
