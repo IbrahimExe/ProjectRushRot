@@ -152,6 +152,8 @@ public class PlayerControllerBase : MonoBehaviour
 
     void Update()
     {
+        if (TutorialManager.IsInputBlocked) return;
+
         IsGrounded = CheckGrounded();
         if (IsGrounded) 
         {
@@ -174,6 +176,8 @@ public class PlayerControllerBase : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (TutorialManager.IsInputBlocked) return;
+
         if (dash != null) dash.TickFixed();
         if (wallRun != null) wallRun.TickFixed();
         if (wallJump != null) wallJump.TickFixed();

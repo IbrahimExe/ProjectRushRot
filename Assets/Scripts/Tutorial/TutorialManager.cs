@@ -2,8 +2,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 
+/// <summary>
+/// Tutorial Manager - Add this check to your player input scripts:
+/// if (TutorialManager.IsInputBlocked) return;
+/// 
+/// Place this at the start of Update() or any input handling method.
+/// </summary>
 public class TutorialManager : MonoBehaviour
 {
+    // Static flag that your player scripts can check
+    public static bool IsInputBlocked { get; private set; } = false;
+
     [System.Serializable]
     public class TutorialStep
     {
@@ -29,6 +38,10 @@ public class TutorialManager : MonoBehaviour
 
     [Header("Player Settings")]
     public string playerTag = "Player";
+
+    [Header("Optional: Disable Specific Scripts")]
+    [Tooltip("Drag your player controller scripts here to disable them during tutorials")]
+    public MonoBehaviour[] scriptsToDisable;
 
     [Header("Dismiss Settings")]
     public KeyCode dismissKey = KeyCode.Space;
@@ -99,9 +112,12 @@ public class TutorialManager : MonoBehaviour
     private IEnumerator ShowTutorial(TutorialStep step)
     {
         isTutorialActive = true;
+        IsInputBlocked = true; // Block input globally
+
+        // Disable specified scripts if any
+        DisablePlayerScripts();
 
         // Slow down time
-        float originalTimeScale = Time.timeScale;
         Time.timeScale = slowMotionScale;
         Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
@@ -152,8 +168,40 @@ public class TutorialManager : MonoBehaviour
         Time.timeScale = 1f;
         Time.fixedDeltaTime = 0.02f;
 
+        // Re-enable scripts
+        EnablePlayerScripts();
+
+        IsInputBlocked = false; // Unblock input globally
         isTutorialActive = false;
         currentStep = null;
+    }
+
+    private void DisablePlayerScripts()
+    {
+        if (scriptsToDisable != null && scriptsToDisable.Length > 0)
+        {
+            foreach (var script in scriptsToDisable)
+            {
+                if (script != null && script.enabled)
+                {
+                    script.enabled = false;
+                }
+            }
+        }
+    }
+
+    private void EnablePlayerScripts()
+    {
+        if (scriptsToDisable != null && scriptsToDisable.Length > 0)
+        {
+            foreach (var script in scriptsToDisable)
+            {
+                if (script != null)
+                {
+                    script.enabled = true;
+                }
+            }
+        }
     }
 
     private IEnumerator FadeImage(CanvasGroup canvasGroup, float startAlpha, float endAlpha)
