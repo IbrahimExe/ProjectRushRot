@@ -18,6 +18,23 @@ MonoBehaviour:
     Prefabs:
     - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
     Layer: 0
+    SurfaceType: 3
+    OccupantType: 0
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    IsWalkable: 1
+    AllowWFC: 0
+    biomeAffinities: []
+  - ID: GARDEN_SUR
+    Name: Garden
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
+    Layer: 0
     SurfaceType: 0
     OccupantType: 0
     Size: {x: 0, y: 0, z: 0}
@@ -27,8 +44,42 @@ MonoBehaviour:
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
+    IsWalkable: 1
+    AllowWFC: 1
+    biomeAffinities: []
+  - ID: WALL_SUR
+    Name: WALL
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    Layer: 0
+    SurfaceType: 4
+    OccupantType: 1
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
     IsWalkable: 0
-    AllowWFC: 0
+    AllowWFC: 1
+    biomeAffinities: []
+  - ID: WALL_occupant
+    Name: WALL
+    Prefabs:
+    - {fileID: 100000, guid: 0064eb002f3790247969e12119bbf9d2, type: 3}
+    Layer: 1
+    SurfaceType: 4
+    OccupantType: 5
+    Size: {x: 0, y: 0, z: 0}
+    OccupantWeight: 0
+    Tags: []
+    Cost: 0
+    MinRowGap: 2
+    SizeZ: 2
+    AllowedSurfaceIDs: []
+    IsWalkable: 0
+    AllowWFC: 1
     biomeAffinities: []
   debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugSurfaceDef:

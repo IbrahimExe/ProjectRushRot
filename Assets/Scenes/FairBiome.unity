@@ -532,9 +532,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
   biomeConfigs:
   - {fileID: 11400000, guid: 27d5d94fa69bd4541baf302f6db7ac20, type: 2}
-  startBiomeIndex: 0
+  startBiomeIndex: 1
   biomeBias: 0.25
-  seed: ghngjhjhlik
+  seed: fasfsaasfas
   playerTransform: {fileID: 652304941}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

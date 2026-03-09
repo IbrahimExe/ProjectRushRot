@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 682566fe71566a64182f00a5bf3e109e, type: 3}
   m_Name: FairConfig
   m_EditorClassIdentifier: Assembly-CSharp::RunnerGenConfig
-  catalog: {fileID: 11400000, guid: 0784e541dd43c58429d248a773076519, type: 2}
+  catalog: {fileID: 11400000, guid: 28f91046c5cccc44ca25ba59eb16a4c6, type: 2}
   weightRules: {fileID: 11400000, guid: 04c806915c35c9e4aa922e582b86a3a7, type: 2}
   laneCount: 30
   laneWidth: 10
