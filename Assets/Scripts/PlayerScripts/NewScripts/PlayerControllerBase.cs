@@ -11,6 +11,7 @@ public class PlayerControllerBase : MonoBehaviour
     public float baseMaxMoveSpeed = 70f;
     public float baseAcceleration = 25f;
     public float baseDeceleration = 25f;
+    public float brakeMultiplier = 2.5f;
 
     private float maxMoveSpeed;
     private float acceleration;
@@ -232,6 +233,13 @@ public class PlayerControllerBase : MonoBehaviour
             RB.AddForce(-forward * backwardAcceleration * -v, ForceMode.Acceleration);
 
         Vector3 newPlanar = Vector3.ClampMagnitude(planarVel, maxForward);
+
+        bool isBraking = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        if (isBraking)
+        {
+            float brakeAmount = baseDeceleration * brakeMultiplier * Time.fixedDeltaTime;
+            newPlanar = Vector3.MoveTowards(newPlanar, Vector3.zero, brakeAmount);
+        }
 
         if (!SuppressVelocityOverride)
         {
