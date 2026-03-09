@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
@@ -7,6 +6,12 @@ public class MainMenu : MonoBehaviour
     public void StartGame()
     {
         SceneManager.LoadScene(1);
+    }
+
+    public void StartProcedural()
+    {
+        // Load the intermediate scene instead
+        SceneManager.LoadScene("ProceduralLoading");
     }
 
     public void QuitGame()

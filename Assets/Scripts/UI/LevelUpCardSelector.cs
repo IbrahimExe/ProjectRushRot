@@ -13,27 +13,23 @@ public class LevelUpCardSelector : MonoBehaviour
     public float legendaryWeight = 5f;
 
     [Header("Source deck (ScriptableObjects)")]
-    [Tooltip("Drag your CardSO ScriptableObjects here.")]
     public List<CardSO> deck = new List<CardSO>();
 
-    [Header("Card target positions (place these empty RectTransforms where you want cards to land)")]
-    [Tooltip("Provide up to 3 RectTransforms (CardPos_1, CardPos_2, CardPos_3).")]
+    [Header("Card target positions")]
     public RectTransform[] cardPositions = new RectTransform[3];
 
     [Header("Optional Prefab")]
-    [Tooltip("Optional card prefab that contains a CardUI component. If null, a simple Image GameObject will be created.")]
     public GameObject optionalCardPrefab;
 
     [Header("Panel (optional)")]
-    [Tooltip("Optional panel RectTransform to show behind cards. It will be animated in/out behind the cards.")]
     public RectTransform panelBehindCards;
 
     [Header("Layout & animation")]
-    public float horizontalSpacing = 220f;     // fallback spacing if positions not set
+    public float horizontalSpacing = 220f;
     public float slideInDuration = 0.28f;
     public float slideOutDuration = 0.22f;
     public float easeOvershoot = 0.1f;
-    public float offscreenOffset = 300f;      // how far off to the right cards start
+    public float offscreenOffset = 300f;
 
     [Header("Selection visuals")]
     public float highlightScale = 1.25f;
@@ -45,162 +41,111 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Curve")]
     public AnimationCurve easeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-    // runtime
+    // ── Runtime ────────────────────────────────────────────────────────
+
     private List<RectTransform> spawned = new List<RectTransform>();
-    private List<GameObject> spawnedGameObjects = new List<GameObject>();
+    private List<GameObject> spawnedObjects = new List<GameObject>();
     private int selectedIndex = 0;
+
+    // isOpen : cards on screen, accepting input
+    // isBusy : coroutine is running ANY phase — gates TriggerLevelUp queuing
     private bool isOpen = false;
+    private bool isBusy = false;
+
     private int queuedLevels = 0;
-    private Coroutine showRoutine;
 
-    // panel animation state (cached once)
-    private Vector2 panelOriginalAnchoredPos;
-    private bool panelWasActiveInitially = false;
+    private Vector2 panelHome;
+    private bool panelHomeCached = false;
 
-    private void Awake()
+    // ── Init ───────────────────────────────────────────────────────────
+
+    private void Awake() => CachePanelHome();
+    private void OnValidate() => CachePanelHome();
+
+    private void CachePanelHome()
     {
-        // Cache panel home position once so it never drifts
-        if (panelBehindCards != null)
+        if (panelBehindCards != null && !panelHomeCached)
         {
-            panelOriginalAnchoredPos = panelBehindCards.anchoredPosition;
-            panelWasActiveInitially = panelBehindCards.gameObject.activeSelf;
+            panelHome = panelBehindCards.anchoredPosition;
+            panelHomeCached = true;
         }
     }
 
-    private void OnValidate()
-    {
-        // Keep editor changes reflected
-        if (panelBehindCards != null)
-        {
-            panelOriginalAnchoredPos = panelBehindCards.anchoredPosition;
-            panelWasActiveInitially = panelBehindCards.gameObject.activeSelf;
-        }
-    }
+    // ── Public API ─────────────────────────────────────────────────────
 
-    // PUBLIC API
     public void TriggerLevelUp()
     {
         if (deck == null || deck.Count == 0)
         {
-            Debug.LogWarning("[LevelUpCardSelector] Deck empty.");
-            queuedLevels++;
+            Debug.LogWarning("[LevelUpCardSelector] Deck is empty.");
             return;
         }
 
-        if (isOpen)
+        if (isBusy)
         {
             queuedLevels++;
             return;
         }
 
-        if (showRoutine != null) StopCoroutine(showRoutine);
-        showRoutine = StartCoroutine(ShowRandomCardSet());
+        StartCoroutine(RunCardSet());
     }
 
-    // Chooses a rarity based on weights
-    private CardRarity RollRarity()
+    // ── Master coroutine ───────────────────────────────────────────────
+
+    private IEnumerator RunCardSet()
     {
-        float total = commonWeight + rareWeight + legendaryWeight;
-        float roll = Random.value * total;
+        isBusy = true;
+        isOpen = false;
 
-        if (roll < commonWeight)
-            return CardRarity.Common;
-        if (roll < commonWeight + rareWeight)
-            return CardRarity.Rare;
+        // Safety: destroy any leftover cards from a previous broken state
+        DestroyAllCards();
 
-        return CardRarity.Legendary;
-    }
-
-    // Picks a set of cards based on rarity rolls
-    private List<CardSO> PickCards(int count)
-    {
-        List<CardSO> result = new();
-        HashSet<CardSO> used = new();
-
-        int safety = 0;
-
-        while (result.Count < count && safety < 100)
-        {
-            safety++;
-
-            CardRarity rarity = RollRarity();
-
-            var pool = deck
-                .Where(c =>
-                    c.rarity == rarity &&
-                    !used.Contains(c))
-                .ToList();
-
-            if (pool.Count == 0)
-                continue;
-
-            CardSO chosen = pool[Random.Range(0, pool.Count)];
-
-            // Unique cards can only appear once per run
-            if (chosen.isUnique && used.Contains(chosen))
-                continue;
-
-            result.Add(chosen);
-            used.Add(chosen);
-        }
-
-        return result;
-    }
-
-    private IEnumerator ShowRandomCardSet()
-    {
-        isOpen = true;
-        selectedIndex = 0;
-        spawned.Clear();
-        spawnedGameObjects.Clear();
-
-        // ensure panel is prepared and animate it in behind cards (if assigned)
+        // ── 1. Panel slide-in ─────────────────────────────────────────
         if (panelBehindCards != null)
         {
-            // ensure active
-            if (!panelBehindCards.gameObject.activeSelf) panelBehindCards.gameObject.SetActive(true);
-
-            // start the panel offscreen to the right using the cached home position (do NOT overwrite the cached home)
-            panelBehindCards.anchoredPosition = panelOriginalAnchoredPos + new Vector2(offscreenOffset, 0f);
-
-            // place panel behind by making it the first sibling in its parent
+            panelBehindCards.gameObject.SetActive(true);
             panelBehindCards.SetAsFirstSibling();
 
-            // slide panel into its cached home position
-            StartCoroutine(Slide(panelBehindCards, panelOriginalAnchoredPos, slideInDuration, true));
+            bool alreadyHome = Vector2.Distance(panelBehindCards.anchoredPosition, panelHome) < 2f;
+            if (!alreadyHome)
+            {
+                panelBehindCards.anchoredPosition = panelHome + new Vector2(offscreenOffset, 0f);
+                yield return StartCoroutine(Slide(panelBehindCards, panelHome, slideInDuration, true));
+            }
         }
 
-        // pick up to 3 unique cards
+        // ── 2. Spawn and slide cards in ───────────────────────────────
         var picks = PickCards(Mathf.Min(3, deck.Count));
         int count = picks.Count;
 
-        // determine whether specific card positions were provided
-        bool usePositions = cardPositions != null && cardPositions.Length >= count && cardPositions.Take(count).All(p => p != null);
+        bool usePositions = cardPositions != null
+            && cardPositions.Length >= count
+            && cardPositions.Take(count).All(p => p != null);
 
-        // fallback parent for spawned cards (attempt to use panel's parent if available)
-        Transform fallbackParent = (panelBehindCards != null) ? panelBehindCards.parent : (transform.parent ? transform.parent : transform);
+        Transform fallbackParent = panelBehindCards != null
+            ? panelBehindCards.parent
+            : (transform.parent != null ? transform.parent : transform);
 
         for (int i = 0; i < count; i++)
         {
             RectTransform targetSlot = usePositions ? cardPositions[i] : null;
-            Transform parentTransform = (targetSlot != null) ? targetSlot.parent : fallbackParent;
+            Transform parentTransform = targetSlot != null ? targetSlot.parent : fallbackParent;
 
             if (parentTransform == null)
             {
                 var canvas = FindFirstObjectByType<Canvas>();
-                parentTransform = (canvas != null) ? canvas.transform : transform;
+                parentTransform = canvas != null ? canvas.transform : transform;
             }
 
             GameObject go = optionalCardPrefab != null
                 ? Instantiate(optionalCardPrefab, parentTransform, false)
-                : new GameObject("CardImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                : new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
 
             var rt = go.GetComponent<RectTransform>();
             rt.SetParent(parentTransform, false);
             rt.localScale = Vector3.one;
             rt.localRotation = Quaternion.identity;
 
-            // copy anchor/pivot from slot if present, otherwise anchor to right-middle by default
             if (targetSlot != null)
             {
                 rt.anchorMin = targetSlot.anchorMin;
@@ -214,17 +159,15 @@ public class LevelUpCardSelector : MonoBehaviour
                 rt.pivot = new Vector2(0.5f, 0.5f);
             }
 
-            // initialize CardUI if present
-            CardUI ui = go.GetComponent<CardUI>() ?? go.GetComponentInChildren<CardUI>();
+            var ui = go.GetComponent<CardUI>() ?? go.GetComponentInChildren<CardUI>();
             if (ui != null)
             {
-                var stats = FindFirstObjectByType<UpgradeStats>();
-                ui.Initialize(picks[i], stats);
+                ui.Initialize(picks[i], FindFirstObjectByType<UpgradeStats>());
             }
             else
             {
                 var img = go.GetComponent<Image>();
-                if (img != null && picks[i] != null && picks[i].cardImage != null)
+                if (img != null && picks[i]?.cardImage != null)
                 {
                     img.sprite = picks[i].cardImage;
                     img.preserveAspect = true;
@@ -232,48 +175,37 @@ public class LevelUpCardSelector : MonoBehaviour
                 }
             }
 
-            // compute target anchored position
-            Vector2 targetAnchored;
+            Vector2 dest;
             if (targetSlot != null)
             {
-                targetAnchored = targetSlot.anchoredPosition;
+                dest = targetSlot.anchoredPosition;
             }
             else
             {
-                RectTransform parentRect = rt.parent as RectTransform;
                 float groupWidth = (count - 1) * horizontalSpacing;
-                float startX = -groupWidth;
-                float x = startX + i * horizontalSpacing;
-                float y = 0f;
-                targetAnchored = new Vector2(x, y);
+                dest = new Vector2(-groupWidth + i * horizontalSpacing, 0f);
             }
 
-            // start offscreen to the right relative to the cached home of the parent
-            float startOff = offscreenOffset;
-            rt.anchoredPosition = targetAnchored + new Vector2(startOff, 0f);
+            rt.anchoredPosition = dest + new Vector2(offscreenOffset, 0f);
 
-            // ensure cards render above the panel
             if (panelBehindCards != null && panelBehindCards.parent == rt.parent)
-            {
-                // panel is first sibling, make sure this card is last so it appears on top
                 rt.SetAsLastSibling();
-            }
 
             spawned.Add(rt);
-            spawnedGameObjects.Add(go);
+            spawnedObjects.Add(go);
 
-            // slide in
-            StartCoroutine(Slide(rt, targetAnchored, slideInDuration, true));
-
-            yield return new WaitForSeconds(0.06f);
+            StartCoroutine(Slide(rt, dest, slideInDuration, true));
+            yield return new WaitForSecondsRealtime(0.06f);
         }
 
-        // small settle
-        yield return new WaitForSeconds(0.02f);
+        yield return new WaitForSecondsRealtime(0.02f);
 
+        // ── 3. Open for input ─────────────────────────────────────────
+        selectedIndex = 0;
         UpdateHighlightImmediate();
+        isOpen = true;
 
-        // Input loop: use mouse wheel for navigation, middle click or Enter to select
+        // ── 4. Input loop ─────────────────────────────────────────────
         while (isOpen)
         {
             float scroll = Input.mouseScrollDelta.y;
@@ -288,139 +220,150 @@ public class LevelUpCardSelector : MonoBehaviour
                 UpdateHighlightImmediate();
             }
 
-            if (Input.GetMouseButtonDown(2) // Middle Mouse Scroll Wheel Click
-                || Input.GetMouseButtonDown(0) // Left Click
-                || Input.GetKeyDown(KeyCode.Return) 
-                || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (Input.GetMouseButtonDown(0)
+             || Input.GetMouseButtonDown(2)
+             || Input.GetKeyDown(KeyCode.Return)
+             || Input.GetKeyDown(KeyCode.KeypadEnter))
             {
-                StartCoroutine(HandleSelection(selectedIndex));
-                yield break;
+                isOpen = false;
+                break;
             }
 
             for (int i = 0; i < spawned.Count; i++)
             {
-                Vector3 target = (i == selectedIndex) ? Vector3.one * highlightScale : Vector3.one;
-                spawned[i].localScale = Vector3.Lerp(spawned[i].localScale, target, Time.unscaledDeltaTime * scaleLerpSpeed);
+                if (spawned[i] == null) continue;
+                Vector3 t = i == selectedIndex ? Vector3.one * highlightScale : Vector3.one;
+                spawned[i].localScale = Vector3.Lerp(
+                    spawned[i].localScale, t, Time.unscaledDeltaTime * scaleLerpSpeed);
             }
 
             yield return null;
         }
-    }
 
-    private IEnumerator HandleSelection(int index)
-    {
-        // apply card effect first (if present)
-        if (index >= 0 && index < spawnedGameObjects.Count)
+        // ── 5. Apply card effect ──────────────────────────────────────
+        if (selectedIndex >= 0 && selectedIndex < spawnedObjects.Count)
         {
-            var cardGO = spawnedGameObjects[index];
-            var cardUI = cardGO.GetComponent<CardUI>() ?? cardGO.GetComponentInChildren<CardUI>();
-            if (cardUI != null)
-                cardUI.ApplyCardEffect();
-            else
-                Debug.LogWarning("Selected card has no CardUI to apply effect.");
+            var cardGO = spawnedObjects[selectedIndex];
+            if (cardGO != null)
+            {
+                var cardUI = cardGO.GetComponent<CardUI>() ?? cardGO.GetComponentInChildren<CardUI>();
+                if (cardUI != null) cardUI.ApplyCardEffect();
+            }
         }
 
-        // freeze input
-        isOpen = false;
-
-        // slide non-selected away to the right while keeping selected in place
-        for (int i = 0; i < spawned.Count; i++)
-        {
-            if (i == index) continue;
-            RectTransform rt = spawned[i];
-            Vector2 start = rt.anchoredPosition;
-            Vector2 target = start + new Vector2(offscreenOffset * 1.2f, 40f);
-            StartCoroutine(Slide(rt, target, slideOutDuration, false));
-        }
-
-        // pop selected
-        if (index >= 0 && index < spawned.Count)
-            spawned[index].localScale = Vector3.one * (highlightScale + 0.04f);
+        // Pop selected briefly so player sees their pick
+        if (selectedIndex >= 0 && selectedIndex < spawned.Count && spawned[selectedIndex] != null)
+            spawned[selectedIndex].localScale = Vector3.one * (highlightScale + 0.04f);
 
         yield return new WaitForSecondsRealtime(selectedHoldTime);
 
-        // animate panel out (if assigned) while cleaning up
-        if (panelBehindCards != null)
+        // ── 6. Slide ALL cards off, yield each, wait for completion
+        for (int i = 0; i < spawned.Count; i++)
         {
-            Vector2 offPos = panelOriginalAnchoredPos + new Vector2(offscreenOffset, 0f);
-            StartCoroutine(Slide(panelBehindCards, offPos, slideOutDuration, false));
-            // hide after a short delay and reset to original anchored pos so it doesn't drift
-            StartCoroutine(DisableAfterDelay(panelBehindCards.gameObject, slideOutDuration + 0.02f));
+            if (spawned[i] == null) continue;
+            Vector2 offTarget = spawned[i].anchoredPosition + new Vector2(offscreenOffset * 1.5f, 0f);
+            yield return StartCoroutine(Slide(spawned[i], offTarget, slideOutDuration, false));
         }
 
-        // cleanup
-        StartCoroutine(CleanupAndMaybeOpenNext());
-    }
+        // ── 7. All slides done — safe to destroy ──────────────────────
+        DestroyAllCards();
 
-    private IEnumerator DisableAfterDelay(GameObject go, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        if (go != null)
-        {
-            // Only disable if it wasn't active before we opened it (respect original state)
-            if (!panelWasActiveInitially)
-                go.SetActive(false);
-
-            // always reset anchoredPosition back to the cached home so future opens use correct home
-            if (panelBehindCards != null)
-                panelBehindCards.anchoredPosition = panelOriginalAnchoredPos;
-        }
-    }
-
-    private IEnumerator CleanupAndMaybeOpenNext()
-    {
-        // destroy spawned objects
-        foreach (var go in spawnedGameObjects)
-            if (go != null) Destroy(go);
-
-        spawned.Clear();
-        spawnedGameObjects.Clear();
-
-        // queued levels
+        // ── 8. Next in queue or close ─────────────────────────────────
         if (queuedLevels > 0)
         {
             queuedLevels--;
-            yield return null;
-            showRoutine = StartCoroutine(ShowRandomCardSet());
+            isBusy = false;
+            yield return null; // one frame to clear input state
+            StartCoroutine(RunCardSet());
         }
         else
         {
-            showRoutine = null;
+            if (panelBehindCards != null)
+            {
+                Vector2 offPos = panelHome + new Vector2(offscreenOffset, 0f);
+                yield return StartCoroutine(Slide(panelBehindCards, offPos, slideOutDuration, false));
+                panelBehindCards.gameObject.SetActive(false);
+                panelBehindCards.anchoredPosition = panelHome;
+            }
+
+            isBusy = false;
         }
     }
 
-    // Slide helper with ease curve + small overshoot
-    private IEnumerator Slide(RectTransform rt, Vector2 targetAnchored, float duration, bool includeOvershoot)
+    // ── Helpers ────────────────────────────────────────────────────────
+
+    private void DestroyAllCards()
     {
+        foreach (var go in spawnedObjects)
+            if (go != null) Destroy(go);
+
+        spawnedObjects.Clear();
+        spawned.Clear();
+    }
+
+    private CardRarity RollRarity()
+    {
+        float total = commonWeight + rareWeight + legendaryWeight;
+        float roll = Random.value * total;
+        if (roll < commonWeight) return CardRarity.Common;
+        if (roll < commonWeight + rareWeight) return CardRarity.Rare;
+        return CardRarity.Legendary;
+    }
+
+    private List<CardSO> PickCards(int count)
+    {
+        var result = new List<CardSO>();
+        var used = new HashSet<CardSO>();
+        int safety = 0;
+
+        while (result.Count < count && safety++ < 100)
+        {
+            var pool = deck.Where(c => c.rarity == RollRarity() && !used.Contains(c)).ToList();
+            if (pool.Count == 0) continue;
+            var chosen = pool[Random.Range(0, pool.Count)];
+            if (chosen.isUnique && used.Contains(chosen)) continue;
+            result.Add(chosen);
+            used.Add(chosen);
+        }
+
+        return result;
+    }
+
+    private IEnumerator Slide(RectTransform rt, Vector2 target, float duration, bool overshoot)
+    {
+        if (rt == null) yield break;
         Vector2 start = rt.anchoredPosition;
         float t = 0f;
-        float dur = Mathf.Max(0.0001f, duration);
+        float dur = Mathf.Max(0.001f, duration);
+
         while (t < dur)
         {
+            if (rt == null) yield break;
             t += Time.unscaledDeltaTime;
             float p = Mathf.Clamp01(t / dur);
             float e = easeCurve.Evaluate(p);
 
-            if (includeOvershoot && p > 0.95f)
+            if (overshoot && p > 0.95f)
             {
-                float overshootT = (p - 0.95f) / 0.05f;
-                float os = Mathf.Sin(overshootT * Mathf.PI) * easeOvershoot;
-                rt.anchoredPosition = Vector2.Lerp(start, targetAnchored, e) + new Vector2(-os * 100f, 0f);
+                float os = Mathf.Sin((p - 0.95f) / 0.05f * Mathf.PI) * easeOvershoot;
+                rt.anchoredPosition = Vector2.Lerp(start, target, e) + new Vector2(-os * 100f, 0f);
             }
             else
             {
-                rt.anchoredPosition = Vector2.Lerp(start, targetAnchored, e);
+                rt.anchoredPosition = Vector2.Lerp(start, target, e);
             }
 
             yield return null;
         }
-        rt.anchoredPosition = targetAnchored;
+
+        if (rt != null) rt.anchoredPosition = target;
     }
 
     private void UpdateHighlightImmediate()
     {
         for (int i = 0; i < spawned.Count; i++)
-            spawned[i].localScale = Vector3.one * (i == selectedIndex ? highlightScale : 1f);
+            if (spawned[i] != null)
+                spawned[i].localScale = Vector3.one * (i == selectedIndex ? highlightScale : 1f);
     }
 
 #if UNITY_EDITOR
