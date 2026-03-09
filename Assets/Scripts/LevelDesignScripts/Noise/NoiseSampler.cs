@@ -22,17 +22,37 @@ using UnityEngine;
 /// </summary>
 public static class NoiseSampler
 {
-    // ─── Entry point ───────────────────────────────────────────────────────────
+    // ─── Entry points ──────────────────────────────────────────────────────────
 
+    // Editor preview: uv [0,1] x resolution → pixel coords → space → noise
     public static float Sample(NoiseConfig cfg, Vector2 uv, int resolution)
     {
-        // Raw pixel coordinate — used directly by patterns that carry their own frequency
         Vector2 px = uv * resolution;
+        return SamplePx(cfg, px);
+    }
 
-        // Space-scaled coordinate — used by base noise
+    // Runtime (RunnerLevelGenerator): world XZ treated as pixel coords directly.
+    // Seamless across chunks — no resolution dependency.
+    public static float SampleWorld(NoiseConfig cfg, Vector2 worldPos)
+        => SamplePx(cfg, worldPos);
+
+    static float SamplePx(NoiseConfig cfg, Vector2 px)
+    {
+        // Cache type-specific settings in thread-locals so noise functions can
+        // read them without threading extra parameters through BaseNoise.
+        _ridged = cfg.ridged;
+        _sparseDot = cfg.sparseDot;
+
+        // Space-scaled coordinate — used by base noise and domain warp
         Vector2 p = ApplySpace(cfg, px);
 
-        // Always start with base noise
+        // Domain warp displaces p before base noise is evaluated.
+        // Patterns (Wood/Marble/Turbulence) bypass this — they sample px directly
+        // with their own frequency and would look wrong if warped.
+        if (cfg.warp.enabled && cfg.warp.level > 0)
+            p = WarpDomain(cfg.warp, p);
+
+        // Base noise on the (possibly warped) space coordinate
         float n = BaseNoise(cfg.noiseType, p);
 
         // Patterns blend into the result via blendWeight.
@@ -56,6 +76,47 @@ public static class NoiseSampler
                 / (cfg.quantization.totalChannels - 1f);
 
         return Mathf.Clamp01(n);
+    }
+
+    // ─── Domain Warp  (Quilez, https://iquilezles.org/articles/warp/) ──────────
+    //
+    // The key insight: to displace a 2D point we need a 2D offset vector.
+    // We synthesise that vector from TWO separate scalar fbm calls, using slightly
+    // different input offsets so their outputs are uncorrelated (they point in
+    // different "random" directions rather than always along the same axis).
+    //
+    // Level 1:
+    //   q = ( fbm(p + offsetQ0),  fbm(p + offsetQ1) )
+    //   warped_p = p + strength * q
+    //
+    // Level 2: adds a second warp built from the already-warped coordinate:
+    //   r = ( fbm(p + strength*q + offsetR0),  fbm(p + strength*q + offsetR1) )
+    //   warped_p = p + strength * r
+    //
+    // The warp fbm always uses FbmNoise (the Default type) regardless of the
+    // config's noiseType, because the warp field is a displacement function —
+    // using Worley or Perlin here would produce a different character of warp
+    // but the displacement magnitudes would be inconsistent. FbmNoise gives
+    // smooth, continuous displacements that work well as a flow field.
+    // (Advanced: could expose warpNoiseType as a separate field if desired.)
+
+    static Vector2 WarpDomain(WarpSettings w, Vector2 p)
+    {
+        // First warp pass — build displacement field q from p
+        Vector2 q = new Vector2(
+            FbmNoise(p + w.offsetQ0),
+            FbmNoise(p + w.offsetQ1));
+
+        if (w.level == 1)
+            return p + w.strength * q;
+
+        // Second warp pass — build displacement field r from (p + strength*q)
+        Vector2 pq = p + w.strength * q;
+        Vector2 r = new Vector2(
+            FbmNoise(pq + w.offsetR0),
+            FbmNoise(pq + w.offsetR1));
+
+        return p + w.strength * r;
     }
 
     // ─── Space ─────────────────────────────────────────────────────────────────
@@ -91,9 +152,15 @@ public static class NoiseSampler
             case NoiseType.Value: return ValueNoise(p);
             case NoiseType.Perlin: return PerlinNoise(p);
             case NoiseType.Worley: return WorleyNoise(p);
+            case NoiseType.Ridged: return RidgedNoise(p, _ridged);
+            case NoiseType.SparseDot: return SparseDotNoise(p, _sparseDot);
             default: return FbmNoise(p);
         }
     }
+
+    // Thread-local config references set by SamplePx before any BaseNoise call.
+    [System.ThreadStatic] static RidgedSettings _ridged;
+    [System.ThreadStatic] static SparseDotSettings _sparseDot;
 
     // Default: 5-layer fBm
     static float FbmNoise(Vector2 p)
@@ -111,6 +178,59 @@ public static class NoiseSampler
             amp *= gain;
         }
         return sum / maxAmp;
+    }
+
+    // Ridged multifractal noise
+    // Reference: Musgrave 1994 / the standard "ridged" variation seen in
+    //   shadertoy, GPU Gems, and threejsroadmap.com/blog/10-noise-functions-for-threejs-tsl-shaders
+    //
+    // Core idea: each octave's noise is folded by  n = 1 - abs(noise)
+    // This turns smooth zero-crossings of gradient noise into sharp peaks.
+    // Squaring (n = n*n) makes peaks thinner and knife-like.
+    //
+    // ridgeInfluence (Musgrave's "weight/signal" term):
+    //   Each octave's amplitude is multiplied by the previous octave's ridge value.
+    //   At 0 this degrades to plain ridged fBm. At 1, detail is concentrated on the
+    //   ridges — valleys go quiet, mountain peaks accumulate fine structure.
+    //   Try 0.7 for realistic mountain ranges.
+    //
+    // Uses PerlinNoise internally — gradient noise has signed zero-crossings that
+    // produce clean, evenly-spaced ridges. ValueNoise also works but gives blobby
+    // humps rather than sharp edges.
+    static float RidgedNoise(Vector2 p, RidgedSettings s)
+    {
+        float sum = 0f;
+        float amp = 0.5f;
+        float maxAmp = 0f;
+        float weight = 1f;         // Musgrave signal term, starts at 1
+        Vector2 q = p;
+        int layers = Mathf.Max(1, s.octaves);
+
+        for (int i = 0; i < layers; i++)
+        {
+            // Sample gradient noise in [-0.5, 0.5] (PerlinNoise returns [0,1], centre it)
+            float raw = PerlinNoise(q) * 2f - 1f;  // → approx [-1, 1]
+
+            // Ridge fold: invert absolute value so zero-crossings become peaks
+            float n = 1f - Mathf.Abs(raw);         // → [0, 1], peaks at 0-crossings
+
+            // Optional squaring — sharpens ridges from broad hills to knife edges
+            if (s.squaredRidges) n *= n;            // → [0, 1], sharper peaks
+
+            // Musgrave weighting: amplitude for this octave scales with previous ridge
+            float effectiveAmp = amp * weight;
+            sum += n * effectiveAmp;
+            maxAmp += effectiveAmp;
+
+            // Update signal weight: lerp between 1 (no influence) and n (full influence)
+            weight = Mathf.Lerp(1f, n, s.ridgeInfluence);
+            weight = Mathf.Clamp01(weight);
+
+            q *= s.lacunarity;
+            amp *= s.gain;
+        }
+
+        return maxAmp > 0f ? sum / maxAmp : 0f;
     }
 
     // Value: random scalars at lattice corners, Hermite blend
@@ -162,6 +282,50 @@ public static class NoiseSampler
                 if (d < minDist) minDist = d;
             }
         return Mathf.Clamp01(1f - minDist / 1.4142f);
+    }
+
+    // Sparse dot noise
+    // Reference: Thorsten Renk — science-and-fiction.org/rendering/noise.html
+    //
+    // Each cell either has a dot (gated by density) or is empty.
+    // The dot's centre is constrained so it can never reach the cell boundary,
+    // guaranteeing no overlap between adjacent cells (the "sparse" assumption).
+    // The dot profile is a smooth falloff: 1 at centre, 0 at radius edge.
+    //
+    // p is the space-scaled coordinate — frequency is controlled by the Space
+    // settings in NoiseConfig (tilingFrequency / Custom mode), same as every
+    // other noise type. Higher frequency = more, smaller cells = denser dots.
+    static float SparseDotNoise(Vector2 p, SparseDotSettings s)
+    {
+        Vector2 i = Floor2(p);          // cell origin (integer part)
+        Vector2 f = p - i;              // position within cell (fractional part)
+
+        // Gate: most cells are empty. rand(i + (1,1)) is a stable per-cell coin flip.
+        // Using the diagonal corner as the seed avoids correlation with the offset seeds below.
+        if (Rand(i + new Vector2(1f, 1f)) > s.density)
+            return 0f;
+
+        // Jitter the dot centre within the cell.
+        // xoffset/yoffset are in [-0.5, 0.5] so truePos starts near cell centre (0.5, 0.5).
+        float xoffset = Rand(i) - 0.5f;
+        float yoffset = Rand(i + new Vector2(1f, 0f)) - 0.5f;
+
+        // Randomise dot size per cell. max(0.25, ...) ensures a minimum visible radius.
+        // The 0.5 factor keeps actual radius <= 0.5 * maxDotSize, leaving room to
+        // shrink the position range so the dot can never overlap the boundary.
+        float dotSize = 0.5f * s.maxDotSize
+                      * Mathf.Max(0.25f, Rand(i + new Vector2(0f, 1f)));
+
+        // Constrain centre: the (1 - 2*dotSize) factor shrinks the jitter range
+        // so the dot edge (centre ± dotSize) stays strictly inside [0, 1].
+        Vector2 truePos = new Vector2(
+            0.5f + xoffset * (1f - 2f * dotSize),
+            0.5f + yoffset * (1f - 2f * dotSize));
+
+        // Smooth radial falloff: 1 at centre, 0 at dotSize, hard 0 beyond.
+        // The inner edge (0.3 * dotSize) gives a flat bright core like a real droplet.
+        float dist = Vector2.Distance(truePos, f);
+        return 1f - Mathf.SmoothStep(0.3f * dotSize, dotSize, dist);
     }
 
     // ──────────────────────────────────────────────────────────────────────────

@@ -27,6 +27,7 @@ public class NoiseEditorWindow : EditorWindow
     bool _foldMar = false;
     bool _foldTurb = false;
     bool _foldInvert = false;
+    bool _foldWarp = false;
 
     Vector2 _scroll;
 
@@ -36,6 +37,8 @@ public class NoiseEditorWindow : EditorWindow
         "Value — random scalars blended at lattice corners. Blocky, pillowy appearance.",
         "Perlin — gradient noise. Smooth, organic, directional — no visible grid.",
         "Worley — cellular noise. Crystal / stone / cell membrane pattern.",
+        "Ridged — sharp mountain ridges, lightning, cracks, veins. Settings below.",
+        "Sparse Dot — rare soft dots, irregularly spaced. Rain, pores, spots. Settings below.",
     };
 
     // ─── Open ─────────────────────────────────────────────────────────────────
@@ -124,6 +127,35 @@ public class NoiseEditorWindow : EditorWindow
         if ((uint)idx < (uint)k_NoiseHints.Length)
             EditorGUILayout.HelpBox(k_NoiseHints[idx], MessageType.None);
 
+        // Ridged settings — only visible when Ridged type is selected
+        if (idx == (int)NoiseType.Ridged)
+        {
+            EditorGUI.indentLevel++;
+            var rp = Prop("ridged");
+            if (rp != null)
+            {
+                Child(rp, "octaves", "Octaves");
+                Child(rp, "lacunarity", "Lacunarity");
+                Child(rp, "gain", "Gain");
+                Child(rp, "squaredRidges", "Squared Ridges (sharper peaks)");
+                Child(rp, "ridgeInfluence", "Ridge Influence  (0 = plain, 0.7 = mountains)");
+            }
+            EditorGUI.indentLevel--;
+        }
+
+        // Sparse Dot settings — only visible when SparseDot type is selected
+        if (idx == (int)NoiseType.SparseDot)
+        {
+            EditorGUI.indentLevel++;
+            var sp = Prop("sparseDot");
+            if (sp != null)
+            {
+                Child(sp, "density", "Density  (0 = none, 1 = every cell)");
+                Child(sp, "maxDotSize", "Max Dot Size  (fraction of cell)");
+            }
+            EditorGUI.indentLevel--;
+        }
+
         // ── Space ─────────────────────────────────────────────────────────────
         Separator("Space");
         var modeProp = Prop("spaceMode");
@@ -147,6 +179,12 @@ public class NoiseEditorWindow : EditorWindow
         EditorGUI.BeginChangeCheck();
         _resolution = EditorGUILayout.IntSlider("Resolution", _resolution, 32, 512);
         if (EditorGUI.EndChangeCheck()) MarkDirty();
+
+        // ── Domain Warp ───────────────────────────────────────────────────────
+        DrawPattern("Domain Warp",
+            ref _foldWarp, "warp", DrawWarpBody,
+            "Quilez-style fbm domain warping: displaces the sample point by another fbm " +
+            "before evaluating base noise. Level 1 = one warp pass. Level 2 = warp-of-warp.");
 
         // ── Custom Patterns ───────────────────────────────────────────────────
         Separator("Custom Patterns");
@@ -265,11 +303,74 @@ public class NoiseEditorWindow : EditorWindow
 
     // ─── Pattern field drawers ────────────────────────────────────────────────
 
+    void DrawWarpBody(SerializedProperty p)
+    {
+        // Level: int slider 0–2 with inline label explaining each value
+        var levelProp = p.FindPropertyRelative("level");
+        if (levelProp != null)
+        {
+            EditorGUI.BeginChangeCheck();
+            int newLevel = EditorGUILayout.IntSlider("Level", levelProp.intValue, 0, 2);
+            if (EditorGUI.EndChangeCheck()) { levelProp.intValue = newLevel; MarkDirty(); }
+
+            string[] levelHints =
+            {
+                "Level 0 — warp disabled (same as unchecking Enabled).",
+                "Level 1 — f(p + strength · fbm(p)). Folded, organic terrain.",
+                "Level 2 — f(p + strength · fbm(fbm(p))). Convoluted, turbulent.",
+            };
+            var hintStyle = new GUIStyle(EditorStyles.miniLabel)
+            { wordWrap = true, normal = { textColor = new Color(0.55f, 0.75f, 0.55f) } };
+            EditorGUI.indentLevel++;
+            EditorGUILayout.LabelField(levelHints[Mathf.Clamp(levelProp.intValue, 0, 2)], hintStyle);
+            EditorGUI.indentLevel--;
+        }
+
+        Child(p, "strength", "Strength  (Quilez default = 4)");
+
+        // Offset vectors — collapsible sub-section
+        EditorGUILayout.Space(4);
+        EditorGUILayout.LabelField("Decorrelation Offsets", EditorStyles.boldLabel);
+
+        var offsetStyle = new GUIStyle(EditorStyles.miniLabel)
+        { wordWrap = true, normal = { textColor = new Color(0.6f, 0.6f, 0.6f) } };
+        EditorGUI.indentLevel++;
+        EditorGUILayout.LabelField(
+            "These seed different regions of the fbm so the X and Y components of each " +
+            "displacement field are uncorrelated. Quilez's values (the defaults) work well — " +
+            "change them for variety without breaking the algorithm.",
+            offsetStyle);
+        EditorGUI.indentLevel--;
+
+        EditorGUILayout.Space(2);
+        Child(p, "offsetQ0", "Q offset X  (Quilez: 0, 0)");
+        Child(p, "offsetQ1", "Q offset Y  (Quilez: 5.2, 1.3)");
+
+        var levelVal = p.FindPropertyRelative("level");
+        if (levelVal != null && levelVal.intValue >= 2)
+        {
+            Child(p, "offsetR0", "R offset X  (Quilez: 1.7, 9.2)");
+            Child(p, "offsetR1", "R offset Y  (Quilez: 8.3, 2.8)");
+        }
+
+        // Reset button
+        EditorGUILayout.Space(4);
+        if (GUILayout.Button("Reset offsets to Quilez defaults"))
+        {
+            var so = p.serializedObject;
+            so.FindProperty("warp.offsetQ0").vector2Value = new Vector2(0.0f, 0.0f);
+            so.FindProperty("warp.offsetQ1").vector2Value = new Vector2(5.2f, 1.3f);
+            so.FindProperty("warp.offsetR0").vector2Value = new Vector2(1.7f, 9.2f);
+            so.FindProperty("warp.offsetR1").vector2Value = new Vector2(8.3f, 2.8f);
+            MarkDirty();
+        }
+    }
+
     void DrawWoodBody(SerializedProperty p)
     {
-        Child(p, "frequency", "Frequency");        
+        Child(p, "frequency", "Frequency");
         Child(p, "multiplier", "Multiplier (ring density)");
-        Child(p, "blendWeight", "Blend Weight");     
+        Child(p, "blendWeight", "Blend Weight");
     }
 
     void DrawQuantBody(SerializedProperty p)
@@ -284,7 +385,7 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "phase", "Phase (stripe offset, rad)");
-        Child(p, "blendWeight", "Blend Weight");    
+        Child(p, "blendWeight", "Blend Weight");
     }
 
     void DrawTurbBody(SerializedProperty p)
@@ -294,7 +395,7 @@ public class NoiseEditorWindow : EditorWindow
         Child(p, "amplitudeMult", "Gain");
         Child(p, "numLayers", "Layers");
         Child(p, "maxNoiseVal", "Max Noise Val (0 = auto)");
-        Child(p, "blendWeight", "Blend Weight");    
+        Child(p, "blendWeight", "Blend Weight");
     }
 
     void DrawInvertBody(SerializedProperty p)
