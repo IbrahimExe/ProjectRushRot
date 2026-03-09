@@ -12,75 +12,106 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
   m_Name: FairCatalog
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  noiseChannel: {fileID: 11400000, guid: 184e585ae95d91648b733cbd6227cf98, type: 2}
   Definitions:
-  - ID: SafePath
-    Name: SafePath
+  - ID: SAFEPATH
+    Name: safepath
     Prefabs:
     - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
     Layer: 0
-    SurfaceType: 3
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 2
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 1
-    AllowWFC: 0
-    biomeAffinities: []
-  - ID: GARDEN_SUR
-    Name: Garden
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: WALL_R
+    Name: WallRight
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
+    Layer: 0
+    SurfaceType: 4
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: WALL_L
+    Name: WallLeft
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: GRASS_SUR
+    Name: Grass
     Prefabs:
     - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
     Layer: 0
     SurfaceType: 0
-    OccupantType: 0
-    Size: {x: 0, y: 0, z: 0}
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 1
-    AllowWFC: 1
-    biomeAffinities: []
-  - ID: WALL_SUR
-    Name: WALL
+    Tags: []
+    noiseTier: 1
+    isNoiseCandidate: 1
+  - ID: TENT_SUR
+    Name: TentGrass
     Prefabs:
-    - {fileID: 2631921935959975402, guid: e19e690be0aa6ee45a3e25c59a8d9faa, type: 3}
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
     Layer: 0
-    SurfaceType: 4
-    OccupantType: 1
-    Size: {x: 0, y: 0, z: 0}
+    SurfaceType: 0
     OccupantWeight: 0
-    Tags: []
     Cost: 0
     MinRowGap: 0
     SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
-    AllowWFC: 1
-    biomeAffinities: []
-  - ID: WALL_occupant
-    Name: WALL
-    Prefabs:
-    - {fileID: 100000, guid: 0064eb002f3790247969e12119bbf9d2, type: 3}
-    Layer: 1
-    SurfaceType: 4
-    OccupantType: 5
-    Size: {x: 0, y: 0, z: 0}
-    OccupantWeight: 0
     Tags: []
+    noiseTier: 2
+    isNoiseCandidate: 1
+  - ID: PEOPLE_SUR
+    Name: People
+    Prefabs:
+    - {fileID: 100000, guid: ffa95796af8d5884f9d08f66e6bb627e, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantWeight: 0
     Cost: 0
-    MinRowGap: 2
-    SizeZ: 2
+    MinRowGap: 0
+    SizeZ: 0
     AllowedSurfaceIDs: []
-    IsWalkable: 0
-    AllowWFC: 1
-    biomeAffinities: []
+    Tags: []
+    noiseTier: 3
+    isNoiseCandidate: 1
+  - ID: BALLPIT_SUR
+    Name: Ball Pit
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+    Layer: 0
+    SurfaceType: 1
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 4
+    isNoiseCandidate: 1
   debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
   debugSurfaceDef:
     ID: 
@@ -88,16 +119,30 @@ MonoBehaviour:
     Prefabs: []
     Layer: 1
     SurfaceType: 0
-    OccupantType: 0
-    Size: {x: 1, y: 1, z: 1}
     OccupantWeight: 10
-    Tags: []
     Cost: 1
     MinRowGap: 2
     SizeZ: 1
     AllowedSurfaceIDs: []
-    IsWalkable: 0
-    AllowWFC: 1
-    biomeAffinities: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 1
   debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
-  debugEdgeWall: {fileID: 2860747524071934025, guid: d8a43dfec90825544a3390fe92933271, type: 3}
+  leftWallPrefabs:
+  - ID: WallLeft
+    Name: WallBuilding
+    Prefabs:
+    - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
+    - {fileID: 7607492880546952915, guid: c78d8e9a1e1ee6f4291d1a7cd2346468, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 4
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  mirrorRightFromLeft: 1
+  rightWallPrefabs: []

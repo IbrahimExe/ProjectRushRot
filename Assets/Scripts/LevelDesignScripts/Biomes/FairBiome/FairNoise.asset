@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c419f34de84f0d94d9bf763cbfbcbe4a, type: 3}
   m_Name: FairNoise
   m_EditorClassIdentifier: Assembly-CSharp::NoiseConfig
-  noiseType: 0
+  noiseType: 2
   spaceMode: 0
-  tilingFrequency: 6.96
+  tilingFrequency: 2.57
   position:
     value: {x: 3, y: 3, z: 0}
   rotation:
@@ -22,9 +22,10 @@ MonoBehaviour:
   scale:
     value: {x: 1, y: 1, z: 1}
   wood:
-    frequency: 0
     enabled: 0
+    frequency: 0
     multiplier: 10
+    blendWeight: 0
   quantization:
     enabled: 0
     totalChannels: 0
@@ -35,6 +36,7 @@ MonoBehaviour:
     frequencyMult: 0
     amplitudeMult: 0
     numLayers: 1
+    blendWeight: 0
   turbulence:
     enabled: 0
     frequency: 0
@@ -42,3 +44,7 @@ MonoBehaviour:
     amplitudeMult: 0
     numLayers: 0
     maxNoiseVal: 0
+    blendWeight: 0
+  invert:
+    enabled: 0
+    blendWeight: 0

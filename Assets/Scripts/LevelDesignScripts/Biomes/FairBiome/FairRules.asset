@@ -12,6 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f9fc60f384989e4a93a3c6eff27d1b8, type: 3}
   m_Name: FairRules
   m_EditorClassIdentifier: Assembly-CSharp::NeighborRulesConfig
-  catalog: {fileID: 0}
-  surfaceRules: []
-  occupantRules: []
+  catalog: {fileID: 11400000, guid: 28f91046c5cccc44ca25ba59eb16a4c6, type: 2}
+  surfaceRules:
+  - selfID: SAFEPATH
+    allowed:
+    - neighborID: SAFEPATH
+      directions: 15
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: TENT_SUR
+      directions: 15
+  occupantRules:
+  - selfID: Carousel
+    allowed: []
+    denied:
+    - neighborID: Carousel
+      directions: 15

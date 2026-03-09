@@ -148,9 +148,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1109a507cc1e91439270b133be3c746, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RunnerLevelGenerator
-  config: {fileID: 11400000, guid: e451c5c677999ff43ba436fbe9d6feb9, type: 2}
+  config: {fileID: 11400000, guid: 27d5d94fa69bd4541baf302f6db7ac20, type: 2}
+  biomePool: []
+  biomeSwitchChance: 0.15
+  minChunksPerBiome: 5
   seed: hjgujklfu
   playerTransform: {fileID: 883337444}
+  debugOccupantSpawning: 0
+  debugOccupantID: 
 --- !u!4 &333083874
 Transform:
   m_ObjectHideFlags: 0
