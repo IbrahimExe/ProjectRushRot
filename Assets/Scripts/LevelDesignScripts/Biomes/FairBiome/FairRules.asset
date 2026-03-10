@@ -17,17 +17,206 @@ MonoBehaviour:
   - selfID: SAFEPATH
     allowed:
     - neighborID: SAFEPATH
+      directions: -1
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: -1
+      weight: 0
+    denied:
+    - neighborID: TENT_SUR
+      directions: -1
+    - neighborID: BALLPIT_SUR
+      directions: -1
+    - neighborID: WALL_L
+      directions: -1
+    - neighborID: WALL_R
+      directions: -1
+    - neighborID: PEOPLE_SUR
+      directions: -1
+  - selfID: GRASS_SUR
+    allowed:
+    - neighborID: SAFEPATH
+      directions: -1
+      weight: 0
+    - neighborID: PEOPLE_SUR
       directions: 15
       weight: 0
     - neighborID: GRASS_SUR
       directions: 15
       weight: 0
-    denied:
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: TENT_SUR
+      directions: 12
+      weight: 0
+    - neighborID: WALL_L
+      directions: 15
+      weight: 0
+    - neighborID: WALL_R
+      directions: 15
+      weight: 0
+    denied: []
+  - selfID: PEOPLE_SUR
+    allowed:
+    - neighborID: GRASS_SUR
+      directions: 15
+      weight: 0
+    - neighborID: PEOPLE_SUR
+      directions: 15
+      weight: 0
     - neighborID: TENT_SUR
       directions: 15
-  occupantRules:
-  - selfID: Carousel
-    allowed: []
+      weight: 0
+    - neighborID: WALL_L
+      directions: 15
+      weight: 0
+    - neighborID: WALL_R
+      directions: 15
+      weight: 0
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
     denied:
-    - neighborID: Carousel
+    - neighborID: SAFEPATH
+      directions: -1
+  - selfID: TENT_SUR
+    allowed:
+    - neighborID: TENT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: WALL_L
+      directions: 15
+      weight: 0
+    - neighborID: WALL_R
+      directions: 15
+      weight: 0
+    - neighborID: PEOPLE_SUR
+      directions: 15
+      weight: 0
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: 12
+      weight: 0
+    denied:
+    - neighborID: SAFEPATH
+      directions: 31
+  - selfID: BALLPIT_SUR
+    allowed:
+    - neighborID: TENT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: WALL_L
+      directions: 15
+      weight: 0
+    - neighborID: WALL_R
+      directions: 15
+      weight: 0
+    - neighborID: PEOPLE_SUR
+      directions: 15
+      weight: 0
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: GRASS_SUR
+      directions: 15
+    - neighborID: SAFEPATH
+      directions: 15
+  - selfID: WALL_L
+    allowed:
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: 15
+      weight: 0
+    - neighborID: PEOPLE_SUR
+      directions: 15
+      weight: 0
+    - neighborID: TENT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: WALL_L
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: WALL_R
+      directions: 15
+    - neighborID: SAFEPATH
+      directions: 15
+  - selfID: WALL_R
+    allowed:
+    - neighborID: BALLPIT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: GRASS_SUR
+      directions: 15
+      weight: 0
+    - neighborID: PEOPLE_SUR
+      directions: 15
+      weight: 0
+    - neighborID: TENT_SUR
+      directions: 15
+      weight: 0
+    - neighborID: WALL_R
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: WALL_L
+      directions: 15
+    - neighborID: SAFEPATH
+      directions: 15
+  occupantRules:
+  - selfID: CAROUSEL_OC
+    allowed:
+    - neighborID: PEOPLE_OC
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: CAROUSEL_OC
+      directions: -1
+    - neighborID: TENT_OC
+      directions: 15
+    - neighborID: TRAMPOLINE_OC
+      directions: 15
+  - selfID: PEOPLE_OC
+    allowed:
+    - neighborID: TRAMPOLINE_OC
+      directions: 15
+      weight: 0
+    - neighborID: TENT_OC
+      directions: 15
+      weight: 0
+    - neighborID: CAROUSEL_OC
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: PEOPLE_OC
+      directions: 15
+  - selfID: TENT_OC
+    allowed:
+    - neighborID: PEOPLE_OC
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: CAROUSEL_OC
+      directions: 15
+    - neighborID: TRAMPOLINE_OC
+      directions: 15
+    - neighborID: TENT_OC
+      directions: 15
+  - selfID: TRAMPOLINE_OC
+    allowed:
+    - neighborID: PEOPLE_OC
+      directions: 15
+      weight: 0
+    denied:
+    - neighborID: CAROUSEL_OC
+      directions: 15
+    - neighborID: TRAMPOLINE_OC
+      directions: 15
+    - neighborID: TENT_OC
       directions: 15

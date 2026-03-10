@@ -151,8 +151,8 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 27d5d94fa69bd4541baf302f6db7ac20, type: 2}
   biomePool: []
   biomeSwitchChance: 0.15
-  minChunksPerBiome: 5
-  seed: hjgujklfu
+  minChunksPerBiome: 10
+  seed: qdasdsadsaf
   playerTransform: {fileID: 883337444}
   debugOccupantSpawning: 0
   debugOccupantID: 

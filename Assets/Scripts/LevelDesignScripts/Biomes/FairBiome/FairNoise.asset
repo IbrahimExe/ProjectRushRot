@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NoiseConfig
   noiseType: 2
   spaceMode: 0
-  tilingFrequency: 2.57
+  tilingFrequency: 7.81
   position:
     value: {x: 3, y: 3, z: 0}
   rotation:
@@ -25,10 +25,10 @@ MonoBehaviour:
     enabled: 0
     frequency: 0
     multiplier: 10
-    blendWeight: 0
+    blendWeight: 0.54
   quantization:
-    enabled: 0
-    totalChannels: 0
+    enabled: 1
+    totalChannels: 5
   marble:
     enabled: 0
     phase: 0
@@ -36,15 +36,15 @@ MonoBehaviour:
     frequencyMult: 0
     amplitudeMult: 0
     numLayers: 1
-    blendWeight: 0
+    blendWeight: 0.505
   turbulence:
-    enabled: 0
-    frequency: 0
-    frequencyMult: 0
-    amplitudeMult: 0
-    numLayers: 0
-    maxNoiseVal: 0
-    blendWeight: 0
+    enabled: 1
+    frequency: 9.9
+    frequencyMult: 0.6
+    amplitudeMult: 1.4
+    numLayers: 5
+    maxNoiseVal: 6.06
+    blendWeight: 0.47
   invert:
-    enabled: 0
+    enabled: 1
     blendWeight: 0
