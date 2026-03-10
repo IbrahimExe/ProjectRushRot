@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Level.Editor
 {
@@ -16,35 +17,57 @@ namespace Level.Editor
     {
         private LevelEditorTabs _activeTab = LevelEditorTabs.Noise;
 
+        // Add one field per tab as you migrate each sub-window.
+        private LevelEditorPreviewPanel _previewPanel;
+        private NoiseEditorPanel _noisePanel;
+
+        //Open 
+
         [MenuItem("Window/Level Editor")]
-        public static void Open()
+        public static void Open() => GetWindow<LevelEditor>("Level Editor");
+
+        private void OnEnable()
         {
-            GetWindow<LevelEditor>("Level Editor");
+            _noisePanel = new NoiseEditorPanel();
+            _noisePanel.OnRepaintNeeded += Repaint;
+            _noisePanel.OnEnable();
         }
 
-        private void OnGUI()
+        private void OnDisable()
         {
-            // Tabs
+            _noisePanel.OnDisable();
+            _noisePanel.OnRepaintNeeded -= Repaint;
+        }
+
+        private void CreateGUI()
+        {
+            var splitView = new TwoPaneSplitView(0, 340, TwoPaneSplitViewOrientation.Horizontal);
+            rootVisualElement.Add(splitView);
+
+            var leftPane = new ScrollView(ScrollViewMode.Vertical);
+            splitView.Add(leftPane);
+
+            var imgui = new IMGUIContainer(DrawTabs);
+            imgui.style.flexGrow = 1;
+            leftPane.Add(imgui);
+
+            _previewPanel = new LevelEditorPreviewPanel();
+            splitView.Add(_previewPanel);
+
+            // Noise panel pushes its rebuilt texture into the preview
+            _noisePanel.OnPreviewRebuilt += tex => _previewPanel.UpdatePreview(tex);
+        }
+
+        private void DrawTabs()
+        {
             GUILayout.Space(6);
             var newTab = (LevelEditorTabs)GUILayout.Toolbar(
                 (int)_activeTab,
                 System.Enum.GetNames(typeof(LevelEditorTabs))
             );
-
-            // If the tab changed, update preview / overlay / whatever
-            if (newTab != _activeTab)
-            {
-                _activeTab = newTab;
-
-                UpdatePreviewForTab(_activeTab);
-
-                // Repaint this window
-                Repaint();
-            }
+            if (newTab != _activeTab) { _activeTab = newTab; Repaint(); }
 
             GUILayout.Space(8);
-
-            // Tab contents
             DrawActiveTabUI(_activeTab);
         }
 
@@ -52,54 +75,29 @@ namespace Level.Editor
         {
             switch (tab)
             {
-                case LevelEditorTabs.Noise:
-                    DrawNoiseTab();
-                    break;
-
-                case LevelEditorTabs.Terrain:
-                    DrawTerrainTab();
-                    break;
-
-                case LevelEditorTabs.Prefabs:
-                    DrawPrefbsTabs();
-                    break;
-
-                case LevelEditorTabs.Overlays:
-                    DrawOverlaysTab();
-                    break;
-
-                case LevelEditorTabs.Spawning:
-                    DrawSpawningTab();
-                    break;
+                case LevelEditorTabs.Noise: DrawNoiseTab(); break;
+                case LevelEditorTabs.Terrain: DrawTerrainTab(); break;
+                case LevelEditorTabs.Prefabs: DrawPrefabsTab(); break;
+                case LevelEditorTabs.Overlays: DrawOverlaysTab(); break;
+                case LevelEditorTabs.Spawning: DrawSpawningTab(); break;
             }
         }
 
         private void UpdatePreviewForTab(LevelEditorTabs tab)
         {
-            // Placeholder: this is where you'd switch overlay textures,
-            // regenerate a RenderTexture, change preview mode, etc.
-            // Example debug:
-            // Debug.Log($"Switched tab -> {tab}");
+            // Placeholder: switch overlay textures / scene previews per tab
         }
-
+        
         private void DrawNoiseTab()
         {
-
+            // All noise UI + preview lives in the panel.
+            // Pass position.width so the preview texture sizes correctly.
+            _noisePanel.Draw(position.width);
         }
 
-        private void DrawTerrainTab()
-        {
-        }
-
-        private void DrawPrefbsTabs()
-        {
-        }
-
-        private void DrawOverlaysTab()
-        {
-        }
-
-        private void DrawSpawningTab()
-        {
-        }
+        private void DrawTerrainTab() { }
+        private void DrawPrefabsTab() { } 
+        private void DrawOverlaysTab() { }
+        private void DrawSpawningTab() { }
+    }
 }
