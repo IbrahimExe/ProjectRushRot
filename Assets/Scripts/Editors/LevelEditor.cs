@@ -17,9 +17,11 @@ namespace Level.Editor
     {
         private LevelEditorTabs _activeTab = LevelEditorTabs.Noise;
 
+
         // Add one field per tab as you migrate each sub-window.
         private LevelEditorPreviewPanel _previewPanel;
         private NoiseEditorPanel _noisePanel;
+        private PrefabCatalogPanel _catalogPanel;
 
         //Open 
 
@@ -31,6 +33,10 @@ namespace Level.Editor
             _noisePanel = new NoiseEditorPanel();
             _noisePanel.OnRepaintNeeded += Repaint;
             _noisePanel.OnEnable();
+
+            _catalogPanel = new PrefabCatalogPanel();
+            _catalogPanel.OnRepaintNeeded += Repaint;
+            _catalogPanel.OnEnable();
         }
 
         private void OnDisable()
@@ -65,7 +71,13 @@ namespace Level.Editor
                 (int)_activeTab,
                 System.Enum.GetNames(typeof(LevelEditorTabs))
             );
-            if (newTab != _activeTab) { _activeTab = newTab; Repaint(); }
+            if (newTab != _activeTab)
+            {
+                if (_activeTab == LevelEditorTabs.Noise && !_noisePanel.TryWarnUnsaved()) return;
+                if (_activeTab == LevelEditorTabs.Prefabs && !_catalogPanel.TryWarnUnsaved()) return;
+                _activeTab = newTab;
+                Repaint();
+            }
 
             GUILayout.Space(8);
             DrawActiveTabUI(_activeTab);
@@ -75,11 +87,22 @@ namespace Level.Editor
         {
             switch (tab)
             {
-                case LevelEditorTabs.Noise: DrawNoiseTab(); break;
-                case LevelEditorTabs.Terrain: DrawTerrainTab(); break;
-                case LevelEditorTabs.Prefabs: DrawPrefabsTab(); break;
-                case LevelEditorTabs.Overlays: DrawOverlaysTab(); break;
-                case LevelEditorTabs.Spawning: DrawSpawningTab(); break;
+                case LevelEditorTabs.Noise:
+                    _noisePanel.Draw(position.width, _previewPanel.Resolution); // All noise UI + preview lives in the panel.
+                    break;
+                case LevelEditorTabs.Terrain:
+                  
+                    break;
+                case LevelEditorTabs.Prefabs:
+                    _catalogPanel.Draw(position.width); 
+                    Debug.Log("Drawing prefabs tab");
+                    break;
+                case LevelEditorTabs.Overlays: 
+                    DrawOverlaysTab();
+                    break;
+                case LevelEditorTabs.Spawning: 
+                    DrawSpawningTab(); 
+                    break;
             }
         }
 
@@ -87,16 +110,9 @@ namespace Level.Editor
         {
             // Placeholder: switch overlay textures / scene previews per tab
         }
-        
-        private void DrawNoiseTab()
-        {
-            // All noise UI + preview lives in the panel.
-            // Pass position.width so the preview texture sizes correctly.
-            _noisePanel.Draw(position.width);
-        }
-
-        private void DrawTerrainTab() { }
-        private void DrawPrefabsTab() { } 
+        private void DrawPrefabsTab() {
+            
+        } 
         private void DrawOverlaysTab() { }
         private void DrawSpawningTab() { }
     }

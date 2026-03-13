@@ -6,6 +6,8 @@ namespace Level.Editor
     public class NoiseEditorWindow : EditorWindow
     {
         NoiseEditorPanel _panel;
+        //resolution is passed to the panel so it can draw the preview at the correct size, and also to save it with the correct resolution
+        int _resolution = 512;
 
         [MenuItem("Window/Noise Generator")]
         public static void Open() => GetWindow<NoiseEditorWindow>("Noise Generator");
@@ -24,7 +26,7 @@ namespace Level.Editor
             _panel.OnRepaintNeeded -= Repaint;
         }
 
-        void OnGUI() => _panel.Draw(position.width);
+        void OnGUI() => _panel.Draw(position.width, _resolution);
 
         private void OnDestroy()
         {

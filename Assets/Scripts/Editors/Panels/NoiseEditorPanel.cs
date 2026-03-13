@@ -18,9 +18,7 @@ namespace Level.Editor
         SerializedObject _so;
 
         Texture2D _preview;
-        int _resolution = 128;
-        bool _dirty = true;
-
+        int _resolution;
         const double k_DebounceSeconds = 0.35;
         double _lastChangeTime = 0;
         bool _rebuildScheduled = false;
@@ -49,7 +47,6 @@ namespace Level.Editor
 
         public void OnEnable()
         {
-            _dirty = true;
             _runtimeConfig = ScriptableObject.CreateInstance<NoiseConfig>();
             _so = new SerializedObject(_runtimeConfig);
             EditorApplication.update += OnEditorUpdate;
@@ -73,12 +70,13 @@ namespace Level.Editor
         }
 
         // Public entry point 
-        public void Draw(float windowWidth)
+        public void Draw(float windowWidth, int resolution)
         {
+            _resolution = resolution;
             if (_so == null || _so.targetObject == null)
                 _so = new SerializedObject(_runtimeConfig);
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            // No BeginScrollView here — LevelEditor's left pane handles scrolling
             EditorGUILayout.Space(4);
 
             EditorGUI.BeginChangeCheck();
@@ -97,7 +95,7 @@ namespace Level.Editor
             try { DrawBody(windowWidth); }
             catch (System.Exception e) { Debug.LogException(e); }
 
-            EditorGUILayout.EndScrollView();
+            
         }
 
         //Lets the hub window push a config directly (e.g. from a shared master config).

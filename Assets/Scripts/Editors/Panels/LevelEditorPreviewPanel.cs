@@ -7,7 +7,7 @@ namespace Level.Editor
     public class LevelEditorPreviewPanel : VisualElement
     {
         readonly Image _image;
-
+        public int Resolution = 128;
         public LevelEditorPreviewPanel()
         {
             style.flexGrow = 1;
