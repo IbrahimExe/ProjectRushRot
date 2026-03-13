@@ -201,8 +201,9 @@ namespace Level.Editor
                 ref _foldInvert, "invert", DrawInvertBody,
                 "Flips the output: white becomes black, black becomes white.");
 
-            if (EditorGUI.EndChangeCheck())
-                MarkDirty();
+            bool changed = EditorGUI.EndChangeCheck();
+            _so.ApplyModifiedPropertiesWithoutUndo();
+            if (changed) MarkDirty();
 
             //Save Logic
             if (_hasUnsavedChanges)

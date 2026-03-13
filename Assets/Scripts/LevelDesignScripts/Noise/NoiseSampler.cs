@@ -1,25 +1,24 @@
 using UnityEngine;
 
-/// <summary>
-/// Noise sampler following the scratchapixel.com reference exactly.
-///
-/// COORDINATE SYSTEM
-/// -----------------
-/// uv [0,1] → pixel coords px = uv * resolution
-/// Space frequency then scales px → sample point p used by base noise.
-///
-/// Patterns (Wood, Marble, Turbulence) work exactly as the reference:
-///   pNoise = Vec2f(i, j) * frequency   ← their OWN frequency on raw pixel coords
-/// They fully REPLACE the base noise when enabled (they are not additive tweaks).
-/// Quantization post-processes whatever value came before it.
-///
-/// BASE NOISE TYPES
-/// ----------------
-///   Default — 5-layer fBm over Value noise.  Cloud/terrain.
-///   Value   — Hermite-interpolated lattice scalars.  Blocky/pillowy.
-///   Perlin  — Gradient noise (dot product with random unit vectors).  Smooth/organic.
-///   Worley  — 1 - nearest feature-point distance.  Crystal/cell/stone.
-/// </summary>
+// Noise sampler following the scratchapixel.com reference exactly.
+//
+// COORDINATE SYSTEM
+// -----------------
+// uv [0,1] → pixel coords px = uv * resolution
+// Space frequency then scales px → sample point p used by base noise.
+//
+// Patterns (Wood, Marble, Turbulence) work exactly as the reference:
+//   pNoise = Vec2f(i, j) * frequency   ← their OWN frequency on raw pixel coords
+// They fully REPLACE the base noise when enabled (they are not additive tweaks).
+// Quantization post-processes whatever value came before it.
+//
+// BASE NOISE TYPES
+// ----------------
+//   Default — 5-layer fBm over Value noise.  Cloud/terrain.
+//   Value   — Hermite-interpolated lattice scalars.  Blocky/pillowy.
+//   Perlin  — Gradient noise (dot product with random unit vectors).  Smooth/organic.
+//   Worley  — 1 - nearest feature-point distance.  Crystal/cell/stone.
+
 public static class NoiseSampler
 {
     // ─── Entry points ──────────────────────────────────────────────────────────
@@ -38,10 +37,7 @@ public static class NoiseSampler
 
     static float SamplePx(NoiseConfig cfg, Vector2 px)
     {
-        // Cache type-specific settings in thread-locals so noise functions can
-        // read them without threading extra parameters through BaseNoise.
-        _ridged = cfg.ridged;
-        _sparseDot = cfg.sparseDot;
+        
 
         // Space-scaled coordinate — used by base noise and domain warp
         Vector2 p = ApplySpace(cfg, px);
@@ -53,18 +49,19 @@ public static class NoiseSampler
             p = WarpDomain(cfg.warp, p);
 
         // Base noise on the (possibly warped) space coordinate
-        float n = BaseNoise(cfg.noiseType, p);
+        // pass directly instead of thread-locals
+        float n = BaseNoise(cfg.noiseType, p, cfg);
 
         // Patterns blend into the result via blendWeight.
         // blendWeight = 1 fully overwrites, 0 = no effect, in-between mixes.
         if (cfg.wood.enabled)
-            n = Mathf.Lerp(n, WoodPattern(px, cfg.wood, cfg.noiseType), cfg.wood.blendWeight);
+            n = Mathf.Lerp(n, WoodPattern(px, cfg.wood, cfg.noiseType, cfg), cfg.wood.blendWeight);
 
         if (cfg.marble.enabled)
-            n = Mathf.Lerp(n, MarblePattern(px, cfg.marble, cfg.noiseType), cfg.marble.blendWeight);
+            n = Mathf.Lerp(n, MarblePattern(px, cfg.marble, cfg.noiseType, cfg), cfg.marble.blendWeight);
 
         if (cfg.turbulence.enabled)
-            n = Mathf.Lerp(n, TurbulencePattern(px, cfg.turbulence, cfg.noiseType), cfg.turbulence.blendWeight);
+            n = Mathf.Lerp(n, TurbulencePattern(px, cfg.turbulence, cfg.noiseType, cfg), cfg.turbulence.blendWeight);
 
         // Invert: lerp toward (1 - n)
         if (cfg.invert.enabled)
@@ -145,15 +142,15 @@ public static class NoiseSampler
     //  BASE NOISE
     // ──────────────────────────────────────────────────────────────────────────
 
-    static float BaseNoise(NoiseType type, Vector2 p)
+    static float BaseNoise(NoiseType type, Vector2 p, NoiseConfig cfg)
     {
         switch (type)
         {
             case NoiseType.Value: return ValueNoise(p);
             case NoiseType.Perlin: return PerlinNoise(p);
             case NoiseType.Worley: return WorleyNoise(p);
-            case NoiseType.Ridged: return RidgedNoise(p, _ridged);
-            case NoiseType.SparseDot: return SparseDotNoise(p, _sparseDot);
+            case NoiseType.Ridged: return RidgedNoise(p, cfg.ridged);
+            case NoiseType.SparseDot: return SparseDotNoise(p, cfg.sparseDot);
             default: return FbmNoise(p);
         }
     }
@@ -337,10 +334,10 @@ public static class NoiseSampler
     // WOOD
     // Reference:  g = noise(Vec2f(i,j) * frequency) * multiplier;
     //             result = g - (int)g;      // i.e. frac(g)
-    static float WoodPattern(Vector2 px, WoodSettings s, NoiseType noiseType)
+    static float WoodPattern(Vector2 px, WoodSettings s, NoiseType noiseType, NoiseConfig cfg)
     {
         Vector2 pNoise = px * s.frequency * 0.01f;
-        float g = BaseNoise(noiseType, pNoise) * s.multiplier;
+        float g = BaseNoise(noiseType, pNoise, cfg) * s.multiplier;
         return g - Mathf.Floor(g);
     }
 
@@ -349,7 +346,7 @@ public static class NoiseSampler
     //             for layers: noiseValue += noise(pNoise) * amplitude; pNoise *= freqMult; amp *= ampMult;
     //             result = (sin( (i + j + noiseValue*100) * 2π/200 + phase ) + 1) / 2
     // px.x + px.y gives diagonal veins; noiseValue perturbs the phase of those stripes.
-    static float MarblePattern(Vector2 px, MarbleSettings s, NoiseType noiseType)
+    static float MarblePattern(Vector2 px, MarbleSettings s, NoiseType noiseType, NoiseConfig cfg)
     {
         Vector2 pNoise = px * s.frequency * 0.01f;
         float amplitude = 1f;
@@ -357,7 +354,7 @@ public static class NoiseSampler
 
         for (int l = 0; l < (int)s.numLayers; l++)
         {
-            noiseVal += BaseNoise(noiseType, pNoise) * amplitude;
+            noiseVal += BaseNoise(noiseType, pNoise, cfg) * amplitude;
             pNoise *= s.frequencyMult;
             amplitude *= s.amplitudeMult;
         }
@@ -371,7 +368,7 @@ public static class NoiseSampler
     //             for layers: noiseMap += fabs(2*noise(pNoise) - 1) * amplitude;
     //             pNoise *= freqMult; amp *= ampMult;
     //             normalise by maxNoiseVal at the end.
-    static float TurbulencePattern(Vector2 px, TurbulenceSettings s, NoiseType noiseType)
+    static float TurbulencePattern(Vector2 px, TurbulenceSettings s, NoiseType noiseType, NoiseConfig cfg)
     {
         Vector2 pNoise = px * s.frequency * 0.01f;
         float amplitude = 1f;
@@ -380,7 +377,7 @@ public static class NoiseSampler
 
         for (int l = 0; l < (int)s.numLayers; l++)
         {
-            float n = Mathf.Abs(2f * BaseNoise(noiseType, pNoise) - 1f);
+            float n = Mathf.Abs(2f * BaseNoise(noiseType, pNoise, cfg) - 1f);
             sum += n * amplitude;
             maxAmp += amplitude;
             pNoise *= s.frequencyMult;
@@ -399,7 +396,7 @@ public static class NoiseSampler
     static float Rand(Vector2 p)
     {
         float n = Mathf.Sin(p.x * 127.1f + p.y * 311.7f +
-                            p.x * 269.5f * 0.3f + p.y * 183.3f * 0.7f) * 43758.5453f;
+                    p.x * 269.5f * 0.3f + p.y * 183.3f * 0.7f + 1.4f) * 43758.5453f;
         return n - Mathf.Floor(n);
     }
 
