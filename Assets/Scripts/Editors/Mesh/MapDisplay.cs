@@ -1,5 +1,5 @@
 using LevelGenerator;
-using LevelGenerator.Data;
+ 
 using UnityEngine;
 
 namespace LevelGenerator

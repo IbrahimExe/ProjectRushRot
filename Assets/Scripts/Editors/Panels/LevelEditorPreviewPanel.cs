@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-using LevelGenerator.Data;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -9,7 +8,6 @@ namespace Level.Editor
     public class LevelEditorPreviewPanel : VisualElement
     {
         readonly Image _image;
-        public int Resolution { get; private set; } = 128;
         //Pass from TerrainConfig, used to convert footprint size to pixels for the preview
         public float WorldScale = 1f;
         public LevelEditorPreviewPanel()

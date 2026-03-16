@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LevelGenerator.Data
-{
     public enum PrefabCategory
     {
         Obstacle,
@@ -96,4 +94,3 @@ namespace LevelGenerator.Data
             return _categoryIndex.TryGetValue(category, out var list) ? list : new List<PrefabDef>();
         }
     }
-}

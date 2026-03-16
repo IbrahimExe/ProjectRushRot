@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using LevelGenerator.Data;
+
 
 namespace Level.Editor
 {
@@ -17,7 +17,10 @@ namespace Level.Editor
 
         int _selectedIndex = -1;
         public event System.Action OnSelectionChanged;
-        public NewPrefabDef SelectedDef
+
+        public void ApplyChanges() => _so.ApplyModifiedProperties();
+        public PrefabCatalog LoadedCatalog => _catalog as PrefabCatalog;
+        public PrefabDef SelectedDef
         {
             get
             {
@@ -27,7 +30,7 @@ namespace Level.Editor
                 var entry = defsProp.GetArrayElementAtIndex(_selectedIndex);
                 var footprintProp = entry.FindPropertyRelative("Footprint");
                 var nameProp = entry.FindPropertyRelative("Name");
-                return new NewPrefabDef
+                return new PrefabDef
                 {
                     Name = nameProp.stringValue,
                     Footprint = footprintProp.floatValue

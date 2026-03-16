@@ -1,7 +1,6 @@
 using UnityEngine;
 
-namespace LevelGenerator.Data
-{
+
     [CreateAssetMenu(fileName = "LevelGeneratorCommon", menuName = "Runner/Level Generator Common")]
     public class LevelGeneratorCommon : ScriptableObject
     {
@@ -29,4 +28,3 @@ namespace LevelGenerator.Data
         [Tooltip("World unit height scale applied to noise values [0,1].")]
         public float HeightMultiplier = 20f;
     }
-}

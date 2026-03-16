@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LevelGenerator.Data
-{
+
+
     public enum TerrainBlendMode
     {
         Linear,
@@ -45,4 +45,3 @@ namespace LevelGenerator.Data
 
         public List<TerrainType> Regions = new List<TerrainType>();
     }
-}

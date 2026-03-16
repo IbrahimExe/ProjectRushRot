@@ -1,10 +1,9 @@
 #if UNITY_EDITOR
-using LevelGenerator.Data;
+ 
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEditorInternal;
-using static LevelGenerator.Data.TerrainType;
 
 namespace Level.Editor
 {
@@ -23,6 +22,13 @@ namespace Level.Editor
         public event System.Action OnRepaintNeeded;
         public event System.Action OnPreviewDirty;
         public TerrainConfig RuntimeConfig => _runtimeConfig;
+        public TerrainConfig Config => _config;
+
+        public void ApplyChanges()
+        {
+            _so.ApplyModifiedProperties();
+            _soCommon?.ApplyModifiedProperties();
+        }
 
         public void OnEnable()
         {

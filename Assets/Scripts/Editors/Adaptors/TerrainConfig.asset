@@ -41,7 +41,7 @@ MonoBehaviour:
       VoronoiCells: 4
   - Name: Grass
     Height: 0.41
-    Color: {r: 0.5921569, g: 0.026961025, b: 0.0117647005, a: 1}
+    Color: {r: 0.0117647005, g: 0.5921569, b: 0.078441866, a: 1}
     BlendWidth: 0
     BlendMode: 0
     Texture: {fileID: 0}

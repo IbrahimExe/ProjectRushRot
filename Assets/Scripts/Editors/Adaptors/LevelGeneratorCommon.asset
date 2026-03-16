@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5b280391926c0a4a926d6c281446040, type: 3}
   m_Name: LevelGeneratorCommon
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.LevelGeneratorCommon
-  NoiseConfig: {fileID: 11400000, guid: b4fb3ab67fcc0244f9765624a4264db5, type: 2}
-  TerrainConfig: {fileID: 11400000, guid: 0324d84a0d1159e44b3c98334a410d2c, type: 2}
+  NoiseConfig: {fileID: 11400000, guid: 29c1145334f2ace48b63f5efe9d56581, type: 2}
+  TerrainConfig: {fileID: 11400000, guid: 27223b0383d65944d8422b8c483b7bb1, type: 2}
   PrefabCatalog: {fileID: 11400000, guid: dc5eeb6cedf189941b6966f831b8e7c3, type: 2}
   ChunkWidth: 100
   ChunkLength: 100
-  VertexResolution: 129
+  VertexResolution: 255
   HeightCurve:
     serializedVersion: 2
     m_Curve:
@@ -51,4 +51,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  HeightMultiplier: 20
+  HeightMultiplier: 30

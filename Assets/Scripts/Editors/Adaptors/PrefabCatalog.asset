@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 96cc3f6cd0262644c8e63aee47afb90a, type: 3}
-  m_Name: NewPrefabCatalog
+  m_Name: TestPrefabCatalog
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.NewPrefabCatalog
   Definitions:
   - Name: ANIMAL

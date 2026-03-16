@@ -1,6 +1,6 @@
 #if UNITY_EDITOR
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace Level.Editor
 {
@@ -16,6 +16,8 @@ namespace Level.Editor
         NoiseConfig _runtimeConfig;
         NoiseConfig _config;
         SerializedObject _so;
+        LevelGeneratorCommon _common;
+        public void SetCommon(LevelGeneratorCommon common) => _common = common;
 
         Texture2D _preview;
         int _resolution;
@@ -35,7 +37,10 @@ namespace Level.Editor
 
         public event System.Action OnRepaintNeeded;
         public NoiseConfig RuntimeConfig => _runtimeConfig;
+        public NoiseConfig Config => _config;
         public void SetWorldScale(float scale) => _worldScale = scale;
+
+        public void ApplyChanges() => _so.ApplyModifiedProperties();
 
         static readonly string[] k_NoiseHints =
         {
@@ -72,10 +77,8 @@ namespace Level.Editor
         }
 
         // Public entry point 
-        public void Draw(float windowWidth, int resolution, float worldScale )
+        public void Draw(float windowWidth, float worldScale )
         {
-            _resolution = resolution;
-            _worldScale = worldScale;
             if (_so == null || _so.targetObject == null)
                 _so = new SerializedObject(_runtimeConfig);
 
@@ -166,12 +169,6 @@ namespace Level.Editor
                 DrawVector3("rotation", "Rotation (offset)");
                 DrawVector3("scale",    "Scale");
             }
-
-            //Preview
-            Separator("Preview");
-            EditorGUI.BeginChangeCheck();
-            //_resolution = EditorGUILayout.IntSlider("Resolution", _resolution, 32, 512); moved this 
-            if (EditorGUI.EndChangeCheck()) MarkDirty();
 
             //Domain Warp
             DrawPattern("Domain Warp",
@@ -433,8 +430,7 @@ namespace Level.Editor
         void RebuildPreview()
         {
             if (_runtimeConfig == null) return;
-
-            int sz = Mathf.Max(_resolution, 1);
+            int sz = Mathf.Max(_common?.VertexResolution ?? 128, 1);
             if (_preview == null || _preview.width != sz)
             {
                 DestroyPreview();

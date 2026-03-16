@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using LevelGenerator.Data;
+
 
 namespace Level.Editor
 {
@@ -19,23 +19,20 @@ namespace Level.Editor
         private LevelEditorTabs _activeTab = LevelEditorTabs.Noise;
         private LevelGeneratorCommon _common;
 
-
-        // Add one field per tab as you migrate each sub-window.
         private LevelEditorPreviewPanel _previewPanel;
         private NoiseEditorPanel _noisePanel;
         private Texture2D _lastNoiseTexture;
         private PrefabCatalogPanel _catalogPanel;
         private TerrainEditorPanel _terrainPanel;
 
-
-        //Open 
-
         [MenuItem("Window/Level Editor")]
-        public static void Open() => GetWindow<LevelEditor>("Level Editor");
+        public static void Open()
+        {
+            GetWindow<LevelEditor>("Level Editor");
+        }
 
         private void OnEnable()
         {
-
             _noisePanel = new NoiseEditorPanel();
             _noisePanel.OnRepaintNeeded += Repaint;
             _noisePanel.OnEnable();
@@ -45,28 +42,45 @@ namespace Level.Editor
             _catalogPanel.OnEnable();
 
             _terrainPanel = new TerrainEditorPanel();
-            _terrainPanel.SetCommon(_common);
             _terrainPanel.OnRepaintNeeded += Repaint;
             _terrainPanel.OnEnable();
-            _terrainPanel.OnPreviewDirty += () => UpdatePreviewForTab(_activeTab);
+            _terrainPanel.OnPreviewDirty += HandlePreviewDirty;
 
-            _catalogPanel.OnSelectionChanged += () => UpdatePreviewForTab(_activeTab);
+            _catalogPanel.OnSelectionChanged += HandleSelectionChanged;
+
+            if (_common != null)
+            {
+                LoadProjectIntoPanels(_common);
+            }
         }
 
         private void OnDisable()
         {
-            _noisePanel.OnDisable();
-            _noisePanel.OnRepaintNeeded -= Repaint;
+            if (_noisePanel != null)
+            {
+                _noisePanel.OnDisable();
+                _noisePanel.OnRepaintNeeded -= Repaint;
+            }
 
-            _catalogPanel.OnDisable();
-            _catalogPanel.OnRepaintNeeded -= Repaint;
+            if (_catalogPanel != null)
+            {
+                _catalogPanel.OnDisable();
+                _catalogPanel.OnRepaintNeeded -= Repaint;
+                _catalogPanel.OnSelectionChanged -= HandleSelectionChanged;
+            }
 
-            _terrainPanel.OnDisable();
-            _terrainPanel.OnRepaintNeeded -= Repaint;
+            if (_terrainPanel != null)
+            {
+                _terrainPanel.OnDisable();
+                _terrainPanel.OnRepaintNeeded -= Repaint;
+                _terrainPanel.OnPreviewDirty -= HandlePreviewDirty;
+            }
         }
 
         private void CreateGUI()
         {
+            rootVisualElement.Clear();
+
             var splitView = new TwoPaneSplitView(0, 340, TwoPaneSplitViewOrientation.Horizontal);
             rootVisualElement.Add(splitView);
 
@@ -80,7 +94,6 @@ namespace Level.Editor
             _previewPanel = new LevelEditorPreviewPanel();
             splitView.Add(_previewPanel);
 
-            // Controls drawn at the top of the preview pane
             var previewControls = new IMGUIContainer(() =>
             {
                 EditorGUI.BeginChangeCheck();
@@ -92,7 +105,8 @@ namespace Level.Editor
                     UpdatePreviewForTab(_activeTab);
                 }
             });
-            _previewPanel.Insert(0, previewControls); //<-- 0 Insert before the preview image
+
+            _previewPanel.Insert(0, previewControls);
 
             _noisePanel.OnPreviewRebuilt += tex =>
             {
@@ -104,25 +118,31 @@ namespace Level.Editor
         private void DrawTabs()
         {
             EditorGUI.BeginChangeCheck();
-            _common = (LevelGeneratorCommon)EditorGUILayout.ObjectField(
-                "Project", _common, typeof(LevelGeneratorCommon), false);
-            if (EditorGUI.EndChangeCheck() && _common != null)
+            var selectedCommon = (LevelGeneratorCommon)EditorGUILayout.ObjectField(
+                "Project",
+                _common,
+                typeof(LevelGeneratorCommon),
+                false);
+
+            if (EditorGUI.EndChangeCheck())
             {
-                if (_common.NoiseConfig != null) _noisePanel.LoadConfig(_common.NoiseConfig);
-                if (_common.TerrainConfig != null) _terrainPanel.LoadConfig(_common.TerrainConfig);
-                if (_common.PrefabCatalog != null) _catalogPanel.LoadCatalog(_common.PrefabCatalog);
-                _terrainPanel.SetCommon(_common);
+                _common = selectedCommon;
+
+                if (_common != null)
+                {
+                    LoadProjectIntoPanels(_common);
+                }
             }
 
             GUILayout.Space(6);
+
             var newTab = (LevelEditorTabs)GUILayout.Toolbar(
                 (int)_activeTab,
-                System.Enum.GetNames(typeof(LevelEditorTabs))
-            );
+                System.Enum.GetNames(typeof(LevelEditorTabs)));
 
             if (newTab != _activeTab)
             {
-                    _activeTab = newTab;
+                _activeTab = newTab;
 
                 if (_lastNoiseTexture == null)
                 {
@@ -132,13 +152,13 @@ namespace Level.Editor
                 {
                     UpdatePreviewForTab(_activeTab);
                 }
-                    Repaint();
+
+                Repaint();
             }
 
             GUILayout.Space(8);
             DrawActiveTabUI(_activeTab);
             DrawProjectSave();
-
         }
 
         private void DrawActiveTabUI(LevelEditorTabs tab)
@@ -146,159 +166,165 @@ namespace Level.Editor
             switch (tab)
             {
                 case LevelEditorTabs.Noise:
-                    _noisePanel.Draw(position.width, _previewPanel.Resolution, _previewPanel.WorldScale);
+                    _noisePanel.Draw(position.width, _previewPanel.WorldScale);
                     break;
+
                 case LevelEditorTabs.Terrain:
-                  _terrainPanel.Draw(position.width);
+                    _terrainPanel.Draw(position.width);
                     break;
+
                 case LevelEditorTabs.Prefabs:
-                    _catalogPanel.Draw(position.width); 
+                    _catalogPanel.Draw(position.width);
                     break;
-                case LevelEditorTabs.Overlays: 
-                   
+
+                case LevelEditorTabs.Overlays:
                     break;
-                case LevelEditorTabs.Spawning: 
-                  
+
+                case LevelEditorTabs.Spawning:
                     break;
             }
         }
 
         private void DrawProjectSave()
         {
-            if (_common == null) return;
+            if (_common == null)
+                return;
 
             EditorGUILayout.Space(8);
-            Rect r = EditorGUILayout.GetControlRect(false, 1f);
-            EditorGUI.DrawRect(r, new Color(0.35f, 0.35f, 0.35f, 0.6f));
+            Rect divider = EditorGUILayout.GetControlRect(false, 1f);
+            EditorGUI.DrawRect(divider, new Color(0.35f, 0.35f, 0.35f, 0.6f));
             EditorGUILayout.Space(4);
 
             EditorGUILayout.BeginHorizontal();
+
             if (GUILayout.Button("Save Project As New"))
             {
-                
-                if (EditorUtility.DisplayDialog("Save Project",
+                if (EditorUtility.DisplayDialog(
+                    "Save Project",
                     "This will save ALL configs as new assets. Continue?",
-                    "Save All", "Cancel"))
+                    "Save All",
+                    "Cancel"))
                 {
-               
-                    SaveAllConfigs(saveAsNew: true);
+                    SaveAllConfigs(true);
                 }
             }
+
             if (GUILayout.Button("Update Project"))
             {
-                if (EditorUtility.DisplayDialog("Update Project",
+                if (EditorUtility.DisplayDialog(
+                    "Update Project",
                     "This will OVERWRITE all loaded configs (Noise, Terrain, Prefabs). Continue?",
-                    "Overwrite All", "Cancel"))
+                    "Overwrite All",
+                    "Cancel"))
                 {
-                    SaveAllConfigs(saveAsNew: false);
+                    SaveAllConfigs(false);
                 }
             }
+
             EditorGUILayout.EndHorizontal();
         }
 
         private void SaveAllConfigs(bool saveAsNew)
         {
+            if (_common == null)
+                return;
+
             if (saveAsNew)
             {
                 var path = EditorUtility.SaveFilePanelInProject(
                     "Save Project", "NewLevelProject", "asset", "Choose location");
-                if (string.IsNullOrEmpty(path)) { Debug.Log("Path empty - cancelled"); return; }
-
-                string dir = System.IO.Path.GetDirectoryName(path).Replace("\\", "/");
-                Debug.Log($"Saving to dir: {dir}");
-                Debug.Log($"NoisePanel.RuntimeConfig: {_noisePanel.RuntimeConfig}");
-                Debug.Log($"TerrainPanel.RuntimeConfig: {_terrainPanel.RuntimeConfig}");
-                Debug.Log($"CatalogPanel.RuntimeCatalog: {_catalogPanel.RuntimeCatalog}");
-
-                SaveConfigAsNew(_noisePanel.RuntimeConfig, dir, "NoiseConfig");
-                SaveConfigAsNew(_terrainPanel.RuntimeConfig, dir, "TerrainConfig");
-                SaveConfigAsNew(_catalogPanel.RuntimeCatalog, dir, "PrefabCatalog");
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-
-                var noiseAsset = AssetDatabase.LoadAssetAtPath<NoiseConfig>($"{dir}/NoiseConfig.asset");
-                var terrainAsset = AssetDatabase.LoadAssetAtPath<TerrainConfig>($"{dir}/TerrainConfig.asset");
-                var catalogAsset = AssetDatabase.LoadAssetAtPath<PrefabCatalog>($"{dir}/PrefabCatalog.asset");
-
-                Debug.Log($"Loaded back - noise:{noiseAsset} terrain:{terrainAsset} catalog:{catalogAsset}");
+                if (string.IsNullOrEmpty(path)) return;
 
                 var commonCopy = Object.Instantiate(_common);
-                commonCopy.NoiseConfig = noiseAsset;
-                commonCopy.TerrainConfig = terrainAsset;
-                commonCopy.PrefabCatalog = catalogAsset;
-
-                Debug.Log($"CommonCopy refs - noise:{commonCopy.NoiseConfig} terrain:{commonCopy.TerrainConfig} catalog:{commonCopy.PrefabCatalog}");
+                commonCopy.name = System.IO.Path.GetFileNameWithoutExtension(path);
+                commonCopy.NoiseConfig = _common.NoiseConfig;
+                commonCopy.TerrainConfig = _common.TerrainConfig;
+                commonCopy.PrefabCatalog = _common.PrefabCatalog;
 
                 AssetDatabase.CreateAsset(commonCopy, path);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
-                Debug.Log("Save complete");
+                Selection.activeObject = commonCopy;
             }
             else
             {
-                if (_common.NoiseConfig != null)
-                {
-                    JsonUtility.FromJsonOverwrite(
-                        JsonUtility.ToJson(_noisePanel.RuntimeConfig), _common.NoiseConfig);
-                    EditorUtility.SetDirty(_common.NoiseConfig);
-                }
-                if (_common.TerrainConfig != null)
-                {
-                    JsonUtility.FromJsonOverwrite(
-                        JsonUtility.ToJson(_terrainPanel.RuntimeConfig), _common.TerrainConfig);
-                    EditorUtility.SetDirty(_common.TerrainConfig);
-                }
-                if (_common.PrefabCatalog != null)
-                {
-                    JsonUtility.FromJsonOverwrite(
-                        JsonUtility.ToJson(_catalogPanel.RuntimeCatalog), _common.PrefabCatalog);
-                    EditorUtility.SetDirty(_common.PrefabCatalog);
-                }
+                var soCommon = new SerializedObject(_common);
+                soCommon.Update();
+
+                soCommon.FindProperty("NoiseConfig").objectReferenceValue = _noisePanel.Config;
+                soCommon.FindProperty("TerrainConfig").objectReferenceValue = _terrainPanel.Config;
+                soCommon.FindProperty("PrefabCatalog").objectReferenceValue = _catalogPanel.LoadedCatalog;
+
+                soCommon.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_common);
                 AssetDatabase.SaveAssets();
-                Debug.Log("Update complete");
+                AssetDatabase.Refresh();
+                Selection.activeObject = _common;
             }
         }
 
-        private Object SaveConfigAsNew(Object config, string dir, string name)
+        private void LoadProjectIntoPanels(LevelGeneratorCommon common)
         {
-            if (config == null) return null;
-            var copy = Object.Instantiate(config);
-            var path = $"{dir}/{name}.asset";
-            AssetDatabase.CreateAsset(copy, path);
-            return copy;
+            if (common == null)
+                return;
+
+            if (common.NoiseConfig != null)
+                _noisePanel.LoadConfig(common.NoiseConfig);
+
+            if (common.TerrainConfig != null)
+                _terrainPanel.LoadConfig(common.TerrainConfig);
+
+            if (common.PrefabCatalog != null)
+                _catalogPanel.LoadCatalog(common.PrefabCatalog);
+
+            _terrainPanel.SetCommon(common);
+            UpdatePreviewForTab(_activeTab);
         }
 
+        private void HandlePreviewDirty()
+        {
+            UpdatePreviewForTab(_activeTab);
+        }
+
+        private void HandleSelectionChanged()
+        {
+            UpdatePreviewForTab(_activeTab);
+        }
 
         private void UpdatePreviewForTab(LevelEditorTabs tab)
         {
-            if (_lastNoiseTexture == null)
-            {
-                Debug.Log("UpdatePreviewForTab: _lastNoiseTexture is NULL");
+            if (_previewPanel == null || _lastNoiseTexture == null)
                 return;
-            }
 
             switch (tab)
             {
                 case LevelEditorTabs.Terrain:
                     _previewPanel.UpdatePreview(_terrainPanel.BuildPreviewTexture(_lastNoiseTexture));
                     break;
+
                 case LevelEditorTabs.Prefabs:
                     var terrainTex = _terrainPanel.BuildPreviewTexture(_lastNoiseTexture);
-                    var def = _catalogPanel.SelectedDef;
-                    if (def != null)
-                        _previewPanel.UpdatePreview(_previewPanel.DrawFootprintCircle(
-                            terrainTex,
-                            def.Footprint,
-                            _common?.ChunkWidth ?? 100f));
+                    var selectedDef = _catalogPanel.SelectedDef;
+
+                    if (selectedDef != null)
+                    {
+                        _previewPanel.UpdatePreview(
+                            _previewPanel.DrawFootprintCircle(
+                                terrainTex,
+                                selectedDef.Footprint,
+                                _common != null ? _common.ChunkWidth : 100f));
+                    }
                     else
+                    {
                         _previewPanel.UpdatePreview(terrainTex);
+                    }
+
                     break;
+
                 default:
                     _previewPanel.UpdatePreview(_lastNoiseTexture);
                     break;
             }
         }
-
     }
 }
