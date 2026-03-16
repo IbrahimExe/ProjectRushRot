@@ -6,6 +6,7 @@ namespace Level.Editor
     public class NoiseEditorWindow : EditorWindow
     {
         NoiseEditorPanel _panel;
+        float worldScale = 1f;
         //resolution is passed to the panel so it can draw the preview at the correct size, and also to save it with the correct resolution
         int _resolution = 512;
 
@@ -26,7 +27,7 @@ namespace Level.Editor
             _panel.OnRepaintNeeded -= Repaint;
         }
 
-        void OnGUI() => _panel.Draw(position.width, _resolution);
+        void OnGUI() => _panel.Draw(position.width, _resolution, worldScale);
 
         private void OnDestroy()
         {

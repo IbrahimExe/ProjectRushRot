@@ -101,7 +101,7 @@ namespace LevelGenerator.Data
     // --- Prefab definition ----------------------------------------------------
 
     [System.Serializable]
-    public class PrefabDef
+    public class OLDPrefabDef
     {
         [Tooltip("Stable Unique Identifier. Used for Save/Load and Logic.")]
         public string ID;

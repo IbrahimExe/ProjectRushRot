@@ -23,6 +23,8 @@ namespace Level.Editor
         double _lastChangeTime = 0;
         bool _rebuildScheduled = false;
         bool _hasUnsavedChanges = false;
+        float _worldScale = 1f;
+
 
         bool _foldWood  = false;
         bool _foldQuant = false;
@@ -31,9 +33,9 @@ namespace Level.Editor
         bool _foldInvert = false;
         bool _foldWarp  = false;
 
-        Vector2 _scroll;
-
         public event System.Action OnRepaintNeeded;
+        public NoiseConfig RuntimeConfig => _runtimeConfig;
+        public void SetWorldScale(float scale) => _worldScale = scale;
 
         static readonly string[] k_NoiseHints =
         {
@@ -70,9 +72,10 @@ namespace Level.Editor
         }
 
         // Public entry point 
-        public void Draw(float windowWidth, int resolution)
+        public void Draw(float windowWidth, int resolution, float worldScale )
         {
             _resolution = resolution;
+            _worldScale = worldScale;
             if (_so == null || _so.targetObject == null)
                 _so = new SerializedObject(_runtimeConfig);
 
@@ -108,8 +111,6 @@ namespace Level.Editor
             SchedulePreviewRebuild();
             OnRepaintNeeded?.Invoke();
         }
-
-        public NoiseConfig Config => _config;
         void DrawBody(float windowWidth)
         {
             EditorGUI.BeginChangeCheck();
@@ -169,7 +170,7 @@ namespace Level.Editor
             //Preview
             Separator("Preview");
             EditorGUI.BeginChangeCheck();
-            _resolution = EditorGUILayout.IntSlider("Resolution", _resolution, 32, 512);
+            //_resolution = EditorGUILayout.IntSlider("Resolution", _resolution, 32, 512); moved this 
             if (EditorGUI.EndChangeCheck()) MarkDirty();
 
             //Domain Warp
@@ -226,6 +227,8 @@ namespace Level.Editor
             {
                 if (GUILayout.Button("Update Loaded"))
                 {
+                    _so.ApplyModifiedProperties();
+                    EditorUtility.CopySerializedIfDifferent(_runtimeConfig, _config);
                     EditorUtility.SetDirty(_config);
                     AssetDatabase.SaveAssets();
                     _hasUnsavedChanges = false;
@@ -383,7 +386,7 @@ namespace Level.Editor
         }
         SerializedProperty Prop(string name) => _so.FindProperty(name);
 
-        void SchedulePreviewRebuild()
+        public void SchedulePreviewRebuild()
         {
             _lastChangeTime = EditorApplication.timeSinceStartup;
             _rebuildScheduled = true;
@@ -445,11 +448,13 @@ namespace Level.Editor
             for (int y = 0; y < sz; y++)
                 for (int x = 0; x < sz; x++)
                 {
-                    float v = NoiseSampler.Sample(_runtimeConfig, new Vector2(x * inv, y * inv), sz);
-                    pixels[y * sz + x] = new Color(v, v, v);
+                    float u = 0.5f + (x * inv - 0.5f) * _worldScale;
+                    float v = 0.5f + (y * inv - 0.5f) * _worldScale;
+                    float val = NoiseSampler.Sample(_runtimeConfig, new Vector2(u, v), sz);
+                    pixels[y * sz + x] = new Color(val, val, val);
                 }
 
-            _preview.SetPixels(pixels);
+                    _preview.SetPixels(pixels);
             _preview.Apply();
             OnPreviewRebuilt?.Invoke(_preview);
         }

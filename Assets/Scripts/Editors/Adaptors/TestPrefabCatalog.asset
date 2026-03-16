@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96cc3f6cd0262644c8e63aee47afb90a, type: 3}
+  m_Name: TestPrefabCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.NewPrefabCatalog
+  Definitions:
+  - Name: ANIMAL
+    ID: ANIMAL
+    Category: 0
+    Variants:
+    - {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
+    Footprint: 1
+  - Name: Tree
+    ID: TREE
+    Category: 0
+    Variants:
+    - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
+    Footprint: 1
+  - Name: Rock
+    ID: ROCK
+    Category: 0
+    Variants:
+    - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
+    Footprint: 1
