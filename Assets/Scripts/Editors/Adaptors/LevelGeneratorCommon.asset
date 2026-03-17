@@ -15,9 +15,10 @@ MonoBehaviour:
   NoiseConfig: {fileID: 11400000, guid: 29c1145334f2ace48b63f5efe9d56581, type: 2}
   TerrainConfig: {fileID: 11400000, guid: 27223b0383d65944d8422b8c483b7bb1, type: 2}
   PrefabCatalog: {fileID: 11400000, guid: dc5eeb6cedf189941b6966f831b8e7c3, type: 2}
-  ChunkWidth: 100
-  ChunkLength: 100
-  VertexResolution: 255
+  ChunkWidth: 1000
+  ChunkLength: 1000
+  TextureResolution: 246
+  VertexResolution: 50
   HeightCurve:
     serializedVersion: 2
     m_Curve:
@@ -31,10 +32,19 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0.35538748
     - serializedVersion: 3
-      time: 0.7691136
-      value: 0.35405308
-      inSlope: 1.3588672
-      outSlope: 1.3588672
+      time: 0.66037565
+      value: 0.14402339
+      inSlope: -0.0055886833
+      outSlope: -0.0055886833
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.23026605
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.91791016
+      value: 0.36160898
+      inSlope: 1.7938817
+      outSlope: 1.7938817
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.33333334
@@ -42,8 +52,8 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0.9899999
       value: 0.58710426
-      inSlope: 1.0550731
-      outSlope: 1.0550731
+      inSlope: 3.1279805
+      outSlope: 3.1279805
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
@@ -51,4 +61,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  HeightMultiplier: 30
+  HeightMultiplier: 20

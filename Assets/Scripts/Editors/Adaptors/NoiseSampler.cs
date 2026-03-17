@@ -30,6 +30,9 @@ public static class NoiseSampler
         return SamplePx(cfg, px);
     }
 
+    public static float SampleUV(NoiseConfig cfg, Vector2 uv)
+    => SamplePx(cfg, uv);
+
     // Runtime (RunnerLevelGenerator): world XZ treated as pixel coords directly.
     // Seamless across chunks — no resolution dependency.
     public static float SampleWorld(NoiseConfig cfg, Vector2 worldPos)

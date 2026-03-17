@@ -430,7 +430,7 @@ namespace Level.Editor
         void RebuildPreview()
         {
             if (_runtimeConfig == null) return;
-            int sz = Mathf.Max(_common?.VertexResolution ?? 128, 1);
+            int sz = 128;
             if (_preview == null || _preview.width != sz)
             {
                 DestroyPreview();
