@@ -1,4 +1,4 @@
-using System.Reflection;
+ï»¿using System.Reflection;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
@@ -21,30 +21,45 @@ public class DestructableWall : MonoBehaviour
     // Called for non-trigger colliders
     private void OnCollisionEnter(Collision collision)
     {
+        Debug.Log($"DestructableWall: OnCollisionEnter with '{collision.collider.gameObject.name}' (Layer: {LayerMask.LayerToName(collision.collider.gameObject.layer)}, Tag: {collision.collider.gameObject.tag})");
         TryHandleHit(collision.collider);
     }
 
     // Called for trigger colliders
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"DestructableWall: OnTriggerEnter with '{other.gameObject.name}' (Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.gameObject.tag})");
         TryHandleHit(other);
     }
 
     private void TryHandleHit(Collider col)
     {
-        if (col == null) return;
+        if (col == null)
+        {
+            Debug.LogWarning("DestructableWall: Collider is null on hit.");
+            return;
+        }
+        else
+        {
+            Debug.Log($"DestructableWall: Hit by '{col.gameObject.name}' (Layer: {LayerMask.LayerToName(col.gameObject.layer)}, Tag: {col.gameObject.tag})");
+        }
+        // Determine the actor root (prefer the object with the Rigidbody)
+        var root = col.attachedRigidbody != null
+            ? col.attachedRigidbody.gameObject
+            : col.gameObject;
 
-        // Layer filter
-        if ((affectedLayers.value & (1 << col.gameObject.layer)) == 0) return;
+        // Layer filter (use the actor/root so child collider can belong to the player)
+        if ((affectedLayers.value & (1 << root.layer)) == 0)
+            return;
 
-        // Tag filter if set
-        if (!string.IsNullOrEmpty(requiredTag) && !col.CompareTag(requiredTag)) return;
-
-        var root = col.attachedRigidbody != null ? col.attachedRigidbody.gameObject : col.gameObject;
+        // Tag filter if set (check the actor/root instead of the child collider)
+        if (!string.IsNullOrEmpty(requiredTag) && !root.CompareTag(requiredTag))
+            return;
 
         bool isDashHit = IsDashObject(root);
 
-        if (requireDash && !isDashHit) return;
+        if (requireDash && !isDashHit)
+            return;
 
         // Destroy or disable
         if (destroyGameObject)
@@ -61,25 +76,25 @@ public class DestructableWall : MonoBehaviour
         var dash = go.GetComponentInParent<DashAbility>();
         if (dash != null)
         {
-            // public properties on DashAbility
             if (dash.IsDashing || dash.IsSideDashing || dash.IsDashFlipping)
                 return true;
         }
 
-        // 2) Fallback: PlayerController2 (older controller) — read private bools via reflection
+        // 2) Fallback: PlayerController2 (older controller) â€” read private bools via reflection
         var pc2 = go.GetComponentInParent<PlayerController2>();
         if (pc2 != null)
         {
             var t = pc2.GetType();
-            // check common private field names used in PlayerController2
             string[] fieldNames = { "isDashing", "isSideDashing", "isDashFlipping" };
+
             foreach (var name in fieldNames)
             {
                 var f = t.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
                 if (f != null && f.FieldType == typeof(bool))
                 {
                     object val = f.GetValue(pc2);
-                    if (val is bool b && b) return true;
+                    if (val is bool b && b)
+                        return true;
                 }
             }
         }
@@ -88,7 +103,6 @@ public class DestructableWall : MonoBehaviour
         var rb = go.GetComponentInParent<Rigidbody>();
         if (rb != null)
         {
-            // speed threshold (meters/sec) — consider tuning if needed
             const float dashSpeedThreshold = 18f;
             if (rb.linearVelocity.magnitude >= dashSpeedThreshold)
                 return true;
