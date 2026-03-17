@@ -87,7 +87,7 @@ MonoBehaviour:
   - ID: PEOPLE_SUR
     Name: People
     Prefabs:
-    - {fileID: 100000, guid: ffa95796af8d5884f9d08f66e6bb627e, type: 3}
+    - {fileID: 2629836852225095429, guid: 65798c975bd7e4a4e829949043a0aec6, type: 3}
     Layer: 0
     SurfaceType: 0
     OccupantWeight: 0
@@ -101,7 +101,7 @@ MonoBehaviour:
   - ID: BALLPIT_SUR
     Name: Ball Pit
     Prefabs:
-    - {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+    - {fileID: 6253659941484392735, guid: 7a3fecf5ce68d71498bcec303009509e, type: 3}
     Layer: 0
     SurfaceType: 1
     OccupantWeight: 0
