@@ -263,8 +263,9 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: a0c7f2d01a52e9e4c896bcfe666b0da9, type: 2}
   biomePool:
   - {fileID: 11400000, guid: a0c7f2d01a52e9e4c896bcfe666b0da9, type: 2}
+  - {fileID: 11400000, guid: 27d5d94fa69bd4541baf302f6db7ac20, type: 2}
   biomeSwitchChance: 0.15
-  minChunksPerBiome: 5
+  minChunksPerBiome: 20
   seed: Runner
   playerTransform: {fileID: 883337444}
   debugOccupantSpawning: 0
