@@ -6,13 +6,16 @@ namespace LevelGenerator
     {
         public enum DrawMode { NoiseMap, ColourMap, Mesh }
         public DrawMode drawMode;
+        public Vector2 NoiseOffset;
 
         public LevelGeneratorCommon Common;
 
-        const int mapChunkSize = 241;
+        public const int mapChunkSize = 241;
+        public static int GetChunkSize(LevelGeneratorCommon common) => common.VertexResolution + 1;
 
         [Range(0, 6)]
         public int levelOfDetail;
+
 
         public float meshHeightMultiplier;
         public AnimationCurve meshHeightCurve;
@@ -34,18 +37,28 @@ namespace LevelGenerator
             if (meshHeightCurve == null || meshHeightCurve.length == 0)
                 meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
-            // Sample heightmap
-            float[,] noiseMap = new float[mapChunkSize, mapChunkSize];
             float inv = 1f / Mathf.Max(mapChunkSize - 1, 1);
+
+            // First loop — heightmap
+            float[,] noiseMap = new float[mapChunkSize, mapChunkSize];
+
             for (int y = 0; y < mapChunkSize; y++)
                 for (int x = 0; x < mapChunkSize; x++)
-                    noiseMap[x, y] = NoiseSampler.Sample(Common.NoiseConfig, new Vector2(x * inv, y * inv), mapChunkSize);
+                {
+                    float worldX = x + NoiseOffset.x * (mapChunkSize - 1);
+                    float worldZ = -y + NoiseOffset.y * (mapChunkSize - 1);
+                    noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig, new Vector2(worldX, worldZ));
+                }
 
-            // Build colour map from terrain regions
+            float cornerX0 = 0 + NoiseOffset.x * (mapChunkSize - 1);
+            float cornerZ0 = 0 + NoiseOffset.y * (mapChunkSize - 1);
+            float cornerX1 = (mapChunkSize - 1) + NoiseOffset.x * (mapChunkSize - 1);
+            float cornerZ1 = -(mapChunkSize - 1) + NoiseOffset.y * (mapChunkSize - 1);
+
+            // Second loop — colour map, same UV calculation
             var regions = Common.TerrainConfig.Regions;
             Color[] colourMap = new Color[mapChunkSize * mapChunkSize];
             for (int y = 0; y < mapChunkSize; y++)
-            {
                 for (int x = 0; x < mapChunkSize; x++)
                 {
                     float h = noiseMap[x, y];
@@ -58,11 +71,8 @@ namespace LevelGenerator
                         }
                     }
                 }
-            }
 
-
-            MapDisplay display = GetComponentInChildren<MapDisplay>();
-
+            MapDisplay display = GetComponent<MapDisplay>();
             if (drawMode == DrawMode.NoiseMap)
                 display.DrawTexture(TextureGenerator.TextureFromHeightMap(noiseMap));
             else if (drawMode == DrawMode.ColourMap)
@@ -71,6 +81,10 @@ namespace LevelGenerator
                 display.DrawMesh(
                     MeshGenerator.GenerateTerrainMesh(noiseMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail),
                     TextureGenerator.TextureFromColourMap(colourMap, mapChunkSize, mapChunkSize));
+
+            Debug.Log($"[Chunk {NoiseOffset}] HeightCurve keys: {meshHeightCurve?.length}, " +
+          $"Sample at 0.5: {meshHeightCurve?.Evaluate(0.5f)}");
+            Debug.Log($"[Chunk {NoiseOffset}] WorldPos: {transform.position}");
         }
 
         void OnValidate()

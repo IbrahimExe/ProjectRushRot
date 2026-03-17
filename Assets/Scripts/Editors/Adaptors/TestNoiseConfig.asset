@@ -23,7 +23,7 @@ MonoBehaviour:
     density: 0.3
     maxDotSize: 0.4
   spaceMode: 0
-  tilingFrequency: 13.3
+  tilingFrequency: 10
   position:
     value: {x: 3, y: 3, z: 0}
   rotation:

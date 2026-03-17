@@ -4,7 +4,7 @@ namespace LevelGenerator
 {
     public class MapDisplay : MonoBehaviour
     {
-        public Renderer   TextureRenderer;
+        public MeshRenderer TextureRenderer;
         public MeshFilter MeshFilter;
         public MeshRenderer MeshRenderer;
 

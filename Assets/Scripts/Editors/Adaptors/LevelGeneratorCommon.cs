@@ -12,6 +12,10 @@ public class LevelGeneratorCommon : ScriptableObject
     public float ChunkWidth = 100f;
     public float ChunkLength = 100f;
 
+    [Header("Height")]
+    public AnimationCurve HeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+    public float HeightMultiplier = 20f;
+
     [Header("Texture")]
     [Range(64, 1024)]
     public int TextureResolution = 512;

@@ -27,7 +27,7 @@ namespace LevelGenerator
                         heightCurve.Evaluate(heightMap[x, y]) * heightMultiplier,
                         topLeftZ - y);
 
-                    meshData.uvs[vertexIndex] = new Vector2(x / (float)width, y / (float)height);
+                    meshData.uvs[vertexIndex] = new Vector2( x / (float)(width - 1), y / (float)(height - 1));
 
                     if (x < width - 1 && y < height - 1)
                     {
