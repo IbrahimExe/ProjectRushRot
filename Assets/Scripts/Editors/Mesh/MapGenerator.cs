@@ -11,7 +11,7 @@ namespace LevelGenerator
         public LevelGeneratorCommon Common;
 
         public const int mapChunkSize = 241;
-        public static int GetChunkSize(LevelGeneratorCommon common) => common.VertexResolution + 1;
+        //public static int GetChunkSize(LevelGeneratorCommon common) => common.VertexResolution + 1;
 
         [Range(0, 6)]
         public int levelOfDetail;
