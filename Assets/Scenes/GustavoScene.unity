@@ -9367,8 +9367,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 414849315}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.08715575, y: -0.000000013758733, z: 0.0000000012037332, w: 0.9961947}
-  m_LocalPosition: {x: 16.32, y: 12.001009, z: -31.10577}
+  m_LocalRotation: {x: 0.23285241, y: -0.0000018822357, z: 0.000000450671, w: 0.9725121}
+  m_LocalPosition: {x: 32.8038, y: 1.000999, z: 2.2956123}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20423,6 +20423,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b158bcd1f599a3043b87e5164d4ab7c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerControllerBase
+--- !u!114 &713965997 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7188365373034891474, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+  m_PrefabInstance: {fileID: 152380996816733992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 713965978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3ff9f944ab698d46bb69115cf1c9616, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DashAbility
 --- !u!43 &734227765
 Mesh:
   m_ObjectHideFlags: 0
@@ -34726,28 +34737,6 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
---- !u!114 &1387902568 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 514173491931606823, guid: a23929af763594242bb856147f0e1d9a, type: 3}
-  m_PrefabInstance: {fileID: 767987417}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ffca47f5d6c3be4ab53d5473ba9a092, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterSelector
---- !u!114 &1390021525 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 514173491931606823, guid: a23929af763594242bb856147f0e1d9a, type: 3}
-  m_PrefabInstance: {fileID: 2336800702486122302}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ffca47f5d6c3be4ab53d5473ba9a092, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterSelector
 --- !u!1 &1400019691
 GameObject:
   m_ObjectHideFlags: 0
@@ -42075,6 +42064,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4beb89007c214164d841e6f9489787a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AltExpManager
+  xpSystemEnabled: 0
   baseXP: 50
   xpGrowth: 1.25
   baseXPPerSecond: 5
@@ -42094,13 +42084,9 @@ MonoBehaviour:
   speedMultiplier: 1
   globalMultiplier: 1
   dashKillMultiplier: 1
-  IsLevelReset: 0
   debugLog: 1
   xpBar: {fileID: 1894240279}
   levelUpCardSelector: {fileID: 1546841898}
-  cs: {fileID: 1390021525}
-  cs2: {fileID: 2081135135}
-  cs3: {fileID: 1387902568}
 --- !u!114 &1721444905
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45798,6 +45784,53 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1778677289
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1778677290}
+  - component: {fileID: 1778677291}
+  m_Layer: 0
+  m_Name: CamLookAt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1778677290
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778677289}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 32.80379, y: 0, z: 4.26612}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1778677291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778677289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04bab038788e6c84b871d07a8f986920, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraTargetFollow
+  playerTransform: {fileID: 713965993}
+  positionOffset: {x: 0, y: 5, z: 0}
+  rotationSmoothSpeed: 6
 --- !u!1001 &1779095033
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -56005,17 +56038,6 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
---- !u!114 &2081135135 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 514173491931606823, guid: a23929af763594242bb856147f0e1d9a, type: 3}
-  m_PrefabInstance: {fileID: 1644929876}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ffca47f5d6c3be4ab53d5473ba9a092, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterSelector
 --- !u!43 &2091850735
 Mesh:
   m_ObjectHideFlags: 0
@@ -59087,6 +59109,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2854710723262664737, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: m_Interpolate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2854710723262664737, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_AngularDamping
       value: 0
       objectReference: {fileID: 0}
@@ -59101,7 +59127,7 @@ PrefabInstance:
     - target: {fileID: 2946657206990674743, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: Target.TrackingTarget
       value: 
-      objectReference: {fileID: 860496018}
+      objectReference: {fileID: 1778677290}
     - target: {fileID: 3294469309054466338, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: turnGrip
       value: 6
@@ -59159,32 +59185,44 @@ PrefabInstance:
       value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 3.942784
+      objectReference: {fileID: 0}
+    - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.913774
+      value: -0.0429924
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5.18227
+      value: -1.9038814
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9961947
+      value: 0.97251207
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.087155744
+      value: 0.23285246
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.000000013758732
+      value: -0.0000018826819
       objectReference: {fileID: 0}
     - target: {fileID: 3489885519710927109, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.0000000012037321
+      value: 0.00000045077806
       objectReference: {fileID: 0}
     - target: {fileID: 4940313654620728586, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_Name
       value: Player2.0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6457804267282043099, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: dashAbility
+      value: 
+      objectReference: {fileID: 713965997}
+    - target: {fileID: 7327210272813586765, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: HorizontalAxis.Recentering.Wait
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 7401148801439138598, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: m_LocalPosition.x
@@ -59317,6 +59355,7 @@ SceneRoots:
   - {fileID: 1215886727}
   - {fileID: 414849318}
   - {fileID: 152380996816733992}
+  - {fileID: 1778677290}
   - {fileID: 1141560392}
   - {fileID: 1126884629}
   - {fileID: 1721444906}
