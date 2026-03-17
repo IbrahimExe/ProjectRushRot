@@ -173,6 +173,11 @@ public class PlayerControllerBase : MonoBehaviour
         }
 
         if (dash != null) dash.TickUpdate();
+
+        // changed from Fixed Update here
+        AlignModelToGroundAndTilt_GroundOnly();
+        UprightModelInAir();
+        ApplyAirMovementTilt();
     }
 
     void FixedUpdate()
@@ -185,9 +190,6 @@ public class PlayerControllerBase : MonoBehaviour
 
         BaseMove();
         ApplyCustomGravity();
-        AlignModelToGroundAndTilt_GroundOnly();
-        UprightModelInAir();
-        ApplyAirMovementTilt();
 
         if (!IsGrounded)
         {
@@ -342,7 +344,8 @@ public class PlayerControllerBase : MonoBehaviour
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed);
             cartModel.rotation = Quaternion.Euler(
                 cartModel.rotation.eulerAngles.x,
-                RB.rotation.eulerAngles.y,
+                // RB.rotation.eulerAngles.y,
+                transform.eulerAngles.y,
                 cartModel.rotation.eulerAngles.z
             );
         }
@@ -362,14 +365,16 @@ public class PlayerControllerBase : MonoBehaviour
         if (enableAirMovementTilt)
         {
             float currentY = cartModel.rotation.eulerAngles.y;
-            float targetY = RB.rotation.eulerAngles.y;
+            // float targetY = RB.rotation.eulerAngles.y;
+            float targetY = transform.eulerAngles.y;
             float smoothY = Mathf.LerpAngle(currentY, targetY, Time.deltaTime * airUprightSpeed);
             Vector3 currentEuler = cartModel.rotation.eulerAngles;
             cartModel.rotation = Quaternion.Euler(currentEuler.x, smoothY, currentEuler.z);
         }
         else
         {
-            Quaternion target = Quaternion.Euler(0f, RB.rotation.eulerAngles.y, 0f);
+            // Quaternion target = Quaternion.Euler(0f, RB.rotation.eulerAngles.y, 0f);
+            Quaternion target = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, target, Time.deltaTime * airUprightSpeed);
         }
     }
