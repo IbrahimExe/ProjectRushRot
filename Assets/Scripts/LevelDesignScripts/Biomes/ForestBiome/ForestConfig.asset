@@ -26,7 +26,7 @@ MonoBehaviour:
   worldNoiseScale: 500
   useWavePath: 1
   safePathWidth: 2
-  safePathBlendRadius: 3
+  safePathBlendRadius: 2
   waveStrength: 1
   waveAmplitudeLanes: 23
   waveFrequency: 0.0216
