@@ -21,6 +21,7 @@ using UnityEngine;
 
 public static class NoiseSampler
 {
+
     // ─── Entry points ──────────────────────────────────────────────────────────
 
     // Editor preview: uv [0,1] x resolution → pixel coords → space → noise
@@ -35,13 +36,8 @@ public static class NoiseSampler
 
     // Runtime (RunnerLevelGenerator): world XZ treated as pixel coords directly.
     // Seamless across chunks — no resolution dependency.
-    public static float SampleWorld(NoiseConfig cfg, Vector2 worldPos)
-       => SamplePx(cfg, worldPos);
-
-    static float SamplePx(NoiseConfig cfg, Vector2 px)
+    public static float SamplePx(NoiseConfig cfg, Vector2 px)
     {
-        
-
         // Space-scaled coordinate — used by base noise and domain warp
         Vector2 p = ApplySpace(cfg, px);
 

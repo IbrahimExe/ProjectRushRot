@@ -1,12 +1,13 @@
 using UnityEngine;
 
+using Debug = UnityEngine.Debug;
+
 namespace LevelGenerator
 {
     public class MapGenerator : MonoBehaviour
     {
         public enum DrawMode { NoiseMap, ColourMap, Mesh }
         public DrawMode drawMode;
-        public Vector2 NoiseOffset;
 
         public LevelGeneratorCommon Common;
 
@@ -15,17 +16,27 @@ namespace LevelGenerator
 
         [Range(0, 6)]
         public int levelOfDetail;
-
-
         public float meshHeightMultiplier;
         public AnimationCurve meshHeightCurve;
 
         public bool autoUpdate;
 
+        [Space]
+        [Header("Noise Settings")]
+        public int scale;
+        public int octaves;
+        public float persistence;
+        public float lacunarity;
+        public int seed;
+        public Vector2 NoiseOffset;
+        
+
         void Reset()
         {
             meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         }
+
+
 
         public void GenerateMap()
         {
@@ -40,15 +51,7 @@ namespace LevelGenerator
             float inv = 1f / Mathf.Max(mapChunkSize - 1, 1);
 
             // First loop — heightmap
-            float[,] noiseMap = new float[mapChunkSize, mapChunkSize];
-
-            for (int y = 0; y < mapChunkSize; y++)
-                for (int x = 0; x < mapChunkSize; x++)
-                {
-                    float worldX = x + NoiseOffset.x * (mapChunkSize - 1);
-                    float worldZ = -y + NoiseOffset.y * (mapChunkSize - 1);
-                    noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig, new Vector2(worldX, worldZ));
-                }
+            float[,] noiseMap = Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, scale, octaves, persistence, lacunarity, seed, NoiseOffset);
 
             float cornerX0 = 0 + NoiseOffset.x * (mapChunkSize - 1);
             float cornerZ0 = 0 + NoiseOffset.y * (mapChunkSize - 1);
