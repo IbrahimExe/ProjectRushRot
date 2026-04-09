@@ -36,4 +36,6 @@ public class PlayerCharacterData : ScriptableObject
     [Header("Passive Abilities")]
     public int numOfJumps = 1;
     public float xpMultiplierOnKill = 1f;
+    [Tooltip("Allows this character to side dash while airborne, and transition into a wall run if they dash into a wall.")]
+    public bool canAirSideDash = false;
 }
