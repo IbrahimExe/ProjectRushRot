@@ -35,6 +35,16 @@ public class DashAbility : MonoBehaviour
     public float hitWindowAfterDash = 0.25f;
     private float hitWindowEndTime = 0f;
 
+    [Tooltip("Fraction of the player's current speed that is removed when killing an enemy with a late dash.")]
+    [Range(0f, 1f)]
+    public float lateDashSpeedPenaltyFraction = 0.5f;
+
+    // True while the active dash movement is running (isDashing or isSideDashing)
+    public bool IsWithinDashWindow => isDashing || isSideDashing;
+
+    // True during the grace window AFTER an active dash ends (hitWindowAfterDash). False once that window expires.
+    public bool IsWithinHitWindow => !IsWithinDashWindow && Time.time <= hitWindowEndTime;
+
     [Header("Dash Kill -> XP Multiplier")]
     public int dashKillCap = 10;                 // cap at 10 kills
     public float secondsToKeepMultiplier = 10f;  // stays for 10s after last kill
@@ -211,6 +221,9 @@ public class DashAbility : MonoBehaviour
         dashBoostEndTime = dashEndTime + Mathf.Max(0f, dashBoostDuration);
         nextDashAllowedTime = Time.time + dashCooldown;
 
+        // Open the hit-window starting from when the dash ends
+        hitWindowEndTime = dashEndTime + hitWindowAfterDash;
+
         StartDashFlipRoll(currentDashType);
     }
 
@@ -266,11 +279,13 @@ public class DashAbility : MonoBehaviour
     {
         if (!isSideDashing) return;
 
-        hitWindowEndTime = Time.time + sideDashDuration + hitWindowAfterDash;
-
         sideDashElapsed += Time.fixedDeltaTime;
         if (sideDashElapsed >= sideDashDuration)
+        {
             isSideDashing = false;
+            // Open the hit-window after side dash ends
+            hitWindowEndTime = Time.time + hitWindowAfterDash;
+        }
     }
 
     private void StartDashFlipRoll(DashType dashType)
@@ -372,6 +387,13 @@ public class DashAbility : MonoBehaviour
     {
         if (!CanDashKill()) return;
         if (!otherGO.CompareTag("Enemy")) return;
+
+        // Apply a speed penalty when the kill happens in the late hit-window
+        bool isLateDashHit = IsWithinHitWindow;
+        if (isLateDashHit && lateDashSpeedPenaltyFraction > 0f)
+        {
+            RB.linearVelocity *= (1f - lateDashSpeedPenaltyFraction);
+        }
 
         Destroy(otherGO);
 
