@@ -4,16 +4,16 @@ using System.Collections;
 public class ProceduralSceneStarter : MonoBehaviour
 {
     [Header("References - Assign in Inspector")]
-    public RunnerLevelGenerator generator;
+    //public RunnerLevelGenerator generator;
     public GameObject player;
 
     void Awake()
     {
         // Disable the generator temporarily
-        if (generator != null)
-        {
-            generator.enabled = false;
-        }
+        //if (generator != null)
+        //{
+        //    generator.enabled = false;
+        //}
 
         // Disable the player temporarily
         if (player != null)
@@ -30,10 +30,10 @@ public class ProceduralSceneStarter : MonoBehaviour
         yield return new WaitForEndOfFrame();
 
         // Re-enable the generator - this triggers its Start()
-        if (generator != null)
-        {
-            generator.enabled = true;
-        }
+        //if (generator != null)
+        //{
+        //    generator.enabled = true;
+        //}
 
         // Wait for generator to finish initial generation
         yield return new WaitForSeconds(1.5f);
