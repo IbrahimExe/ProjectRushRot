@@ -57,6 +57,9 @@ public class AppLoader : SystemLoader
     private void RegisterSystems()
     {
         Debug.Log($"{nameof(RegisterSystems)}");
+
+        PerkManager pm = new PerkManager();
+        ServiceLocator.Register<PerkManager>(pm);
     }
 
     private T FindMonoSystem<T>() where T : MonoBehaviour

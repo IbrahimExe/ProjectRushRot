@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PerkManager : MonoBehaviour
+public class PerkManager
 {
     [SerializeField] private PlayerControllerBase player;
 
