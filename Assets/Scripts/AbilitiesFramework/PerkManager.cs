@@ -3,9 +3,14 @@ using UnityEngine;
 
 public class PerkManager
 {
-    [SerializeField] private PlayerControllerBase player;
+    private PlayerControllerBase _player;
 
     private readonly Dictionary<string, (AbilityBase ability, int level)> _active = new();
+
+    public void GetPlayerReference()
+    {
+        _player = GameObject.FindFirstObjectByType<PlayerControllerBase>();
+    }
 
     public void Apply(AbilityBase ability)
     {
@@ -15,14 +20,14 @@ public class PerkManager
             return;
         }
         _active[ability.abilityId] = (ability, 1);
-        ability.OnApply(player, 1);
+        ability.OnApply(_player, 1);
         RecalculateStats();
     }
 
     public void Remove(string abilityId)
     {
         if (!_active.TryGetValue(abilityId, out var entry)) return;
-        entry.ability.OnRemove(player);
+        entry.ability.OnRemove(_player);
         _active.Remove(abilityId);
         RecalculateStats();
     }
@@ -38,15 +43,15 @@ public class PerkManager
         int oldLevel = entry.level;
         int newLevel = Mathf.Min(oldLevel + 1, entry.ability.maxLevel);
         _active[abilityId] = (entry.ability, newLevel);
-        entry.ability.OnUpgrade(player, oldLevel, newLevel);
+        entry.ability.OnUpgrade(_player, oldLevel, newLevel);
         RecalculateStats();
     }
 
     private void RecalculateStats()
     {
-        //player.ResetStats();
+        //_player.ResetStats();
         //foreach (var (ability, level) in _active.Values)
         //    foreach (var mod in ability.GetStatModifiers(level))
-        //        player.ApplyStatModifier(mod);
+        //        _player.ApplyStatModifier(mod);
     }
 }
