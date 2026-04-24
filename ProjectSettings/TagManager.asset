@@ -7,6 +7,9 @@ TagManager:
   - Enemy
   - BlockWall
   - Wall
+  - Ground
+  - DestructableObject
+  - Collectible
   layers:
   - Default
   - TransparentFX
