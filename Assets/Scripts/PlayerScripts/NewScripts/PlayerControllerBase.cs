@@ -94,16 +94,22 @@ public class PlayerControllerBase : MonoBehaviour
 
     [Header("Air Jumps")]
     public int currentJumps = 0;
+
+    private void Awake()
+    {
+        RB = GetComponent<Rigidbody>();
+    }
     void Start()
     {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        RB = GetComponent<Rigidbody>();
-
         if (characterData != null) ChangeCharacter(characterData);
         else SetBaseStats();
     }
+
+    [Header("Perk Runtime Stats")]
+    public int bonusAirJumps = 0;
 
     public void ApplyCharacter(PlayerCharacterData data)
     {
@@ -135,14 +141,19 @@ public class PlayerControllerBase : MonoBehaviour
         if (wallRun != null) wallRun.cartModel = cartModel;
     }
 
+
     public void SetBaseStats()
     {
+        if (RB == null)
+            RB = GetComponent<Rigidbody>();
+
         maxMoveSpeed = baseMaxMoveSpeed;
         acceleration = baseAcceleration;
 
         RB.mass = mass;
 
         jumpForce = baseJumpForce;
+        bonusAirJumps = 0;
     }
 
     public void NotifyWallJump()
@@ -294,6 +305,7 @@ public class PlayerControllerBase : MonoBehaviour
     public bool CanAirJump()
     {
         int maxJ = characterData != null ? characterData.numOfJumps : 1;
+        maxJ += bonusAirJumps;
         return currentJumps < maxJ;
     }
 

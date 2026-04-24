@@ -1,26 +1,54 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Perks/Missiles")]
+[CreateAssetMenu(menuName = "Perks/Missile")]
 public class MissilePerk : AbilityBase
 {
-    public float baseIndividualCooldown = 30f;
-    public int baseAmount = 3;
-    public int baseMaxAmount = 5;
+    public float baseCooldown = 30f;
+    public int baseMissileAmount = 1;
+    public int maxMissiles = 5;
+    public float searchRadius = 45f;
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
-    {
-        new StatModifier("missileCooldown",  -3f * level, StatModifier.ModType.Flat),
-        new StatModifier("missileAmount",     level,      StatModifier.ModType.Flat),
-        new StatModifier("missileMaxAmount",  level,      StatModifier.ModType.Flat)
-    };
+    public string targetTag = "MissileObstacle";
 
-    public override void OnApply(PlayerControllerBase player, int level)
+    private float cooldownTimer;
+
+    public override void Tick(PlayerAbilityContext ctx, int level, float deltaTime)
     {
-        // player.missilesEnabled = true;
+        if (cooldownTimer > 0f)
+            cooldownTimer -= deltaTime;
     }
 
-    public override void OnRemove(PlayerControllerBase player)
+    public override bool TryUse(PlayerAbilityContext ctx, int level)
     {
-        // player.missilesEnabled = false;
+        if (cooldownTimer > 0f)
+            return false;
+
+        int missileAmount = Mathf.Min(baseMissileAmount + level - 1, maxMissiles);
+
+        Collider[] hits = Physics.OverlapSphere(
+            ctx.playerTransform.position,
+            searchRadius,
+            ctx.abilityMask
+        );
+
+        int used = 0;
+
+        foreach (Collider hit in hits)
+        {
+            if (!hit.CompareTag(targetTag))
+                continue;
+
+            Destroy(hit.gameObject);
+            used++;
+
+            if (used >= missileAmount)
+                break;
+        }
+
+        if (used <= 0)
+            return false;
+
+        cooldownTimer = Mathf.Max(3f, baseCooldown - 3f * (level - 1));
+        return true;
     }
 }

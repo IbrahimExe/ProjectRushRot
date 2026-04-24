@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23db5f5518ee7014fbab0b098ea68414, type: 3}
+  m_Name: Missile Perk
+  m_EditorClassIdentifier: Assembly-CSharp::MissilePerk
+  abilityId: missile
+  displayName: Missile Launcher
+  description: 
+  icon: {fileID: 21300000, guid: 095b8753ea3700e45b850e153616be99, type: 3}
+  maxLevel: 3
+  baseCooldown: 30
+  baseMissileAmount: 1
+  maxMissiles: 5
+  searchRadius: 45
+  targetTag: MissileObstacle

@@ -3,26 +3,37 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Perks/Extra Jump")]
 public class ExtraJumpPerk : AbilityBase
 {
-    public float baseCooldown = 10f;
+    public int extraJumpsAtLevelOne = 1;
+    public float baseRechargeCooldown = 2f;
+    public float cooldownReductionPerLevel = 0.25f;
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
+    public override void OnApply(PlayerAbilityContext ctx, int level)
     {
-        new StatModifier("extraJumpCount",    level,       StatModifier.ModType.Flat),
-        new StatModifier("extraJumpCooldown", -1f * level, StatModifier.ModType.Flat)
-    };
-
-    public override void OnApply(PlayerControllerBase player, int level)
-    {
-       // player.OnJump += HandleJump;
+        ApplyJumpBonus(ctx, level);
     }
 
-    public override void OnRemove(PlayerControllerBase player)
+    public override void OnUpgrade(PlayerAbilityContext ctx, int oldLevel, int newLevel)
     {
-       // player.OnJump -= HandleJump;
+        ApplyJumpBonus(ctx, newLevel);
     }
 
-    private void HandleJump(PlayerControllerBase player)
+    private void ApplyJumpBonus(PlayerAbilityContext ctx, int level)
     {
-      
+        if (ctx.player.characterData == null)
+            return;
+
+        int extraJumps = extraJumpsAtLevelOne;
+
+        ctx.player.characterData.numOfJumps += extraJumps;
+    }
+
+    public override StatModifier[] GetStatModifiers(int level)
+    {
+        float cooldown = Mathf.Max(0.5f, baseRechargeCooldown - cooldownReductionPerLevel * (level - 1));
+
+        return new[]
+        {
+            new StatModifier("extraJumpRechargeCooldown", cooldown, StatModifier.ModType.Flat)
+        };
     }
 }

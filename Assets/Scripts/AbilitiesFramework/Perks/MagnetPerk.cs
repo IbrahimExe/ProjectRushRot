@@ -4,21 +4,42 @@ using UnityEngine;
 public class MagnetPerk : AbilityBase
 {
     public float baseRadius = 10f;
+    public float radiusPerLevel = 2.5f;
     public float basePullStrength = 7.5f;
+    public float pullPerLevel = 1.5f;
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
-    {
-        new StatModifier("magnetRadius",      2.5f * level, StatModifier.ModType.Flat),
-        new StatModifier("magnetPullStrength", 1f * level,  StatModifier.ModType.Flat)
-    };
+    public string targetTag = "Collectible";
 
-    public override void OnApply(PlayerControllerBase player, int level)
+    public override void FixedTick(PlayerAbilityContext ctx, int level, float fixedDeltaTime)
     {
-        // player.magnetEnabled = true;
-    }
+        float radius = baseRadius + radiusPerLevel * (level - 1);
+        float pullStrength = basePullStrength + pullPerLevel * (level - 1);
 
-    public override void OnRemove(PlayerControllerBase player)
-    {
-        // player.magnetEnabled = false;
+        Collider[] hits = Physics.OverlapSphere(
+            ctx.playerTransform.position,
+            radius,
+            ctx.abilityMask
+        );
+
+        foreach (Collider hit in hits)
+        {
+            if (!hit.CompareTag(targetTag))
+                continue;
+
+            Vector3 direction = ctx.playerTransform.position - hit.transform.position;
+
+            if (hit.TryGetComponent(out Rigidbody rb))
+            {
+                rb.AddForce(direction.normalized * pullStrength, ForceMode.Acceleration);
+            }
+            else
+            {
+                hit.transform.position = Vector3.MoveTowards(
+                    hit.transform.position,
+                    ctx.playerTransform.position,
+                    pullStrength * fixedDeltaTime
+                );
+            }
+        }
     }
 }

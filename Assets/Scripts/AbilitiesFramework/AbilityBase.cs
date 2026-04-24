@@ -9,8 +9,20 @@ public abstract class AbilityBase : ScriptableObject
     public Sprite icon;
     public int maxLevel = 3;
 
-    public virtual void OnApply(PlayerControllerBase player, int level) { }
-    public virtual void OnRemove(PlayerControllerBase player) { }
-    public virtual void OnUpgrade(PlayerControllerBase player, int oldLevel, int newLevel) { }
-    public virtual StatModifier[] GetStatModifiers(int level) => System.Array.Empty<StatModifier>();
+    public virtual void OnApply(PlayerAbilityContext ctx, int level) { }
+    public virtual void OnRemove(PlayerAbilityContext ctx) { }
+    public virtual void OnUpgrade(PlayerAbilityContext ctx, int oldLevel, int newLevel) { }
+
+    public virtual void Tick(PlayerAbilityContext ctx, int level, float deltaTime) { }
+    public virtual void FixedTick(PlayerAbilityContext ctx, int level, float fixedDeltaTime) { }
+
+    public virtual bool TryUse(PlayerAbilityContext ctx, int level)
+    {
+        return false;
+    }
+
+    public virtual StatModifier[] GetStatModifiers(int level)
+    {
+        return System.Array.Empty<StatModifier>();
+    }
 }

@@ -3,22 +3,32 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Perks/Beanstalk")]
 public class BeanStalkPerk : AbilityBase
 {
+    public GameObject bridgeSegmentPrefab;
     public int baseSegments = 1;
-    public float baseSegmentLength = 20f;
+    public int segmentsPerLevel = 1;
+    public float segmentLength = 8f;
+    public float segmentLifetime = 5f;
+    public float spawnHeightOffset = -0.5f;
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
+    public override bool TryUse(PlayerAbilityContext ctx, int level)
     {
-        new StatModifier("beanStalkSegments",      level,        StatModifier.ModType.Flat),
-        new StatModifier("beanStalkSegmentLength", 5f * level,   StatModifier.ModType.Flat)
-    };
+        if (bridgeSegmentPrefab == null)
+            return false;
 
-    public override void OnApply(PlayerControllerBase player, int level)
-    {
-        // player.beanStalkEnabled = true;
-    }
+        int count = baseSegments + segmentsPerLevel * (level - 1);
 
-    public override void OnRemove(PlayerControllerBase player)
-    {
-        // player.beanStalkEnabled = false;
+        Vector3 start = ctx.playerTransform.position + Vector3.up * spawnHeightOffset;
+        Vector3 forward = ctx.playerTransform.forward;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 pos = start + forward * segmentLength * (i + 1);
+            Quaternion rot = Quaternion.LookRotation(forward, Vector3.up);
+
+            GameObject segment = Instantiate(bridgeSegmentPrefab, pos, rot);
+            Destroy(segment, segmentLifetime);
+        }
+
+        return true;
     }
 }

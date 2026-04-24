@@ -9,13 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40eef53daafb74146ba8f6b60bb4b019, type: 3}
-  m_Name: New Shield Perk
-  m_EditorClassIdentifier: Assembly-CSharp::ShieldPerk
-  abilityId: 
-  displayName: 
+  m_Script: {fileID: 11500000, guid: 45274714e2d30094db0109e2f8fe9f32, type: 3}
+  m_Name: Shampoo Perk
+  m_EditorClassIdentifier: Assembly-CSharp::ShampooPerk
+  abilityId: shampoo
+  displayName: Shampoo
   description: 
   icon: {fileID: 0}
   maxLevel: 3
-  baseCooldown: 45
-  baseMaxAmount: 3
+  baseRecoveryMultiplier: 0.85
+  recoveryReductionPerLevel: 0.1

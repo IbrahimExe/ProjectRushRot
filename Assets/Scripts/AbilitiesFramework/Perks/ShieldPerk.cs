@@ -4,21 +4,50 @@ using UnityEngine;
 public class ShieldPerk : AbilityBase
 {
     public float baseCooldown = 45f;
-    public int baseMaxAmount = 3;
+    public float cooldownReductionPerLevel = 6f;
+    public float shieldRadius = 3f;
+    public string targetTag = "ShieldObstacle";
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
-    {
-        new StatModifier("shieldCooldown",   -5f * level,  StatModifier.ModType.Flat),  // shorter each level
-        new StatModifier("shieldMaxAmount",   level,       StatModifier.ModType.Flat)
-    };
+    private float cooldownTimer;
+    private bool shieldReady;
 
-    public override void OnApply(PlayerControllerBase player, int level)
+    public override void OnApply(PlayerAbilityContext ctx, int level)
     {
-       
+        shieldReady = true;
     }
 
-    public override void OnRemove(PlayerControllerBase player)
+    public override void Tick(PlayerAbilityContext ctx, int level, float deltaTime)
     {
-        // player.shieldEnabled = false;
+        if (shieldReady)
+            return;
+
+        cooldownTimer -= deltaTime;
+
+        if (cooldownTimer <= 0f)
+            shieldReady = true;
+    }
+
+    public override void FixedTick(PlayerAbilityContext ctx, int level, float fixedDeltaTime)
+    {
+        if (!shieldReady)
+            return;
+
+        Collider[] hits = Physics.OverlapSphere(
+            ctx.playerTransform.position,
+            shieldRadius,
+            ctx.abilityMask
+        );
+
+        foreach (Collider hit in hits)
+        {
+            if (!hit.CompareTag(targetTag))
+                continue;
+
+            Destroy(hit.gameObject);
+
+            shieldReady = false;
+            cooldownTimer = Mathf.Max(5f, baseCooldown - cooldownReductionPerLevel * (level - 1));
+            return;
+        }
     }
 }
