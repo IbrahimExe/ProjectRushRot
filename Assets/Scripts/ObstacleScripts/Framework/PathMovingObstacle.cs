@@ -8,6 +8,12 @@ public class PathMovingObstacle : MonoBehaviour
     [Tooltip("Speed at which the obstacle travels between the two points.")]
     public float speed = 2f;
 
+    [Tooltip("When true, the obstacle will rotate to face the direction it is moving.")]
+    public bool rotateTowardDirection = false;
+
+    [Tooltip("How fast the obstacle rotates toward its direction (degrees per second). 0 = instant snap.")]
+    public float rotationSpeed = 360f;
+
     // Manual Points
     [Header("Path Points")]
     [Tooltip("First point")]
@@ -86,13 +92,11 @@ public class PathMovingObstacle : MonoBehaviour
         Vector3 target = CurrentTarget;
         Vector3 currentPos = rb.position;
 
-        // Direction and step this frame
         Vector3 dir = (target - currentPos);
         float distToTarget = dir.magnitude;
 
         if (distToTarget <= 0.01f)
         {
-            // Arrived — snap and flip direction
             rb.MovePosition(target);
             FlipDirection();
             return;
@@ -108,9 +112,10 @@ public class PathMovingObstacle : MonoBehaviour
             return;
         }
 
+        RotateToward(moveDir);
+
         if (step >= distToTarget)
         {
-            // snap and flip direction
             rb.MovePosition(target);
             FlipDirection();
         }
@@ -148,6 +153,23 @@ public class PathMovingObstacle : MonoBehaviour
     }
 
     private readonly RaycastHit[] _castHits = new RaycastHit[8];
+
+    private void RotateToward(Vector3 moveDir)
+    {
+        if (!rotateTowardDirection || moveDir == Vector3.zero) return;
+
+        Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
+
+        if (rotationSpeed <= 0f)
+        {
+            rb.MoveRotation(targetRot);
+        }
+        else
+        {
+            Quaternion newRot = Quaternion.RotateTowards(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
+            rb.MoveRotation(newRot);
+        }
+    }
 
     private void FlipDirection()
     {
