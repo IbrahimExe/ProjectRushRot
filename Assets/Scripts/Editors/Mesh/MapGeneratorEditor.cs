@@ -10,9 +10,10 @@ public class MapGeneratorEditor : Editor
         MapGenerator mapGen = (MapGenerator)target;
 
         if (DrawDefaultInspector() && mapGen.autoUpdate)
-            mapGen.GenerateMap();
+            mapGen.DrawMapInEditor();
 
         if (GUILayout.Button("Generate", GUILayout.Height(28)))
-            mapGen.GenerateMap();
+            mapGen.DrawMapInEditor();
+
     }
 }
