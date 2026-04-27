@@ -42,7 +42,7 @@ namespace LevelGenerator
             meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         }
 
-        // Called by EndlessTerrain chunks — passes chunk centre so each gets unique noise
+        // Called by EndlessTerrain chunks passes chunk centre so each gets unique noise
         public void RequestMapData(Vector2 centre, Action<MapData> callback)
         {
             ThreadStart threadStart = delegate { MapDataThread(centre, callback); };

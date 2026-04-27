@@ -5,7 +5,7 @@ namespace LevelGenerator
 {
     public class EndlessTerrain : MonoBehaviour
     {
-
+        float _scale;
         public LODInfo[] detailLevels;
         [Header("View")]
         public static float maxViewDist;
@@ -28,7 +28,7 @@ namespace LevelGenerator
         int _chunksVisibleInViewDst;
 
         Dictionary<Vector2, TerrainChunk> _terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
-        List<TerrainChunk> _terrainChunksVisibleLastUpdate = new List<TerrainChunk>();
+        static List<TerrainChunk> terrainChunksVisibleLastUpdate = new List<TerrainChunk>();
 
         void OnValidate()
         {
@@ -41,6 +41,7 @@ namespace LevelGenerator
 
             mapGenerator = FindObjectOfType<MapGenerator>();
             maxViewDist = detailLevels[detailLevels.Length - 1].distanceFraction;
+            _scale = Common.UniformScale;
 
             Common.VertexResolution = vertexResolution;
             Common.ChunkWorldSize = chunkWorldSize;
@@ -53,7 +54,7 @@ namespace LevelGenerator
 
         void Update()
         {
-            viewerPosition = new Vector2(Viewer.position.x, Viewer.position.z);
+            viewerPosition = new Vector2(Viewer.position.x, Viewer.position.z) / _scale;
 
             if ((viewerPositionOld - viewerPosition ).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate)
                 { 
@@ -63,9 +64,9 @@ namespace LevelGenerator
 
         void UpdateVisibleChunks()
         {
-            for (int i = 0; i < _terrainChunksVisibleLastUpdate.Count; i++)
-                _terrainChunksVisibleLastUpdate[i].SetVisible(false);
-            _terrainChunksVisibleLastUpdate.Clear();
+            for (int i = 0; i < terrainChunksVisibleLastUpdate.Count; i++)
+                terrainChunksVisibleLastUpdate[i].SetVisible(false);
+            terrainChunksVisibleLastUpdate.Clear();
 
             int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / _chunkSize);
             int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / _chunkSize);
@@ -79,14 +80,13 @@ namespace LevelGenerator
                     if (_terrainChunkDictionary.ContainsKey(viewedChunkCoord))
                     {
                         _terrainChunkDictionary[viewedChunkCoord].UpdateTerrainChunk();
-                        if (_terrainChunkDictionary[viewedChunkCoord].IsVisible())
-                            _terrainChunksVisibleLastUpdate.Add(_terrainChunkDictionary[viewedChunkCoord]);
+                        
                     }
                     else
                     {
                         var chunk = new TerrainChunk(
                             viewedChunkCoord, _chunkSize, transform,
-                            TerrainMaterial, detailLevels, maxViewDist);
+                            TerrainMaterial, detailLevels, maxViewDist, _scale);
                         _terrainChunkDictionary.Add(viewedChunkCoord, chunk);
                     }
                 }
@@ -111,9 +111,12 @@ namespace LevelGenerator
 
             int previousLODindex = -1;
 
+            float _scale;
+
             public TerrainChunk(Vector2 coord, int size, Transform parent,
-            Material material, LODInfo[] detailLevels, float maxViewDist)
+                Material material, LODInfo[] detailLevels, float maxViewDist, float scale)
             {
+                _scale = scale;
                 this.detailLevels = detailLevels;
                 _maxViewDist = maxViewDist;
 
@@ -124,8 +127,8 @@ namespace LevelGenerator
 
                 _meshObject = new GameObject("Terrain Chunk");
                 _meshObject.transform.parent = parent;
-                _meshObject.transform.position = positionV3;
-                _meshObject.transform.localScale = Vector3.one;
+                _meshObject.transform.position = positionV3 * _scale;
+                _meshObject.transform.localScale = Vector3.one * _scale;
 
                 _meshRenderer = _meshObject.AddComponent<MeshRenderer>();
                 _meshFilter = _meshObject.AddComponent<MeshFilter>();
@@ -179,9 +182,12 @@ namespace LevelGenerator
                             previousLODindex = lodIndex;
                             _meshFilter.mesh = lodMesh.Mesh;
                         }
-                        else if (!lodMesh.HasRequestedMesh)
+                        else if 
+                            (!lodMesh.HasRequestedMesh) { 
                             lodMesh.RequestMesh(_mapData);
+                        }   
                     }
+                    terrainChunksVisibleLastUpdate.Add(this);
                 }
 
                 SetVisible(visible);

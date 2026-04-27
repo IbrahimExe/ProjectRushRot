@@ -8,6 +8,9 @@ public class LevelGeneratorCommon : ScriptableObject
     public TerrainConfig TerrainConfig;
     public PrefabCatalog PrefabCatalog;
 
+    [Header("World")]
+    public float UniformScale = 1f;
+
     [Header("Chunk Dimensions")]
     public float ChunkWidth = 100f;
     public float ChunkLength = 100f;
