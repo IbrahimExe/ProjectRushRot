@@ -6,76 +6,51 @@ public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Canvas mainMenuCanvas;
     [SerializeField] private Canvas characterSelectCanvas;
-
-    private CharacterSelectManager characterSelectManager;
-    private bool isShowingCharacterSelect = false;
+    [SerializeField] private CharacterSelectManager characterSelectManager;
 
     private void Start()
     {
+        if (characterSelectCanvas != null)
+        {
+            characterSelectCanvas.gameObject.SetActive(false);
+        }
+
         // Ensure persistence manager exists
         if (CharacterDataPersistence.Instance == null)
         {
             new GameObject("CharacterDataPersistence").AddComponent<CharacterDataPersistence>();
         }
-
-        // Get reference to CharacterSelectManager
-        characterSelectManager = characterSelectCanvas.GetComponent<CharacterSelectManager>();
-
-        // Make sure character select is hidden on startup
-        if (characterSelectCanvas != null)
-        {
-            characterSelectCanvas.gameObject.SetActive(false);
-        }
     }
 
     public void StartGame()
     {
-        // Show character select instead of directly loading
         ShowCharacterSelect("IbrahimScene");
     }
 
     public void StartProcedural()
     {
-        // Show character select for procedural mode
         ShowCharacterSelect("ProceduralLoading");
     }
 
-    private void ShowCharacterSelect(string targetScene)
+    private void ShowCharacterSelect(string sceneName)
     {
-        isShowingCharacterSelect = true;
-
-        // Hide main menu and show character select
         if (mainMenuCanvas != null)
-        {
             mainMenuCanvas.gameObject.SetActive(false);
-        }
 
         if (characterSelectCanvas != null)
-        {
             characterSelectCanvas.gameObject.SetActive(true);
-        }
 
-        // Set the target scene in the character select manager
         if (characterSelectManager != null)
-        {
-            characterSelectManager.SetTargetScene(targetScene);
-        }
+            characterSelectManager.SetTargetScene(sceneName);
     }
 
     public void OnBackFromCharacterSelect()
     {
-        isShowingCharacterSelect = false;
-
-        // Show main menu and hide character select
         if (mainMenuCanvas != null)
-        {
             mainMenuCanvas.gameObject.SetActive(true);
-        }
 
         if (characterSelectCanvas != null)
-        {
             characterSelectCanvas.gameObject.SetActive(false);
-        }
     }
 
     public void QuitGame()

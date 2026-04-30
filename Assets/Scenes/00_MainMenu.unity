@@ -202,7 +202,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 21362289}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 21362291}
+        m_TargetAssemblyTypeName: CharacterSelectButton, Assembly-CSharp
+        m_MethodName: SelectCharacter
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &21362289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -254,10 +266,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectButton
   characterData: {fileID: 11400000, guid: b876b434fab27f84ab32a8e97bf2f408, type: 2}
-  characterNameText: {fileID: 0}
-  characterStatsText: {fileID: 0}
-  characterPreview: {fileID: 0}
-  selectButton: {fileID: 21362288}
 --- !u!1 &162443975
 GameObject:
   m_ObjectHideFlags: 0
@@ -714,7 +722,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 428968455}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 428968457}
+        m_TargetAssemblyTypeName: CharacterSelectButton, Assembly-CSharp
+        m_MethodName: SelectCharacter
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &428968455
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -766,10 +786,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectButton
   characterData: {fileID: 11400000, guid: 247e1d2042db9c7418efacdba1577585, type: 2}
-  characterNameText: {fileID: 0}
-  characterStatsText: {fileID: 0}
-  characterPreview: {fileID: 0}
-  selectButton: {fileID: 428968454}
 --- !u!1 &435851237
 GameObject:
   m_ObjectHideFlags: 0
@@ -990,7 +1006,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 457661393}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 457661395}
+        m_TargetAssemblyTypeName: CharacterSelectButton, Assembly-CSharp
+        m_MethodName: SelectCharacter
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &457661393
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1042,10 +1070,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectButton
   characterData: {fileID: 11400000, guid: e91a94b9fb7b46148812b1806032eba3, type: 2}
-  characterNameText: {fileID: 0}
-  characterStatsText: {fileID: 0}
-  characterPreview: {fileID: 0}
-  selectButton: {fileID: 457661392}
 --- !u!1 &488538816
 GameObject:
   m_ObjectHideFlags: 0
@@ -1128,7 +1152,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 488538819}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2052404452}
+        m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+        m_MethodName: OnBackFromCharacterSelect
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &488538819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2095,7 +2131,7 @@ MonoBehaviour:
   - {fileID: 21362291}
   - {fileID: 457661395}
   - {fileID: 428968457}
-  backButton: {fileID: 488538818}
+  targetScene: ProceduralLevel
 --- !u!1 &1267327463
 GameObject:
   m_ObjectHideFlags: 0
@@ -2875,6 +2911,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenu
   mainMenuCanvas: {fileID: 341424364}
   characterSelectCanvas: {fileID: 1496723875}
+  characterSelectManager: {fileID: 1076765960}
 --- !u!4 &2052404453
 Transform:
   m_ObjectHideFlags: 0
