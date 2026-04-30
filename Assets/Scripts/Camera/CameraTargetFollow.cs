@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [DefaultExecutionOrder(-200)] 
@@ -38,5 +39,10 @@ public class CameraTargetFollow : MonoBehaviour
         float smoothYaw  = Mathf.LerpAngle(currentYaw, targetYaw, Time.deltaTime * rotationSmoothSpeed);
 
         transform.rotation = Quaternion.Euler(0f, smoothYaw, 0f);
+    }
+
+    internal void Initialize(GameObject playerGO)
+    {
+        throw new NotImplementedException();
     }
 }

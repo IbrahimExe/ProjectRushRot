@@ -8,6 +8,7 @@
 // - Biome (config) switching between chunks
 // ------------------------------------------------------------
 using LevelGenerator.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -1123,5 +1124,10 @@ public class RunnerLevelGenerator : MonoBehaviour
         if (config.catalog.noiseChannel == null)
             Debug.LogWarning("[RunnerLevelGenerator] Catalog has no noiseChannel assigned — surfaces will use fallback only.", this);
         return true;
+    }
+
+    internal void Initialize()
+    {
+        throw new NotImplementedException();
     }
 }

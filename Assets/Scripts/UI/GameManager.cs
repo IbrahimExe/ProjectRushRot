@@ -1,7 +1,7 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 [DisallowMultipleComponent]
 public class GameManager : MonoBehaviour
@@ -27,18 +27,27 @@ public class GameManager : MonoBehaviour
 
     private bool isPaused = false;
     private bool isCountingDown = false;
+    private bool isGameStarted = false;
 
     //health
     [SerializeField] private float hp = 3f;
 
-    void Start()
+    internal void Initialize()
     {
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
     }
 
-    void Update()
+    internal void StartGame()
     {
+        isGameStarted = true;
+    }
+
+    private void Update()
+    {
+        // If the game has not been started, do not Update
+        if (!isGameStarted) { return; }
+
         // If Win or Lose screen is active, ignore pause input entirely
         if (IsWinOrLoseActive()) return;
 

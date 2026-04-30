@@ -13,6 +13,12 @@ public class Example_SceneLoading : MonoBehaviour
 {
     // References to any GameObject or Monobehaviour in the scene should be placed here through SerializedField private variables
     // DO NOT make these variables public by default. Maintain SOLID programming principles.
+    [SerializeField] private GameManager _gameManager;
+    [SerializeField] private RunnerLevelGenerator _levelGenerator;
+    [SerializeField] private LevelUpCardSelector _cardSelector;
+    [SerializeField] private UpgradeStats _upgradeStats;
+    [SerializeField] private CameraTargetFollow _cameraTargetFollow;
+    [SerializeField] private AltExpManager _altExpManager;
     [SerializeField] private GameObject _playerGO;
 
 
@@ -35,8 +41,14 @@ public class Example_SceneLoading : MonoBehaviour
         // Fetch references to any globals you need
 
         // Initialize scene elements
+        _gameManager.Initialize();
+        _levelGenerator.Initialize();
+        _cardSelector.Initialize();
+        _upgradeStats.Initialize();
+        _cameraTargetFollow.Initialize(_playerGO);
+        _altExpManager.Initialize();
 
         // Start any processes that update every frame such as gameplay.
-
+        _gameManager.StartGame();
     }
 }

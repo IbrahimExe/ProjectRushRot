@@ -258,4 +258,9 @@ public class AltExpManager : MonoBehaviour
     public void SetSpeedMultiplier(float m) => speedMultiplier = m;
     public void AddGlobalMultiplier(float m) => globalMultiplier *= m;
     public void SetDashKillMultiplier(float m) => dashKillMultiplier = Mathf.Max(1f, m);
+
+    internal void Initialize()
+    {
+        throw new NotImplementedException();
+    }
 }

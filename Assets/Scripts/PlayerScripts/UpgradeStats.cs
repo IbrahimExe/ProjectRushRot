@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class UpgradeStats : MonoBehaviour
@@ -77,5 +78,10 @@ public class UpgradeStats : MonoBehaviour
         player.addDashKillWindow(windowFlat);
         player.addDashKillCount(killCapFlat);
         Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
+    }
+
+    internal void Initialize()
+    {
+        throw new NotImplementedException();
     }
 }

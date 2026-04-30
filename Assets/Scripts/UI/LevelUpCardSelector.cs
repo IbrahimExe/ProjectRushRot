@@ -372,5 +372,10 @@ public class LevelUpCardSelector : MonoBehaviour
 
     [ContextMenu("Clear queued")]
     public void DebugClear() { queuedLevels = 0; }
+
+    internal void Initialize()
+    {
+        throw new System.NotImplementedException();
+    }
 #endif
 }
