@@ -7,6 +7,7 @@ public class LevelGeneratorCommon : ScriptableObject
     public NoiseConfig NoiseConfig;
     public TerrainConfig TerrainConfig;
     public PrefabCatalog PrefabCatalog;
+    public OverlayConfig OverlayConfig;
 
     [Header("World")]
     public float UniformScale = 1f;

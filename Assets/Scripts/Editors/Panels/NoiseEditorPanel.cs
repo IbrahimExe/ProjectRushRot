@@ -79,8 +79,18 @@ namespace Level.Editor
         // Public entry point 
         public void Draw(float windowWidth, float worldScale )
         {
-            if (_so == null || _so.targetObject == null)
+            if (_runtimeConfig == null)
+            {
+                _runtimeConfig = ScriptableObject.CreateInstance<NoiseConfig>();
+                _runtimeConfig.name = "NoiseConfig_Runtime";
                 _so = new SerializedObject(_runtimeConfig);
+                if (_config != null)
+                    EditorUtility.CopySerializedIfDifferent(_config, _runtimeConfig);
+            }
+            else if (_so == null || _so.targetObject == null)
+            {
+                _so = new SerializedObject(_runtimeConfig);
+            }
 
             // No BeginScrollView here — LevelEditor's left pane handles scrolling
             EditorGUILayout.Space(4);

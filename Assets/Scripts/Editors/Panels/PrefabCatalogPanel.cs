@@ -1,7 +1,8 @@
 ﻿#if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
+using UnityEditorInternal;
+using UnityEngine;
 
 
 namespace Level.Editor
@@ -54,8 +55,18 @@ namespace Level.Editor
 
         public void Draw(float windowWidth)
         {
-            if (_so == null || _so.targetObject == null)
+            if (_runtimeCatalog == null)
+            {
+                _runtimeCatalog = ScriptableObject.CreateInstance<PrefabCatalog>();
+                _runtimeCatalog.name = "PrefabCatalog_Runtime";
                 _so = new SerializedObject(_runtimeCatalog);
+                if (_catalog != null)
+                    EditorUtility.CopySerializedIfDifferent(_catalog, _runtimeCatalog);
+            }
+            else if (_so == null || _so.targetObject == null)
+            {
+                _so = new SerializedObject(_runtimeCatalog);
+            }
 
             // No BeginScrollView here — LevelEditor's left pane handles scrolling
 

@@ -48,8 +48,20 @@ namespace Level.Editor
 
         public void Draw(float windowWidth)
         {
-            if (_so == null || _so.targetObject == null)
+            if (_runtimeConfig == null)
+            {
+                _runtimeConfig = ScriptableObject.CreateInstance<TerrainConfig>();
+                _runtimeConfig.name = "TerrainConfig_Runtime";
                 _so = new SerializedObject(_runtimeConfig);
+                _reorderableList = null; 
+                if (_config != null)
+                    EditorUtility.CopySerializedIfDifferent(_config, _runtimeConfig);
+            }
+            else if (_so == null || _so.targetObject == null)
+            {
+                _so = new SerializedObject(_runtimeConfig);
+                _reorderableList = null; 
+            }
 
             EditorGUILayout.Space(4);
 

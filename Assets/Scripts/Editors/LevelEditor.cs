@@ -24,6 +24,7 @@ namespace Level.Editor
         private Texture2D _lastNoiseTexture;
         private PrefabCatalogPanel _catalogPanel;
         private TerrainEditorPanel _terrainPanel;
+        private OverlaysPanel _overlaysPanel;
 
         [MenuItem("Window/Level Editor")]
         public static void Open()
@@ -45,6 +46,10 @@ namespace Level.Editor
             _terrainPanel.OnRepaintNeeded += Repaint;
             _terrainPanel.OnEnable();
             _terrainPanel.OnPreviewDirty += HandlePreviewDirty;
+
+            _overlaysPanel = new OverlaysPanel();
+            _overlaysPanel.OnRepaintNeeded += Repaint;
+            _overlaysPanel.OnEnable();
 
             _catalogPanel.OnSelectionChanged += HandleSelectionChanged;
 
@@ -74,6 +79,12 @@ namespace Level.Editor
                 _terrainPanel.OnDisable();
                 _terrainPanel.OnRepaintNeeded -= Repaint;
                 _terrainPanel.OnPreviewDirty -= HandlePreviewDirty;
+            }
+
+            if (_overlaysPanel != null)
+            {
+                _overlaysPanel.OnDisable();
+                _overlaysPanel.OnRepaintNeeded -= Repaint;
             }
         }
 
@@ -178,6 +189,7 @@ namespace Level.Editor
                     break;
 
                 case LevelEditorTabs.Overlays:
+                    _overlaysPanel.Draw(position.width);
                     break;
 
                 case LevelEditorTabs.Spawning:
@@ -241,6 +253,7 @@ namespace Level.Editor
                 commonCopy.TerrainConfig = _common.TerrainConfig;
                 commonCopy.PrefabCatalog = _common.PrefabCatalog;
 
+
                 AssetDatabase.CreateAsset(commonCopy, path);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
@@ -254,6 +267,7 @@ namespace Level.Editor
                 soCommon.FindProperty("NoiseConfig").objectReferenceValue = _noisePanel.Config;
                 soCommon.FindProperty("TerrainConfig").objectReferenceValue = _terrainPanel.Config;
                 soCommon.FindProperty("PrefabCatalog").objectReferenceValue = _catalogPanel.LoadedCatalog;
+                soCommon.FindProperty("OverlayConfig").objectReferenceValue = _overlaysPanel.Config;
 
                 soCommon.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_common);
@@ -276,6 +290,9 @@ namespace Level.Editor
 
             if (common.PrefabCatalog != null)
                 _catalogPanel.LoadCatalog(common.PrefabCatalog);
+
+            if (common.OverlayConfig != null)
+                _overlaysPanel.LoadConfig(common.OverlayConfig);
 
             _terrainPanel.SetCommon(common);
             UpdatePreviewForTab(_activeTab);

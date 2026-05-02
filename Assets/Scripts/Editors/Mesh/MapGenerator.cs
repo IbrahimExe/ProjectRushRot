@@ -27,7 +27,7 @@ namespace LevelGenerator
         public const int mapChunkSize = 241;
 
         [Range(0, 6)]
-        public int editorPreviewLOD;
+        public int levelOfDetail;
 
         public float meshHeightMultiplier;
         public AnimationCurve meshHeightCurve;
@@ -42,7 +42,6 @@ namespace LevelGenerator
             meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         }
 
-        // Called by EndlessTerrain chunks passes chunk centre so each gets unique noise
         public void RequestMapData(Vector2 centre, Action<MapData> callback)
         {
             ThreadStart threadStart = delegate { MapDataThread(centre, callback); };
@@ -76,7 +75,7 @@ namespace LevelGenerator
             {
                 while (mapDataThreadInfoQueue.Count > 0)
                 {
-                    MapThreadInfo<MapData> threadInfo = mapDataThreadInfoQueue.Dequeue();
+                    var threadInfo = mapDataThreadInfoQueue.Dequeue();
                     threadInfo.callback(threadInfo.parameter);
                 }
             }
@@ -85,13 +84,12 @@ namespace LevelGenerator
             {
                 while (meshDataThreadInfoQueue.Count > 0)
                 {
-                    MapThreadInfo<MeshData> threadInfo = meshDataThreadInfoQueue.Dequeue();
+                    var threadInfo = meshDataThreadInfoQueue.Dequeue();
                     threadInfo.callback(threadInfo.parameter);
                 }
             }
         }
 
-        // Generates map data for a given world-space centre
         public MapData GenerateMapData(Vector2 centre)
         {
             if (Common == null || Common.NoiseConfig == null || Common.TerrainConfig == null)
@@ -100,24 +98,23 @@ namespace LevelGenerator
                 return new MapData();
             }
 
-            // Copy curve for thread safety
-            AnimationCurve curve = new AnimationCurve(meshHeightCurve.keys);
-
+            // Sample heightmap
             float[,] noiseMap = new float[mapChunkSize, mapChunkSize];
-            float inv = 1f / (mapChunkSize - 1);
-
             for (int y = 0; y < mapChunkSize; y++)
                 for (int x = 0; x < mapChunkSize; x++)
                 {
-                    // World position of this vertex, offset by chunk centre
                     float worldX = centre.x + (x - (mapChunkSize - 1) * 0.5f);
                     float worldZ = centre.y - (y - (mapChunkSize - 1) * 0.5f);
                     noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig, new Vector2(worldX, worldZ));
                 }
 
+            // Apply overlays to heightmap before colour assignment
+            if (Common.OverlayConfig != null)
+                ApplyOverlays(noiseMap, centre, Common.OverlayConfig);
+
+            // Build colour map
             var regions = Common.TerrainConfig.Regions;
             Color[] colourMap = new Color[mapChunkSize * mapChunkSize];
-
             for (int y = 0; y < mapChunkSize; y++)
                 for (int x = 0; x < mapChunkSize; x++)
                 {
@@ -136,7 +133,59 @@ namespace LevelGenerator
             return new MapData(noiseMap, colourMap);
         }
 
-        // Editor only — draws on the attached MapDisplay
+        static void ApplyOverlays(float[,] noiseMap, Vector2 centre, OverlayConfig overlayConfig)
+        {
+            if (overlayConfig?.Overlays == null) return;
+
+            int size = noiseMap.GetLength(0);
+            float halfSize = (size - 1) * 0.5f;
+
+            foreach (var overlay in overlayConfig.Overlays)
+            {
+                if (!overlay.Enabled) continue;
+
+                // Copy curve keys for thread safety
+                var curve = new AnimationCurve(overlay.FalloffCurve.keys);
+
+                for (int y = 0; y < size; y++)
+                {
+                    for (int x = 0; x < size; x++)
+                    {
+                        float worldX = centre.x + (x - halfSize);
+                        float worldZ = centre.y - (y - halfSize);
+
+                        float dist = 0f;
+
+                        switch (overlay.Type)
+                        {
+                            case OverlayType.Island:
+                                float dx = (worldX - overlay.CentreX) / overlay.Scale;
+                                float dz = (worldZ - overlay.CentreZ) / overlay.Scale;
+                                dist = Mathf.Clamp01(Mathf.Sqrt(dx * dx + dz * dz));
+                                break;
+
+                            case OverlayType.Equator:
+                                dist = Mathf.Clamp01(Mathf.Abs(worldZ - overlay.WorldOffset) / overlay.Scale);
+                                break;
+
+                            case OverlayType.Meridian:
+                                dist = Mathf.Clamp01(Mathf.Abs(worldX - overlay.WorldOffset) / overlay.Scale);
+                                break;
+                        }
+
+                        float falloff = curve.Evaluate(dist);
+                        float mask = overlay.GenInvert ? 1f - falloff : falloff;
+
+                        float weight = overlay.Type == OverlayType.Island
+                            ? mask
+                            : Mathf.Lerp(1f - overlay.Strength, 1f, mask);
+
+                        noiseMap[x, y] = Mathf.Lerp(overlay.FloorValue, noiseMap[x, y], weight);
+                    }
+                }
+            }
+        }
+
         public void DrawMapInEditor()
         {
             MapDisplay display = GetComponent<MapDisplay>();
@@ -150,7 +199,7 @@ namespace LevelGenerator
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
             else if (drawMode == DrawMode.Mesh)
                 display.DrawMesh(
-                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, editorPreviewLOD, Common.ChunkWorldSize),
+                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail, Common.ChunkWorldSize),
                     TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
         }
 
