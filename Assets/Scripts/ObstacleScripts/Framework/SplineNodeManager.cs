@@ -4,8 +4,16 @@ using Unity.Mathematics;
 using System.Collections.Generic;
 
 /// <summary>
-/// Manages multiple independent wall spline groups within a single SplineContainer.
-/// SplineInstantiate natively iterates all splines in a container
+/// Manages independent wall spline groups. Each group owns a child GameObject with
+/// its own SplineContainer + SplineInstantiate, so modifying one group never affects
+/// another group's wall layout or prefab selection.
+///
+/// Setup:
+///   • Add this script, a SplineContainer, and a SplineInstantiate to your manager GO.
+///   • Configure the SplineInstantiate in the Inspector (prefabs, spacing, axes, etc.).
+///     It acts as a template — wall groups copy from it at creation time.
+///   • Use "Sync All Groups with Template" (right-click menu) to push inspector changes
+///     to already-running groups.
 /// </summary>
 [RequireComponent(typeof(SplineContainer))]
 public class SplineNodeManager : MonoBehaviour
@@ -13,148 +21,211 @@ public class SplineNodeManager : MonoBehaviour
     public static SplineNodeManager Instance { get; private set; }
 
     [Header("Grouping")]
-    [Tooltip("Max distance between a new node and any node in an existing group for the " +
-             "new node to join that group. Nodes further away start a new separate Spline.")]
+    [Tooltip("Max distance for a new node to join an existing group. Further nodes start a new group.")]
     public float connectionRange = 10f;
 
     [Header("Knot Ordering")]
-    [Tooltip("Axis to sort nodes along – match the player forward direction.")]
+    [Tooltip("Sort axis for nodes – match your runner's forward direction (usually Z).")]
     public Vector3 sortAxis = Vector3.forward;
 
-    // Struct to hold a Spline and its associated nodes
+    // -------------------------------------------------------------------------
+    // SplineGroup
+    // -------------------------------------------------------------------------
+
     private class SplineGroup
     {
-        public Spline spline;
+        public GameObject go;
+        public SplineContainer container;
+        public SplineInstantiate splineInstantiate;
         public readonly List<SplineNode> nodes = new();
 
-        // Sorts nodes along the runner axis then rebuilds this group's Spline knots.
-        // SplineInstantiate is disabled by the caller before this is called.
-        public void Rebuild(Transform containerTransform, Vector3 sortAxis)
+        /// <summary>
+        /// Incremental rebuild: never calls spline.Clear(). Only adds, removes, or
+        /// repositions knots that actually changed, minimising Spline.Changed events.
+        /// Uses TangentMode.Linear so appending a knot at the end never alters the
+        /// tangents (and therefore positions) of existing knots.
+        /// </summary>
+        public void Rebuild(Vector3 sortAxis)
         {
-            
+            var spline = container.Spline;
             Vector3 axis = sortAxis.normalized;
-            
-            nodes.Sort((a, b) =>
-            {
-                float da = Vector3.Dot(a.transform.position, axis);
-                float db = Vector3.Dot(b.transform.position, axis);
-                return da.CompareTo(db);
-            });
 
-            spline.Clear();
+            nodes.Sort((a, b) =>
+                Vector3.Dot(a.transform.position, axis)
+                    .CompareTo(Vector3.Dot(b.transform.position, axis)));
+
+            // Remove excess knots from the tail first.
+            while (spline.Count > nodes.Count)
+                spline.RemoveAt(spline.Count - 1);
+
             for (int i = 0; i < nodes.Count; i++)
             {
-                // Knot positions are always in the container's local space.
-                Vector3 localPos = containerTransform.InverseTransformPoint(nodes[i].transform.position);
-                spline.Add(new BezierKnot(new float3(localPos)), TangentMode.AutoSmooth);
+                var localPos = new float3(
+                    container.transform.InverseTransformPoint(nodes[i].transform.position));
+                var knot = new BezierKnot(localPos);
+
+                if (i < spline.Count)
+                {
+                    // Skip SetKnot if position is unchanged — avoids a spurious
+                    // Spline.Changed -> UpdateInstances() call.
+                    if (math.any(spline[i].Position != localPos))
+                        spline.SetKnot(i, knot);
+                }
+                else
+                {
+                    // Linear: appending never changes any earlier knot's tangent.
+                    spline.Add(knot, TangentMode.Linear);
+                }
+
                 nodes[i].SetKnotIndex(i);
             }
         }
+
+        public void DestroyGroup() => Object.Destroy(go);
     }
 
-    // ------------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------------------
 
-    private SplineContainer _container;
-    private SplineInstantiate _splineInstantiate;
-
-    private readonly List<SplineGroup> _groups = new(); // spline groups
-    private readonly Dictionary<SplineNode, SplineGroup> _nodeToGroup = new(); // dictionary to find the spline group of a node
-
-    // Merge requests from OnTriggerEnter are deferred here and executed in LateUpdate.
+    private SplineInstantiate _template;  // user-configured, on this GO
+    private readonly List<SplineGroup> _groups = new();
+    private readonly Dictionary<SplineNode, SplineGroup> _nodeToGroup = new();
     private readonly List<(SplineNode, SplineNode)> _pendingMerges = new();
+    private int _groupCounter;
 
-    public SplineContainer SplineContainer => _container; // public getter for the SplineContainer in case SplineNodes need to use something from it
+    // -------------------------------------------------------------------------
+    // Unity lifecycle
+    // -------------------------------------------------------------------------
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Debug.LogWarning("[SplineNodeManager] Duplicate manager found. Destroying extra instance.");
-            Destroy(this);
-            return;
-        }
+        if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
 
-        _container = GetComponent<SplineContainer>();
-        _splineInstantiate = GetComponent<SplineInstantiate>();
+        _template = GetComponent<SplineInstantiate>();
 
-        // Start with an empty container, spline groups create their splines at runtime.
-        _container.Splines = new List<Spline>();
+        // Keep the manager's own SplineContainer empty so the template
+        // SplineInstantiate generates nothing — it's config-only.
+        GetComponent<SplineContainer>().Splines = new List<Spline>();
     }
 
-    void OnDestroy()
-    {
-        if (Instance == this) Instance = null;
-    }
+    void OnDestroy() { if (Instance == this) Instance = null; }
 
     void LateUpdate()
     {
         if (_pendingMerges.Count == 0) return;
-
-        // Snapshot and clear first so any merges triggered during processing don't loop.
         var batch = new List<(SplineNode, SplineNode)>(_pendingMerges);
         _pendingMerges.Clear();
-
-        foreach (var (a, b) in batch)
-            ExecuteMerge(a, b);
+        foreach (var (a, b) in batch) ExecuteMerge(a, b);
     }
 
-    //Registers a node. Joins the nearest in range group or creates a new Spline group.
+    // -------------------------------------------------------------------------
+    // Public API – called by SplineNode
+    // -------------------------------------------------------------------------
+
     public void RegisterNode(SplineNode node)
     {
-        if (_nodeToGroup.ContainsKey(node)) return; // the node is already registered
-
+        if (_nodeToGroup.ContainsKey(node)) return;
         var group = FindNearestGroup(node.transform.position) ?? CreateGroup();
-
         group.nodes.Add(node);
         _nodeToGroup[node] = group;
-
-        RebuildGroup(group);
+        group.Rebuild(sortAxis);
     }
 
-    // Unregisters a node called from OnDestroy
-    // If the group becomes empty, its Spline is removed from the container — SplineInstantiate
     public void UnregisterNode(SplineNode node)
     {
         if (!_nodeToGroup.TryGetValue(node, out var group)) return;
-
         _nodeToGroup.Remove(node);
         group.nodes.Remove(node);
 
-        if (group.nodes.Count == 0) // if there are no nodes left in the spline group, the spline is deleted from the container
+        if (group.nodes.Count == 0)
             RemoveGroup(group);
         else
-            RebuildGroup(group);
+            group.Rebuild(sortAxis);
     }
 
-    // Updates a single knot's position in-place
     public void UpdateNodeKnot(SplineNode node, Vector3 worldPos)
     {
         if (!_nodeToGroup.TryGetValue(node, out var group)) return;
-
         int idx = node.KnotIndex;
-        if (idx < 0 || idx >= group.spline.Count) return;
+        if (idx < 0 || idx >= group.container.Spline.Count) return;
 
-        Vector3 localPos = _container.transform.InverseTransformPoint(worldPos);
-        var knot = group.spline[idx];
-        knot.Position = new float3(localPos);
-        group.spline.SetKnot(idx, knot);
-
-        // Reposition wall segment instances along the updated spline
-        // without this, UpdateInstances() will create new walls without removing the old ones
-        _splineInstantiate?.UpdateInstances();
+        var localPos = new float3(group.container.transform.InverseTransformPoint(worldPos));
+        var knot = group.container.Spline[idx];
+        knot.Position = localPos;
+        group.container.Spline.SetKnot(idx, knot);
+        // Spline.Changed fires -> only this group's SplineInstantiate reacts.
     }
 
-    // This functions if for the SplineNodes to call when they detect another node within range in the OnTriggerEnter
-    // It will queue the merge to happen in LateUpdate
     public void TryMergeGroups(SplineNode nodeA, SplineNode nodeB)
     {
-        // Validate upfront to not queue invalid pairs
         if (!_nodeToGroup.TryGetValue(nodeA, out var groupA)) return;
         if (!_nodeToGroup.TryGetValue(nodeB, out var groupB)) return;
-        if (groupA == groupB) return; // already merged
-
+        if (groupA == groupB) return;
         _pendingMerges.Add((nodeA, nodeB));
+    }
+
+    // -------------------------------------------------------------------------
+    // Editor utility
+    // -------------------------------------------------------------------------
+
+    /// <summary>Push template inspector settings to all live groups.</summary>
+    [ContextMenu("Sync All Groups with Template")]
+    public void SyncAllGroups()
+    {
+        if (_template == null) return;
+        foreach (var group in _groups)
+        {
+            CopySettings(_template, group.splineInstantiate);
+            group.splineInstantiate.SetDirty();
+            group.splineInstantiate.UpdateInstances();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Internals
+    // -------------------------------------------------------------------------
+
+    SplineGroup FindNearestGroup(Vector3 position)
+    {
+        SplineGroup nearest = null;
+        float minDist = connectionRange;
+        foreach (var group in _groups)
+            foreach (var node in group.nodes)
+            {
+                float d = Vector3.Distance(position, node.transform.position);
+                if (d < minDist) { minDist = d; nearest = group; }
+            }
+        return nearest;
+    }
+
+    SplineGroup CreateGroup()
+    {
+        var go = new GameObject($"WallGroup_{_groupCounter++}");
+        go.transform.SetParent(transform);
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+
+        var container = go.AddComponent<SplineContainer>();
+        container.Spline.Clear();
+
+        var si = go.AddComponent<SplineInstantiate>();
+        if (_template != null) CopySettings(_template, si);
+        // Unique seed per group = independent random sequence per group.
+        si.Seed = go.GetInstanceID();
+
+        var group = new SplineGroup { go = go, container = container, splineInstantiate = si };
+        _groups.Add(group);
+        return group;
+    }
+
+    void RemoveGroup(SplineGroup group)
+    {
+        _groups.Remove(group);
+        foreach (var node in group.nodes) _nodeToGroup.Remove(node);
+        group.nodes.Clear();
+        group.DestroyGroup(); // child GO destroyed -> SplineInstantiate + all instances gone
     }
 
     void ExecuteMerge(SplineNode nodeA, SplineNode nodeB)
@@ -162,105 +233,34 @@ public class SplineNodeManager : MonoBehaviour
         if (!_nodeToGroup.TryGetValue(nodeA, out var groupA)) return;
         if (!_nodeToGroup.TryGetValue(nodeB, out var groupB)) return;
         if (groupA == groupB) return;
-        
-        // Merge the smaller spline group into the largest to minimize the number of nodes that will be updated
-        var (target, source) = groupA.nodes.Count >= groupB.nodes.Count
-            ? (groupA, groupB)
-            : (groupB, groupA);
 
-        foreach (var n in source.nodes)
-            _nodeToGroup[n] = target;
+        var (target, source) = groupA.nodes.Count >= groupB.nodes.Count
+            ? (groupA, groupB) : (groupB, groupA);
+
+        foreach (var n in source.nodes) _nodeToGroup[n] = target;
         target.nodes.AddRange(source.nodes);
         _groups.Remove(source);
-
-        WithSplineInstantiateDisabled(() =>
-        {
-            // remove the source group's Spline from the container
-            var list = new List<Spline>(_container.Splines);
-            list.Remove(source.spline);
-            _container.Splines = list;
-
-            // rebuild the merged group inside the remaining Spline
-            target.Rebuild(_container.transform, sortAxis);
-        });
+        source.DestroyGroup(); // cleans up source instances immediately
+        target.Rebuild(sortAxis);
     }
 
-    SplineGroup FindNearestGroup(Vector3 position)
+    static void CopySettings(SplineInstantiate src, SplineInstantiate dst)
     {
-        SplineGroup nearest = null;
-        float minDist = connectionRange;
-
-        foreach (var group in _groups)
-        {
-            foreach (var node in group.nodes)
-            {
-                float dist = Vector3.Distance(position, node.transform.position);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    nearest = group;
-                }
-            }
-        }
-
-        return nearest;
-    }
-
-    SplineGroup CreateGroup()
-    {
-        var newSpline = new Spline();
-        var group = new SplineGroup { spline = newSpline };
-        _groups.Add(group);
-
-        // Add the new Spline to the container using the Splines setter
-        // SplineInstantiate is temporarily disabled
-        // enabling it again triggers a clean UpdateInstances() over all splines
-        WithSplineInstantiateDisabled(() =>
-        {
-            var list = new List<Spline>(_container.Splines) { newSpline };
-            _container.Splines = list;
-        });
-
-        return group;
-    }
-
-    // removes a spline group from the container
-    void RemoveGroup(SplineGroup group)
-    {
-        _groups.Remove(group);
-
-        WithSplineInstantiateDisabled(() =>
-        {
-            var list = new List<Spline>(_container.Splines);
-            list.Remove(group.spline);
-            _container.Splines = list;
-        });
-    }
-
-    void RebuildGroup(SplineGroup group)
-    {
-        // Disable SplineInstantiate while we clear and repopulate knots
-        WithSplineInstantiateDisabled(() =>
-        {
-            group.Rebuild(_container.transform, sortAxis);
-        });
-    }
-
-    // Function that temporarily disables SplineInstantiate while executing an action then enables it again
-    void WithSplineInstantiateDisabled(System.Action action)
-    {
-        if (_splineInstantiate == null)
-        {
-            action();
-            return;
-        }
-
-        bool wasEnabled = _splineInstantiate.enabled;
-        _splineInstantiate.enabled = false;
-
-        action();
-
-        if (wasEnabled)
-            _splineInstantiate.enabled = true;
+        dst.InstantiateMethod   = src.InstantiateMethod;
+        dst.MinSpacing          = src.MinSpacing;
+        dst.MaxSpacing          = Mathf.Max(src.MinSpacing, src.MaxSpacing);
+        dst.UpAxis              = src.UpAxis;
+        dst.ForwardAxis         = src.ForwardAxis;
+        dst.CoordinateSpace     = src.CoordinateSpace;
+        dst.itemsToInstantiate  = src.itemsToInstantiate;
+        dst.MinPositionOffset   = src.MinPositionOffset;
+        dst.MaxPositionOffset   = src.MaxPositionOffset;
+        dst.PositionSpace       = src.PositionSpace;
+        dst.MinRotationOffset   = src.MinRotationOffset;
+        dst.MaxRotationOffset   = src.MaxRotationOffset;
+        dst.RotationSpace       = src.RotationSpace;
+        dst.MinScaleOffset      = src.MinScaleOffset;
+        dst.MaxScaleOffset      = src.MaxScaleOffset;
+        dst.ScaleSpace          = src.ScaleSpace;
     }
 }

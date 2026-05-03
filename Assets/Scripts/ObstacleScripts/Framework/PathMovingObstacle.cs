@@ -106,11 +106,11 @@ public class PathMovingObstacle : MonoBehaviour
         Vector3 moveDir = dir.normalized;
 
         // BoxCast ahead to detect colliders in the path
-        if (IsBlockedAhead(moveDir, step))
-        {
-            FlipDirection();
-            return;
-        }
+        //if (IsBlockedAhead(moveDir, step))
+        //{
+        //    FlipDirection();
+        //    return;
+        //}
 
         RotateToward(moveDir);
 

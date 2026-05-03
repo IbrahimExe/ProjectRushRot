@@ -18,6 +18,8 @@ public class SplineNode : MonoBehaviour
     public int KnotIndex => _knotIndex;
     private SphereCollider _trigger;
     private SplineNodeManager _manager;
+    // Tracks last position to avoid spurious knot updates (see Update()).
+    private Vector3 _lastPosition;
 
     void Awake()
     {
@@ -35,7 +37,7 @@ public class SplineNode : MonoBehaviour
 
         if (_manager != null)
         {
-            splineContainer = _manager.SplineContainer;
+            // Each group manages its own SplineContainer
             _manager.RegisterNode(this);
         }
         else
@@ -81,7 +83,7 @@ public class SplineNode : MonoBehaviour
     {
         if (_manager != null)
         {
-            // Pass 'this' so the manager can look up which Spline group to update.
+            // Pass this so the manager can look up which Spline group to update
             _manager.UpdateNodeKnot(this, transform.position);
         }
         else if (splineContainer != null && _knotIndex >= 0 && _knotIndex < splineContainer.Spline.Count)
@@ -95,14 +97,12 @@ public class SplineNode : MonoBehaviour
 
     void Update()
     {
-        if (transform.hasChanged)
-        {
-            UpdateKnotPosition();
-            transform.hasChanged = false;
-        }
+        if (transform.position == _lastPosition) return;
+        _lastPosition = transform.position;
+        UpdateKnotPosition();
     }
 
-    // Fallback: direct registration if there's no manager
+    // direct registration if there's no manager
     void RegisterKnotDirect()
     {
         if (splineContainer == null) return;
@@ -116,7 +116,6 @@ public class SplineNode : MonoBehaviour
     {
         if (splineContainer == null || _knotIndex < 0 || _knotIndex >= splineContainer.Spline.Count) return;
         splineContainer.Spline.RemoveAt(_knotIndex);
-        // NOTE: without a manager, remaining nodes' _knotIndex values will be out of sync with the spline
 
     }
 }
