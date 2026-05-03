@@ -407,6 +407,8 @@ public class DashAbility : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // Skip colliders that are purely for proximity/sensing (e.g. the deer's big sphere trigger).
+        if (other.TryGetComponent<PresenceTriggerMarker>(out _)) return;
         TryKillEnemy(other.gameObject);
     }
 

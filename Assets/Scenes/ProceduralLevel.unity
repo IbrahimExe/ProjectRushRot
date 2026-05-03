@@ -1050,6 +1050,10 @@ PrefabInstance:
       value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 6421345146227240304, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
+      propertyPath: groundLayer.m_Bits
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6421345146227240304, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: timeToSavePosition
       value: 1.5
       objectReference: {fileID: 0}
