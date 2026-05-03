@@ -46,7 +46,7 @@ namespace LevelGenerator
             Common.VertexResolution = vertexResolution;
             Common.ChunkWorldSize = chunkWorldSize;
 
-            _chunkSize = Mathf.RoundToInt(chunkWorldSize);
+            _chunkSize = MapGenerator.mapChunkSize - 1; 
             _chunksVisibleInViewDst = Mathf.RoundToInt(maxViewDist / _chunkSize);
 
             UpdateVisibleChunks();
@@ -100,6 +100,7 @@ namespace LevelGenerator
             Bounds _bounds;
             MeshRenderer _meshRenderer;
             MeshFilter _meshFilter;
+            MeshCollider _meshCollider;
             Texture2D _texture;
             float _maxViewDist;
 
@@ -108,6 +109,7 @@ namespace LevelGenerator
             bool _mapDataReceived;
             LODInfo[] detailLevels;
             LODMesh[] lODMeshes;
+            LODMesh _collisionLod;
 
             int previousLODindex = -1;
 
@@ -132,6 +134,7 @@ namespace LevelGenerator
 
                 _meshRenderer = _meshObject.AddComponent<MeshRenderer>();
                 _meshFilter = _meshObject.AddComponent<MeshFilter>();
+                _meshCollider = _meshObject.AddComponent<MeshCollider>();
                 _meshRenderer.material = new Material(material);
 
                 // Request map data from the singleton using this chunk's world centre
@@ -140,8 +143,14 @@ namespace LevelGenerator
                 SetVisible(false);
 
                 lODMeshes = new LODMesh[detailLevels.Length];
-                    for (int i = 0; i < detailLevels.Length; i++)
-                        lODMeshes[i] = new LODMesh(detailLevels[i].lod, UpdateTerrainChunk);
+                for (int i = 0; i < detailLevels.Length; i++)
+                {
+                    lODMeshes[i] = new LODMesh(detailLevels[i].lod, UpdateTerrainChunk);
+                    if (detailLevels[i].useForCollider)
+                    {
+                        _collisionLod = lODMeshes[i];
+                    }
+                }
             }
 
             void OnMapDataReceived(MapData mapData)
@@ -186,6 +195,17 @@ namespace LevelGenerator
                             (!lodMesh.HasRequestedMesh) { 
                             lodMesh.RequestMesh(_mapData);
                         }   
+                    }
+                    if (lodIndex == 0)
+                    {
+                        if (_collisionLod.HasMesh)
+                        {
+                            _meshCollider.sharedMesh = _collisionLod.Mesh;
+                        }
+                        else if (!_collisionLod.HasRequestedMesh)
+                        {
+                            _collisionLod.RequestMesh(_mapData);
+                        }
                     }
                     terrainChunksVisibleLastUpdate.Add(this);
                 }
@@ -233,6 +253,7 @@ namespace LevelGenerator
     {
         public float distanceFraction;
         public int lod;
+        public bool useForCollider;
     }
 
 }

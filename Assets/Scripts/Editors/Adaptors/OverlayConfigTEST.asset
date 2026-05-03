@@ -15,7 +15,7 @@ MonoBehaviour:
   Overlays:
   - Name: 
     Enabled: 1
-    Type: 0
+    Type: 1
     GenInvert: 1
     FalloffCurve:
       serializedVersion: 2
@@ -55,4 +55,4 @@ MonoBehaviour:
     WorldOffset: 0
     Scale: 500
     Strength: 1
-    FloorValue: 1
+    FloorValue: -0.1

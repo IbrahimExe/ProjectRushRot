@@ -24,7 +24,7 @@ namespace LevelGenerator
 
         public LevelGeneratorCommon Common;
 
-        public const int mapChunkSize = 241;
+        public const int mapChunkSize = 239;
 
         [Range(0, 6)]
         public int levelOfDetail;
@@ -64,7 +64,7 @@ namespace LevelGenerator
         void MeshDataThread(MapData mapData, int lod, Action<MeshData> callback)
         {
             MeshData meshData = MeshGenerator.GenerateTerrainMesh(
-                mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod, Common.ChunkWorldSize);
+                mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod);
             lock (meshDataThreadInfoQueue)
                 meshDataThreadInfoQueue.Enqueue(new MapThreadInfo<MeshData>(callback, meshData));
         }
@@ -98,13 +98,13 @@ namespace LevelGenerator
                 return new MapData();
             }
 
-            // Sample heightmap
-            float[,] noiseMap = new float[mapChunkSize, mapChunkSize];
-            for (int y = 0; y < mapChunkSize; y++)
-                for (int x = 0; x < mapChunkSize; x++)
+            int borderedSize = mapChunkSize + 2; // = 243
+            float[,] noiseMap = new float[borderedSize, borderedSize];
+            for (int y = 0; y < borderedSize; y++)
+                for (int x = 0; x < borderedSize; x++)
                 {
-                    float worldX = centre.x + (x - (mapChunkSize - 1) * 0.5f);
-                    float worldZ = centre.y - (y - (mapChunkSize - 1) * 0.5f);
+                    float worldX = centre.x + (x - borderedSize * 0.5f);
+                    float worldZ = centre.y - (y - borderedSize * 0.5f);
                     noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig, new Vector2(worldX, worldZ));
                 }
 
@@ -199,7 +199,7 @@ namespace LevelGenerator
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
             else if (drawMode == DrawMode.Mesh)
                 display.DrawMesh(
-                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail, Common.ChunkWorldSize),
+                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail),
                     TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
         }
 
