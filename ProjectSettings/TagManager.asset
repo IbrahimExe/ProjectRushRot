@@ -7,7 +7,13 @@ TagManager:
   - Enemy
   - BlockWall
   - Wall
+<<<<<<< HEAD
   - SplineNode
+=======
+  - Ground
+  - DestructableObject
+  - Collectible
+>>>>>>> a580a9da94da8a54e7b702791e122cf653c9bb8d
   layers:
   - Default
   - TransparentFX
