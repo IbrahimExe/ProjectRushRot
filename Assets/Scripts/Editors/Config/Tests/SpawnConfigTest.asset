@@ -12,24 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8602ef76e28d6a8428aa8ef87d066726, type: 3}
   m_Name: SpawnConfigTest
   m_EditorClassIdentifier: Assembly-CSharp::SpawnConfig
-  FullDistance: 200
-  SimDistance: 100
-  StandInDistance: 400
+  FullDistance: 400
+  SimDistance: 200
+  StandInDistance: 500
   Density: 0.1
   Rules:
   - PrefabDefID: ANIMAL
     PlacementMode: 0
-    DensityMultiplier: 2
+    DensityMultiplier: 1
     MinSpacing: 2
-    HeightMin: 0.1
+    HeightMin: 0.2
     HeightMax: 0.4
     MaxSlope: 76.5
     BlockedBy: 0000000001000000020000000300000004000000
   - PrefabDefID: TREE
-    PlacementMode: 0
-    DensityMultiplier: 1
-    MinSpacing: 0.5
-    HeightMin: 0.9
+    PlacementMode: 1
+    DensityMultiplier: 3
+    MinSpacing: 1
+    HeightMin: 0.41
     HeightMax: 1
     MaxSlope: 76.5
     BlockedBy: 0000000001000000020000000300000004000000

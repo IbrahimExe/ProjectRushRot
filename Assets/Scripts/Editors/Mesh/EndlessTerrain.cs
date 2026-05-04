@@ -168,14 +168,14 @@ namespace LevelGenerator
                 if (mapGenerator.Common.SpawnConfig != null && mapGenerator.Common.PrefabCatalog != null)
                 {
                     _spawner.Initialise(
-                        _mapData,
-                        null,
-                        mapGenerator.Common.SpawnConfig,
-                        mapGenerator.Common.PrefabCatalog,
-                        _position,
-                        (MapGenerator.mapChunkSize - 1) * mapGenerator.meshScale,
-                        mapGenerator.meshHeightMultiplier,
-                        new AnimationCurve(mapGenerator.meshHeightCurve.keys));
+                         _mapData, null,
+                         mapGenerator.Common.SpawnConfig,
+                         mapGenerator.Common.PrefabCatalog,
+                         _position,
+                         (MapGenerator.mapChunkSize - 1) * mapGenerator.meshScale,
+                         mapGenerator.meshHeightMultiplier,
+                         new AnimationCurve(mapGenerator.meshHeightCurve.keys),
+                         mapGenerator.transform); 
                 }
 
                 UpdateTerrainChunk();

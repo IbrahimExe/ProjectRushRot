@@ -27,6 +27,7 @@ public class ChunkSpawner : MonoBehaviour
     PrefabCatalog _catalog;
     Vector2      _chunkCenter;
     int          _seed;
+    Transform _spawnRoot;
 
     // Heightmap and normals from MapData
     float[,]  _heightMap;
@@ -44,7 +45,7 @@ public class ChunkSpawner : MonoBehaviour
         MapData mapData, Vector3[] bakedNormals,
         SpawnConfig spawnConfig, PrefabCatalog catalog,
         Vector2 chunkCenter, float chunkWorldSize,
-        float heightMultiplier, AnimationCurve heightCurve)
+        float heightMultiplier, AnimationCurve heightCurve, Transform spawnRoot)
     {
         _spawnConfig     = spawnConfig;
         _catalog         = catalog;
@@ -54,6 +55,7 @@ public class ChunkSpawner : MonoBehaviour
         _heightCurve     = heightCurve;
         _mapSize         = mapData.heightMap.GetLength(0);
         _normals         = bakedNormals;
+        _spawnRoot = spawnRoot;
 
         _catalog.RebuildCache();
 
@@ -142,8 +144,18 @@ public class ChunkSpawner : MonoBehaviour
 
     void TransitionState(SpawnedInstance inst, SpawnState target)
     {
-        // Destroy current object if switching away from it
-        if (inst.ActiveObject != null && target != inst.State)
+        // If already instantiated and just toggling simulation — don't recreate
+        if (inst.ActiveObject != null &&
+            (target == SpawnState.Full || target == SpawnState.Simulating) &&
+            (inst.State == SpawnState.Full || inst.State == SpawnState.Simulating))
+        {
+            SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
+            inst.State = target;
+            return;
+        }
+
+        // Destroy only when actually leaving the Full/Sim tier
+        if (inst.ActiveObject != null)
         {
             Destroy(inst.ActiveObject);
             inst.ActiveObject = null;
@@ -155,18 +167,17 @@ public class ChunkSpawner : MonoBehaviour
         switch (target)
         {
             case SpawnState.None:
-                // Nothing to instantiate
                 break;
 
             case SpawnState.StandIn:
-                // TODO: instantiate stand-in imposter when field is added to PrefabDef
+                // TODO
                 break;
 
             case SpawnState.Full:
             case SpawnState.Simulating:
                 if (def.Variants == null || def.Variants.Count == 0) break;
                 var prefab = PickVariant(def, inst.WorldPosition);
-                inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, transform);
+                inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
                 SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
                 break;
         }
