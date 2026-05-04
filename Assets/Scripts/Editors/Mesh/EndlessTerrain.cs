@@ -5,7 +5,7 @@ namespace LevelGenerator
 {
     public class EndlessTerrain : MonoBehaviour
     {
-        float _scale;
+        
         public LODInfo[] detailLevels;
         [Header("View")]
         public static float maxViewDist;
@@ -18,7 +18,8 @@ namespace LevelGenerator
         [Header("Chunk")]
         [Range(2, 240)]
         public int vertexResolution = 120;
-        public float chunkWorldSize = 240f;
+         float chunkWorldSize;
+         float _scale;
 
         public static Vector2 viewerPosition;
         Vector2 viewerPositionOld;
@@ -46,7 +47,7 @@ namespace LevelGenerator
             Common.VertexResolution = vertexResolution;
             Common.ChunkWorldSize = chunkWorldSize;
 
-            _chunkSize = MapGenerator.mapChunkSize - 1; 
+            _chunkSize = Mathf.RoundToInt((MapGenerator.mapChunkSize - 1) * mapGenerator.meshScale);
             _chunksVisibleInViewDst = Mathf.RoundToInt(maxViewDist / _chunkSize);
 
             UpdateVisibleChunks();
@@ -98,6 +99,7 @@ namespace LevelGenerator
             GameObject _meshObject;
             Vector2 _position;
             Bounds _bounds;
+            ChunkSpawner _spawner;
             MeshRenderer _meshRenderer;
             MeshFilter _meshFilter;
             MeshCollider _meshCollider;
@@ -136,6 +138,7 @@ namespace LevelGenerator
                 _meshFilter = _meshObject.AddComponent<MeshFilter>();
                 _meshCollider = _meshObject.AddComponent<MeshCollider>();
                 _meshRenderer.material = new Material(material);
+                _spawner = _meshObject.AddComponent<ChunkSpawner>();
 
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);
@@ -158,12 +161,23 @@ namespace LevelGenerator
                 _mapData = mapData;
                 _mapDataReceived = true;
 
-                // Build texture once from colour map
                 _texture = TextureGenerator.TextureFromColourMap(
                     _mapData.colorMap, MapGenerator.mapChunkSize, MapGenerator.mapChunkSize);
                 _meshRenderer.sharedMaterial.mainTexture = _texture;
 
-                // Trigger chunk update now that data is ready
+                if (mapGenerator.Common.SpawnConfig != null && mapGenerator.Common.PrefabCatalog != null)
+                {
+                    _spawner.Initialise(
+                        _mapData,
+                        null,
+                        mapGenerator.Common.SpawnConfig,
+                        mapGenerator.Common.PrefabCatalog,
+                        _position,
+                        MapGenerator.mapChunkSize - 1,
+                        mapGenerator.meshHeightMultiplier,
+                        new AnimationCurve(mapGenerator.meshHeightCurve.keys));
+                }
+
                 UpdateTerrainChunk();
             }
 
@@ -210,10 +224,19 @@ namespace LevelGenerator
                     terrainChunksVisibleLastUpdate.Add(this);
                 }
 
+                if (_spawner != null)
+                    _spawner.UpdateLODTier(dst);
+
                 SetVisible(visible);
             }
 
-            public void SetVisible(bool visible) => _meshObject.SetActive(visible);
+            public void SetVisible(bool visible)
+            {
+                _meshObject.SetActive(visible);
+                if (!visible && _spawner != null)
+                    _spawner.Despawn();
+            }
+
             public bool IsVisible() => _meshObject.activeSelf;
         }
 

@@ -4,7 +4,7 @@ namespace LevelGenerator
 {
     public static class MeshGenerator
     {
-        public static MeshData GenerateTerrainMesh(float[,] heightMap, float heightMultiplier, AnimationCurve _heightCurve, int levelOfDetail)
+        public static MeshData GenerateTerrainMesh(float[,] heightMap, float heightMultiplier, AnimationCurve _heightCurve, int levelOfDetail, float meshScale = 1f)
         {
             AnimationCurve heightCurve = new AnimationCurve(_heightCurve.keys);
             int meshSimplificationIncrement = levelOfDetail == 0 ? 1 : levelOfDetail * 2;
@@ -51,7 +51,7 @@ namespace LevelGenerator
                     Vector2 percent = new Vector2((x - meshSimplificationIncrement) / (float)meshSize, (y - meshSimplificationIncrement) / (float)meshSize);
                     float height = heightCurve.Evaluate(heightMap[x, y]) * heightMultiplier;
 
-                    Vector3 vertexPosition = new Vector3( topLeftX + percent.x * meshSizeUnsimplified, height, topLeftZ - percent.y * meshSizeUnsimplified);
+                    Vector3 vertexPosition = new Vector3( (topLeftX + percent.x * meshSizeUnsimplified) * meshScale, height, (topLeftZ - percent.y * meshSizeUnsimplified) * meshScale);
 
                     meshData.AddVertex(vertexPosition, percent, vertexIndex);
 
@@ -186,6 +186,8 @@ namespace LevelGenerator
         {
             bakedNormals = CalculateNormals();
         }
+
+        public Vector3[] GetNormals() => bakedNormals;
 
         public Mesh CreateMesh()
         {

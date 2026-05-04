@@ -31,3 +31,9 @@ MonoBehaviour:
     Variants:
     - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
     Footprint: 1
+  - Name: test
+    ID: TEST
+    Category: 0
+    Variants:
+    - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
+    Footprint: 1

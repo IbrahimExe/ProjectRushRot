@@ -32,6 +32,13 @@ namespace LevelGenerator
         public float meshHeightMultiplier;
         public AnimationCurve meshHeightCurve;
 
+        [Header("Mesh Scale")]
+        [Tooltip("World units per vertex. 1 = one unit per vertex (238x238). Increase to make chunks larger.")]
+        public float meshScale = 1f;
+
+        [Tooltip("Scales the noise sampling. Match this to meshScale to keep noise density consistent.")]
+        public float noiseWorldScale = 1f;
+
         public bool autoUpdate;
 
         Queue<MapThreadInfo<MapData>> mapDataThreadInfoQueue = new Queue<MapThreadInfo<MapData>>();
@@ -64,7 +71,7 @@ namespace LevelGenerator
         void MeshDataThread(MapData mapData, int lod, Action<MeshData> callback)
         {
             MeshData meshData = MeshGenerator.GenerateTerrainMesh(
-                mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod);
+                mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod, meshScale);
             lock (meshDataThreadInfoQueue)
                 meshDataThreadInfoQueue.Enqueue(new MapThreadInfo<MeshData>(callback, meshData));
         }
@@ -103,14 +110,15 @@ namespace LevelGenerator
             for (int y = 0; y < borderedSize; y++)
                 for (int x = 0; x < borderedSize; x++)
                 {
-                    float worldX = centre.x + (x - borderedSize * 0.5f);
-                    float worldZ = centre.y - (y - borderedSize * 0.5f);
-                    noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig, new Vector2(worldX, worldZ));
+                    float worldX = centre.x + (x - borderedSize * 0.5f) * meshScale;
+                    float worldZ = centre.y - (y - borderedSize * 0.5f) * meshScale;
+                    noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig,
+                        new Vector2(worldX / noiseWorldScale, worldZ / noiseWorldScale));
                 }
 
             // Apply overlays to heightmap before colour assignment
             if (Common.OverlayConfig != null)
-                ApplyOverlays(noiseMap, centre, Common.OverlayConfig);
+                ApplyOverlays(noiseMap, centre, Common.OverlayConfig, meshScale, noiseWorldScale);
 
             // Build colour map
             var regions = Common.TerrainConfig.Regions;
@@ -133,7 +141,7 @@ namespace LevelGenerator
             return new MapData(noiseMap, colourMap);
         }
 
-        static void ApplyOverlays(float[,] noiseMap, Vector2 centre, OverlayConfig overlayConfig)
+        static void ApplyOverlays(float[,] noiseMap, Vector2 centre, OverlayConfig overlayConfig, float meshScale, float noiseWorldScale)
         {
             if (overlayConfig?.Overlays == null) return;
 
@@ -151,8 +159,8 @@ namespace LevelGenerator
                 {
                     for (int x = 0; x < size; x++)
                     {
-                        float worldX = centre.x + (x - halfSize);
-                        float worldZ = centre.y - (y - halfSize);
+                        float worldX = (centre.x + (x - halfSize) * meshScale) / noiseWorldScale;
+                        float worldZ = (centre.y - (y - halfSize) * meshScale) / noiseWorldScale;
 
                         float dist = 0f;
 
@@ -199,8 +207,10 @@ namespace LevelGenerator
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
             else if (drawMode == DrawMode.Mesh)
                 display.DrawMesh(
-                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail),
+                    MeshGenerator.GenerateTerrainMesh(mapData.heightMap, meshHeightMultiplier, meshHeightCurve, levelOfDetail, meshScale),
                     TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
+            //redo collision mesh if needed
+            
         }
 
         void OnValidate()

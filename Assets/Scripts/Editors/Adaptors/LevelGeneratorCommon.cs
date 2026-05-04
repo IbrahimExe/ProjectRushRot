@@ -8,6 +8,7 @@ public class LevelGeneratorCommon : ScriptableObject
     public TerrainConfig TerrainConfig;
     public PrefabCatalog PrefabCatalog;
     public OverlayConfig OverlayConfig;
+    public SpawnConfig SpawnConfig;
 
     [Header("World")]
     public float UniformScale = 1f;

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.LevelGeneratorCommon
   NoiseConfig: {fileID: 11400000, guid: 29c1145334f2ace48b63f5efe9d56581, type: 2}
   TerrainConfig: {fileID: 11400000, guid: 27223b0383d65944d8422b8c483b7bb1, type: 2}
-  PrefabCatalog: {fileID: 11400000, guid: dc5eeb6cedf189941b6966f831b8e7c3, type: 2}
+  PrefabCatalog: {fileID: 11400000, guid: add801bdd27484d47a2243fb184bd8a6, type: 2}
   OverlayConfig: {fileID: 11400000, guid: a44941fed6d430440b6ad2793bbb21fa, type: 2}
+  SpawnConfig: {fileID: 11400000, guid: 30d2e88f809c0a948bb094e9fe257134, type: 2}
   UniformScale: 1
   ChunkWidth: 10
   ChunkLength: 10

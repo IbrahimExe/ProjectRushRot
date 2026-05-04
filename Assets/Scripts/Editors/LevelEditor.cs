@@ -25,6 +25,7 @@ namespace Level.Editor
         private PrefabCatalogPanel _catalogPanel;
         private TerrainEditorPanel _terrainPanel;
         private OverlaysPanel _overlaysPanel;
+        private SpawningPanel _spawningPanel;
 
         [MenuItem("Window/Level Editor")]
         public static void Open()
@@ -51,7 +52,12 @@ namespace Level.Editor
             _overlaysPanel.OnRepaintNeeded += Repaint;
             _overlaysPanel.OnEnable();
 
+            _spawningPanel = new SpawningPanel();
+            _spawningPanel.OnRepaintNeeded += Repaint;
+            _spawningPanel.OnEnable();
+
             _catalogPanel.OnSelectionChanged += HandleSelectionChanged;
+
 
             if (_common != null)
             {
@@ -86,6 +92,12 @@ namespace Level.Editor
                 _overlaysPanel.OnDisable();
                 _overlaysPanel.OnRepaintNeeded -= Repaint;
             }
+            if (_spawningPanel != null)
+            {
+                _spawningPanel.OnDisable();
+                _spawningPanel.OnRepaintNeeded -= Repaint;
+            }
+
         }
 
         private void CreateGUI()
@@ -193,6 +205,7 @@ namespace Level.Editor
                     break;
 
                 case LevelEditorTabs.Spawning:
+                    _spawningPanel.Draw(position.width);
                     break;
             }
         }
@@ -268,6 +281,10 @@ namespace Level.Editor
                 soCommon.FindProperty("TerrainConfig").objectReferenceValue = _terrainPanel.Config;
                 soCommon.FindProperty("PrefabCatalog").objectReferenceValue = _catalogPanel.LoadedCatalog;
                 soCommon.FindProperty("OverlayConfig").objectReferenceValue = _overlaysPanel.Config;
+                soCommon.FindProperty("SpawnConfig").objectReferenceValue = _spawningPanel?.Config;
+                var spawnProp = soCommon.FindProperty("SpawnConfig");
+                if (spawnProp != null)
+                    spawnProp.objectReferenceValue = _common.SpawnConfig; // keep existing reference
 
                 soCommon.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_common);
@@ -294,7 +311,11 @@ namespace Level.Editor
             if (common.OverlayConfig != null)
                 _overlaysPanel.LoadConfig(common.OverlayConfig);
 
+            if (common.SpawnConfig != null)
+                _spawningPanel?.LoadConfig(common.SpawnConfig);
+
             _terrainPanel.SetCommon(common);
+            _spawningPanel.SetCatalog(_catalogPanel.RuntimeCatalog);
             UpdatePreviewForTab(_activeTab);
         }
 
@@ -306,6 +327,11 @@ namespace Level.Editor
         private void HandleSelectionChanged()
         {
             UpdatePreviewForTab(_activeTab);
+
+           if (_activeTab == LevelEditorTabs.Spawning)
+            {
+                _spawningPanel.SetCatalog(_catalogPanel.RuntimeCatalog);
+            }
         }
 
         private void UpdatePreviewForTab(LevelEditorTabs tab)
