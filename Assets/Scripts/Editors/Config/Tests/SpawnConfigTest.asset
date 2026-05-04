@@ -27,9 +27,9 @@ MonoBehaviour:
     BlockedBy: 0000000001000000020000000300000004000000
   - PrefabDefID: TREE
     PlacementMode: 0
-    DensityMultiplier: 3
-    MinSpacing: 5
-    HeightMin: 0.4
+    DensityMultiplier: 1
+    MinSpacing: 0.5
+    HeightMin: 0.9
     HeightMax: 1
     MaxSlope: 76.5
     BlockedBy: 0000000001000000020000000300000004000000

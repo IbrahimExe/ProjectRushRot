@@ -22,9 +22,11 @@ public class SpawnRule
     [Tooltip("Minimum world-unit distance between instances of this rule.")]
     public float MinSpacing = 5f;
 
-    [Tooltip("World Y height range this rule can spawn in. Match to your terrain biome heights.")]
+    [Tooltip("Normalized noise height (0 to 1). Match this to your TerrainConfig Region Heights.")]
+    [Range(0f, 1f)]
     public float HeightMin = 0f;
-    public float HeightMax = 100f;
+    [Range(0f, 1f)]
+    public float HeightMax = 1f;
 
     [Tooltip("Maximum slope in degrees. 0 = flat only, 90 = any angle.")]
     [Range(0f, 90f)]

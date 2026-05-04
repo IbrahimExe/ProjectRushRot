@@ -69,6 +69,7 @@ public class ChunkSpawner : MonoBehaviour
 
     void GeneratePlacements()
     {
+
         if (_spawnConfig == null || _catalog == null) { 
             Debug.LogWarning($"[ChunkSpawner] Missing spawn config or prefab catalog for chunk {_chunkCenter}, skipping placement.");
             return;
@@ -87,10 +88,11 @@ public class ChunkSpawner : MonoBehaviour
             List<Vector3> candidates = rule.PlacementMode == PlacementMode.PoissonDisk
                 ? GeneratePoissonPoints(rule, targetCount)
                 : GenerateGridPoints(rule, targetCount);
-
+            Debug.Log($"[ChunkSpawner] Center:{_chunkCenter} WorldSize:{_chunkWorldSize} MapSize:{_mapSize}");
             foreach (var candidate in candidates)
             {
-                if (!PassesHeightCheck(candidate, rule))   continue;
+                float rawNoise = SampleRawNoise(candidate.x, candidate.z);
+                if (!PassesHeightCheck(rawNoise, rule))   continue;
                 if (!PassesSlopeCheck(candidate, rule))    continue;
                 if (!PassesOverlapCheck(candidate, rule, def)) continue;
 
@@ -108,24 +110,30 @@ public class ChunkSpawner : MonoBehaviour
                 //Debug.Log($"[ChunkSpawner] Rule '{rule.PrefabDefID}' — candidates: {candidates.Count}, placed: {_instances.Count}");
             }
         }
+        
         //Debug.Log($"[ChunkSpawner] Chunk {_chunkCenter} placed {_instances.Count} instances across {_spawnConfig.Rules.Count} rules.");
     }
 
     // Called every time TerrainChunk.UpdateTerrainChunk runs
     public void UpdateLODTier(float viewerDst)
     {
+        Vector2 viewerPos = EndlessTerrain.viewerPosition;
+
         foreach (var inst in _instances)
         {
-            float dst = Vector3.Distance(
-                new Vector3(_chunkCenter.x, 0, _chunkCenter.y),
-                new Vector3(inst.WorldPosition.x, 0, inst.WorldPosition.z));
+            float dst = Vector2.Distance(
+                viewerPos,
+                new Vector2(inst.WorldPosition.x, inst.WorldPosition.z));
+            
+            // dst is in unscaled units. Multiply by scale to get real world distance!
+            float worldDst = dst * transform.localScale.x;
 
             SpawnState target;
 
-            if      (dst <= _spawnConfig.SimDistance)    target = SpawnState.Simulating;
-            else if (dst <= _spawnConfig.FullDistance)   target = SpawnState.Full;
-            else if (dst <= _spawnConfig.StandInDistance) target = SpawnState.StandIn;
-            else                                          target = SpawnState.None;
+            if (worldDst <= _spawnConfig.SimDistance) target = SpawnState.Simulating;
+            else if (worldDst <= _spawnConfig.FullDistance) target = SpawnState.Full;
+            else if (worldDst <= _spawnConfig.StandInDistance) target = SpawnState.StandIn;
+            else target = SpawnState.None;
 
             if (target != inst.State)
                 TransitionState(inst, target);
@@ -180,8 +188,7 @@ public class ChunkSpawner : MonoBehaviour
         }
     }
 
-    // ── Placement helpers ────────────────────────────────────────────
-
+    //Placement helpers
     List<Vector3> GeneratePoissonPoints(SpawnRule rule, int targetCount)
     {
         var rng       = new System.Random(_seed ^ rule.PrefabDefID.GetHashCode());
@@ -199,7 +206,9 @@ public class ChunkSpawner : MonoBehaviour
             bool tooClose = false;
             foreach (var existing in result)
             {
-                if (Vector3.Distance(existing, pt) < rule.MinSpacing)
+                float dx = existing.x - pt.x;
+                float dz = existing.z - pt.z;
+                if (Mathf.Sqrt(dx * dx + dz * dz) < rule.MinSpacing)
                 { tooClose = true; break; }
             }
 
@@ -234,29 +243,40 @@ public class ChunkSpawner : MonoBehaviour
         return result;
     }
 
+    float SampleRawNoise(float wx, float wz)
+    {
+        float meshScale = _chunkWorldSize / Mathf.Max(1f, _mapSize - 3f);
+        float halfMap = _mapSize * 0.5f;
+        
+        int x = Mathf.Clamp(Mathf.RoundToInt((wx - _chunkCenter.x) / meshScale + halfMap), 0, _mapSize - 1);
+        int z = Mathf.Clamp(Mathf.RoundToInt(halfMap - (wz - _chunkCenter.y) / meshScale), 0, _mapSize - 1);
+        
+        return _heightMap[x, z];
+    }
+
     float SampleWorldHeight(float wx, float wz)
     {
-        // Convert world position to heightmap UV
-        float u = (wx - _chunkCenter.x) / _chunkWorldSize + 0.5f;
-        float v = (wz - _chunkCenter.y) / _chunkWorldSize + 0.5f;
-        int   x = Mathf.Clamp(Mathf.RoundToInt(u * (_mapSize - 1)), 0, _mapSize - 1);
-        int   z = Mathf.Clamp(Mathf.RoundToInt(v * (_mapSize - 1)), 0, _mapSize - 1);
-        return _heightCurve.Evaluate(_heightMap[x, z]) * _heightMultiplier;
+        return _heightCurve.Evaluate(SampleRawNoise(wx, wz)) * _heightMultiplier;
     }
 
     Vector3 SampleNormal(float wx, float wz)
     {
         if (_normals == null) return Vector3.up;
-        float u = (wx - _chunkCenter.x) / _chunkWorldSize + 0.5f;
-        float v = (wz - _chunkCenter.y) / _chunkWorldSize + 0.5f;
-        int   x = Mathf.Clamp(Mathf.RoundToInt(u * (_mapSize - 1)), 0, _mapSize - 1);
-        int   z = Mathf.Clamp(Mathf.RoundToInt(v * (_mapSize - 1)), 0, _mapSize - 1);
-        int   i = z * _mapSize + x;
+        
+        float meshScale = _chunkWorldSize / Mathf.Max(1f, _mapSize - 3f);
+        float halfMap = _mapSize * 0.5f;
+        
+        int x = Mathf.Clamp(Mathf.RoundToInt((wx - _chunkCenter.x) / meshScale + halfMap), 0, _mapSize - 1);
+        int z = Mathf.Clamp(Mathf.RoundToInt(halfMap - (wz - _chunkCenter.y) / meshScale), 0, _mapSize - 1);
+        int i = z * _mapSize + x;
         return i < _normals.Length ? _normals[i] : Vector3.up;
     }
 
-    bool PassesHeightCheck(Vector3 pt, SpawnRule rule)
-        => pt.y >= rule.HeightMin && pt.y <= rule.HeightMax;
+    bool PassesHeightCheck(float rawNoise, SpawnRule rule)
+    {
+        if (rule.HeightMax <= rule.HeightMin) return true; // disabled
+        return rawNoise >= rule.HeightMin && rawNoise <= rule.HeightMax;
+    }
 
     bool PassesSlopeCheck(Vector3 pt, SpawnRule rule)
     {

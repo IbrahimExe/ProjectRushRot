@@ -173,7 +173,7 @@ namespace LevelGenerator
                         mapGenerator.Common.SpawnConfig,
                         mapGenerator.Common.PrefabCatalog,
                         _position,
-                        MapGenerator.mapChunkSize - 1,
+                        (MapGenerator.mapChunkSize - 1) * mapGenerator.meshScale,
                         mapGenerator.meshHeightMultiplier,
                         new AnimationCurve(mapGenerator.meshHeightCurve.keys));
                 }
@@ -187,6 +187,9 @@ namespace LevelGenerator
 
                 float dst = Mathf.Sqrt(_bounds.SqrDistance(viewerPosition));
                 bool visible = dst <= _maxViewDist;
+
+                if (!visible && _spawner != null)
+                    _spawner.Despawn();
 
                 if (visible)
                 {
@@ -233,8 +236,8 @@ namespace LevelGenerator
             public void SetVisible(bool visible)
             {
                 _meshObject.SetActive(visible);
-                if (!visible && _spawner != null)
-                    _spawner.Despawn();
+                //if (!visible && _spawner != null)
+                //    _spawner.Despawn();
             }
 
             public bool IsVisible() => _meshObject.activeSelf;
