@@ -36,6 +36,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: RockWall3 Variant
       objectReference: {fileID: 0}
+    - target: {fileID: 7420413840513781007, guid: b23f607a2926fcc4d86681b026db97fc, type: 3}
+      propertyPath: m_TagString
+      value: Wall
+      objectReference: {fileID: 0}
     - target: {fileID: 8731149863571399469, guid: b23f607a2926fcc4d86681b026db97fc, type: 3}
       propertyPath: m_LocalPosition.x
       value: -96.646
