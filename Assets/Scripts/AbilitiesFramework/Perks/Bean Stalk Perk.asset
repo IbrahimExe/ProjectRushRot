@@ -18,9 +18,13 @@ MonoBehaviour:
     top of
   icon: {fileID: 21300000, guid: c0210998fa6ab734794b087b9405ce16, type: 3}
   maxLevel: 3
-  bridgeSegmentPrefab: {fileID: 3684276890926039627, guid: ba7ad0d68fd3b18459d5620bd58c5814, type: 3}
-  baseSegments: 1
+  bridgeSegmentPrefab: {fileID: 7825579389614122000, guid: 2c7106a4bcebe544381a2291d126ce7f, type: 3}
+  baseSegments: 3
   segmentsPerLevel: 1
-  segmentLength: 8
-  segmentLifetime: 5
+  segmentLength: 16
+  segmentLifetime: 10
   spawnHeightOffset: -0.5
+  baseCooldown: 8
+  cooldownReductionPerLevel: 0.5
+  minimumCooldown: 3
+  upwardAngle: 35

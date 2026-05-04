@@ -18,7 +18,10 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 095b8753ea3700e45b850e153616be99, type: 3}
   maxLevel: 3
   baseCooldown: 30
-  baseMissileAmount: 1
+  baseMissileAmount: 3
   maxMissiles: 5
-  searchRadius: 45
-  targetTag: MissileObstacle
+  searchRadius: 75
+  missileVisualPrefab: {fileID: 3441939131721710715, guid: 48fa03515e606754cb55998d0cb1f3ec, type: 3}
+  visualOrbitRadius: 1.8
+  visualHeight: 6
+  visualSpinSpeed: 90

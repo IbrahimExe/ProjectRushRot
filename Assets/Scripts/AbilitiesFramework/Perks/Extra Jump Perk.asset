@@ -18,5 +18,5 @@ MonoBehaviour:
   icon: {fileID: 0}
   maxLevel: 3
   extraJumpsAtLevelOne: 1
-  baseRechargeCooldown: 2
+  baseRechargeCooldown: 6
   cooldownReductionPerLevel: 0.25

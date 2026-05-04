@@ -17,9 +17,9 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   maxLevel: 3
+  upwardImpulse: 80
   downwardImpulse: 120
-  baseRadius: 5
+  slamDelay: 0.2
+  baseRadius: 8
   radiusPerLevel: 1.5
   cooldown: 8
-  enemyTag: Enemy
-  breakableTag: BreakableObstacle

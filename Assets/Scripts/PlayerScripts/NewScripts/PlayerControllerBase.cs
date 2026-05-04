@@ -98,6 +98,9 @@ public class PlayerControllerBase : MonoBehaviour
     private void Awake()
     {
         RB = GetComponent<Rigidbody>();
+
+        if (characterData != null)
+            characterData.ResetRuntimeValues();
     }
     void Start()
     {
@@ -113,6 +116,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void ApplyCharacter(PlayerCharacterData data)
     {
+
         characterData = data;
 
         baseMaxMoveSpeed = data.maxMoveSpeed;
@@ -167,7 +171,7 @@ public class PlayerControllerBase : MonoBehaviour
         if (TutorialManager.IsInputBlocked) return;
 
         IsGrounded = CheckGrounded();
-        if (IsGrounded) 
+        if (IsGrounded)
         {
             lastGroundedTime = Time.time;
             currentJumps = 0;
@@ -409,6 +413,18 @@ public class PlayerControllerBase : MonoBehaviour
         Vector3 currentEuler = cartModel.rotation.eulerAngles;
         Quaternion targetRotation = Quaternion.Euler(targetTiltX, currentEuler.y, 0f);
         cartModel.rotation = Quaternion.Slerp(cartModel.rotation, targetRotation, Time.deltaTime * airTiltSpeed);
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (characterData != null)
+            characterData.ResetRuntimeValues();
+    }
+
+    private void OnDisable()
+    {
+        if (characterData != null)
+            characterData.ResetRuntimeValues();
     }
 
     // ─────────────────────────────────────────────

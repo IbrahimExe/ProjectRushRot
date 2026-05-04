@@ -161,6 +161,7 @@ GameObject:
   - component: {fileID: 7777702463314503566}
   - component: {fileID: 71844920841879197}
   - component: {fileID: -5472811209254875260}
+  - component: {fileID: 5795291890464505847}
   m_Layer: 7
   m_Name: Zombie_Idle
   m_TagString: Enemy
@@ -332,6 +333,23 @@ MonoBehaviour:
   player: {fileID: 0}
   disableDistance: 150
   checkRate: 0.5
+--- !u!114 &5795291890464505847
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6138303866977512807}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  - shield
+  - ground_pound
+  destroyVFX: {fileID: 0}
 --- !u!1 &7770692172948649851
 GameObject:
   m_ObjectHideFlags: 0
