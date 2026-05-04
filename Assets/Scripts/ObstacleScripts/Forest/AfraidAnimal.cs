@@ -99,14 +99,16 @@ public class AfraidAnimal : MonoBehaviour
         return d.normalized;
     }
 
-    private void OnTriggerEnter(Collider other)
+    // Called by PresenceTriggerRelay on the child sphere-trigger object.
+    public void OnPresenceTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
         player = other.transform;
         playerInRange = true;
     }
 
-    private void OnTriggerExit(Collider other)
+    // Called by PresenceTriggerRelay on the child sphere-trigger object.
+    public void OnPresenceTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
         playerInRange = false;

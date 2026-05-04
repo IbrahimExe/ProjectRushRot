@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1863785388243541582}
   - component: {fileID: 4982919494858181452}
   - component: {fileID: 6791844425725912170}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Animal
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -104,7 +104,7 @@ GameObject:
   - component: {fileID: 8518636074068108486}
   - component: {fileID: 7669118691711317758}
   - component: {fileID: 1647947134314232257}
-  - component: {fileID: 885145149561872304}
+  - component: {fileID: 6283705257895288379}
   m_Layer: 0
   m_Name: AnimalModel
   m_TagString: Untagged
@@ -204,7 +204,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 30
   m_Center: {x: 0.0000064969063, y: -0.0000001490117, z: 0.00000023841858}
---- !u!114 &885145149561872304
+--- !u!114 &6283705257895288379
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -213,6 +213,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 7059129825452611462}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92b54ed1894b6b34eb2bfa870c64e143, type: 3}
+  m_Script: {fileID: 11500000, guid: 5c4eb345d1bdc884384e9f9af61cae9f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresenceTriggerMarker
+  m_EditorClassIdentifier: Assembly-CSharp::PresenceTriggerRelay

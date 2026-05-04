@@ -14,6 +14,18 @@ public class PathMovingObstacle : MonoBehaviour
     [Tooltip("How fast the obstacle rotates toward its direction (degrees per second). 0 = instant snap.")]
     public float rotationSpeed = 360f;
 
+    // Approach Lerp
+    [Header("Approach Lerp")]
+    [Tooltip("When true, the obstacle will smoothly decelerate as it nears each path point.")]
+    public bool useLerp = false;
+
+    [Tooltip("Distance from the target point at which the lerp deceleration begins.")]
+    public float lerpStartDistance = 2f;
+
+    [Tooltip("Lerp speed factor when approaching the target. Lower values = smoother / slower arrival.")]
+    [Range(1f, 30f)]
+    public float lerpSpeed = 8f;
+
     // Manual Points
     [Header("Path Points")]
     [Tooltip("First point")]
@@ -113,6 +125,16 @@ public class PathMovingObstacle : MonoBehaviour
         //}
 
         RotateToward(moveDir);
+
+        // --- Approach Lerp ---
+        // When within lerpStartDistance, blend position toward the target
+        // instead of using a fixed step, creating a smooth deceleration.
+        if (useLerp && distToTarget <= lerpStartDistance)
+        {
+            Vector3 lerpedPos = Vector3.Lerp(currentPos, target, lerpSpeed * Time.fixedDeltaTime);
+            rb.MovePosition(lerpedPos);
+            return;
+        }
 
         if (step >= distToTarget)
         {

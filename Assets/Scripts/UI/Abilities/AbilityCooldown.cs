@@ -23,7 +23,7 @@ public class AbilityCooldown : MonoBehaviour
 
     void Update()
     {
-        bool isDashingNow = playerController.dash.IsDashing;
+        bool isDashingNow = playerController.dash.IsDashing || playerController.dash.IsSideDashing;
 
         if (isDashingNow && !wasDashing)
         {

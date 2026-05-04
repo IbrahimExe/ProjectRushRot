@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6347204712236024591}
   - component: {fileID: 2096449831859153749}
   - component: {fileID: 5471799101964539331}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Car
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -78,6 +78,9 @@ MonoBehaviour:
   speed: 30
   rotateTowardDirection: 1
   rotationSpeed: 360
+  useLerp: 0
+  lerpStartDistance: 2
+  lerpSpeed: 8
   localOffsetA: {x: -5, y: 0, z: 0}
   localOffsetB: {x: 5, y: 0, z: 0}
   randomizePoints: 1

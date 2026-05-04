@@ -112,13 +112,13 @@ MonoBehaviour:
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
-  - ID: ANIMAL
+  - ID: DEER_OCC
     Name: deer
     Prefabs:
     - {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
     Layer: 1
     SurfaceType: 0
-    OccupantWeight: 35.6
+    OccupantWeight: 25
     Cost: 5
     MinRowGap: 0
     SizeZ: 1
@@ -160,23 +160,7 @@ MonoBehaviour:
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
-  - ID: CAR
-    Name: car
-    Prefabs:
-    - {fileID: 8099606616948930835, guid: 2bd4a9f19046c4543a34b86813d6ac78, type: 3}
-    Layer: 1
-    SurfaceType: 0
-    OccupantWeight: 2.1
-    Cost: 6
-    MinRowGap: 3
-    SizeZ: 7
-    AllowedSurfaceIDs:
-    - Forest_SUR
-    - GRASS_SUR
-    Tags: []
-    noiseTier: 0
-    isNoiseCandidate: 0
-  - ID: WALLRUN
+  - ID: WALLRUN_OCC
     Name: wallrun
     Prefabs:
     - {fileID: 8258777474108923453, guid: a35b206f73d6b3f4a813d4511667cc6c, type: 3}
@@ -187,6 +171,53 @@ MonoBehaviour:
     MinRowGap: 3
     SizeZ: 20
     AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: CAR_OCC
+    Name: car
+    Prefabs:
+    - {fileID: 8099606616948930835, guid: 2bd4a9f19046c4543a34b86813d6ac78, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 2
+    Cost: 6
+    MinRowGap: 3
+    SizeZ: 7
+    AllowedSurfaceIDs:
+    - Forest_SUR
+    - GRASS_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: BEAR_OCC
+    Name: bear
+    Prefabs:
+    - {fileID: 4117830706354083783, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 5
+    Cost: 6
+    MinRowGap: 0
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - Forest_SUR
+    - GRASS_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: FISH_OCC
+    Name: fish
+    Prefabs:
+    - {fileID: 8092977340246846854, guid: 89270b25ddfb53c44a5631a7c3c5426e, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 5.5
+    Cost: 5
+    MinRowGap: 0
+    SizeZ: 1
+    AllowedSurfaceIDs:
+    - Water_SUR
     Tags: []
     noiseTier: 0
     isNoiseCandidate: 0
