@@ -23,7 +23,7 @@ MonoBehaviour:
     density: 0.3
     maxDotSize: 0.4
   spaceMode: 0
-  tilingFrequency: 8.2
+  tilingFrequency: 4.5
   position:
     value: {x: 3, y: 3, z: 0}
   rotation:
@@ -31,11 +31,11 @@ MonoBehaviour:
   scale:
     value: {x: 1, y: 1, z: 1}
   warp:
-    enabled: 0
-    level: 0
-    strength: 0
-    offsetQ0: {x: 0, y: 0}
-    offsetQ1: {x: 0, y: 0}
+    enabled: 1
+    level: 2
+    strength: 1.71
+    offsetQ0: {x: 1.03, y: 0.45}
+    offsetQ1: {x: 0, y: 3.36}
     offsetR0: {x: 0, y: 0}
     offsetR1: {x: 0, y: 0}
   wood:
@@ -55,13 +55,13 @@ MonoBehaviour:
     numLayers: 0
     blendWeight: 0
   turbulence:
-    enabled: 0
-    frequency: 0
-    frequencyMult: 0
-    amplitudeMult: 0
-    numLayers: 0
-    maxNoiseVal: 0
-    blendWeight: 0
+    enabled: 1
+    frequency: 2.53
+    frequencyMult: 1.54
+    amplitudeMult: 2.31
+    numLayers: 3
+    maxNoiseVal: 2
+    blendWeight: 0.075
   invert:
     enabled: 0
     blendWeight: 1

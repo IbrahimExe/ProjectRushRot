@@ -44,6 +44,6 @@ MonoBehaviour:
     CentreX: 0
     CentreZ: 0
     WorldOffset: 0
-    Scale: 100
+    Scale: 150
     Strength: 1
     FloorValue: 0

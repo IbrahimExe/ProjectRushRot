@@ -67,7 +67,7 @@ MonoBehaviour:
       VoronoiCells: 0
   - Name: 
     Height: 0.6
-    Color: {r: 0.28502136, g: 0.3301887, b: 0.3255834, a: 1}
+    Color: {r: 0.4196079, g: 0.5568628, b: 0.1372549, a: 1}
     BlendWidth: 0.29
     BlendMode: 0
     Texture: {fileID: 0}
@@ -80,7 +80,7 @@ MonoBehaviour:
       VoronoiCells: 0
   - Name: 
     Height: 0.8
-    Color: {r: 0.41257858, g: 0.7735849, b: 0, a: 1}
+    Color: {r: 0.4117647, g: 0.4117647, b: 0.4117647, a: 1}
     BlendWidth: 0
     BlendMode: 0
     Texture: {fileID: 0}
@@ -93,7 +93,7 @@ MonoBehaviour:
       VoronoiCells: 0
   - Name: 
     Height: 1
-    Color: {r: 0.10006813, g: 0.5943396, b: 0.09812209, a: 1}
+    Color: {r: 0.9607844, g: 1, b: 0.9803922, a: 1}
     BlendWidth: 0
     BlendMode: 0
     Texture: {fileID: 0}

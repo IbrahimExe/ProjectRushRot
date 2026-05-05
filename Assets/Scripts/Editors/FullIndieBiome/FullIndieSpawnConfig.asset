@@ -27,11 +27,11 @@ MonoBehaviour:
     BlockedBy: 
   - PrefabDefID: TREE
     PlacementMode: 0
-    DensityMultiplier: 0.01
+    DensityMultiplier: 0.03
     MinSpacing: 0
-    HeightMin: 0.4
+    HeightMin: 0.3
     HeightMax: 1
-    MaxSlope: 0
+    MaxSlope: 13.2
     BlockedBy: 
   - PrefabDefID: PEOPLE
     PlacementMode: 0
@@ -59,10 +59,10 @@ MonoBehaviour:
     BlockedBy: 
   - PrefabDefID: SPAWNER
     PlacementMode: 0
-    DensityMultiplier: 0
+    DensityMultiplier: 0.1
     MinSpacing: 0
-    HeightMin: 0.41
-    HeightMax: 0.59
+    HeightMin: 0.6
+    HeightMax: 0.8
     MaxSlope: 0
     BlockedBy: 
   - PrefabDefID: FISH
@@ -70,14 +70,14 @@ MonoBehaviour:
     DensityMultiplier: 0.2
     MinSpacing: 3
     HeightMin: 0
-    HeightMax: 0.2
+    HeightMax: 0.25
     MaxSlope: 0
     BlockedBy: 
   - PrefabDefID: BEAR
     PlacementMode: 0
-    DensityMultiplier: 0.2
-    MinSpacing: 3
-    HeightMin: 0.8
+    DensityMultiplier: 0.1
+    MinSpacing: 30
+    HeightMin: 0.55
     HeightMax: 1
     MaxSlope: 0
     BlockedBy: 
