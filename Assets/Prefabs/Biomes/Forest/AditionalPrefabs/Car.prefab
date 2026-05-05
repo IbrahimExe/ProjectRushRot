@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6347204712236024591}
   - component: {fileID: 2096449831859153749}
   - component: {fileID: 5471799101964539331}
+  - component: {fileID: 6243276259044365147}
   m_Layer: 7
   m_Name: Car
   m_TagString: Untagged
@@ -130,6 +131,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 7.9240723, y: 4.593988, z: 5.4285507}
   m_Center: {x: -0.3300476, y: 1.796994, z: 5.973583}
+--- !u!114 &6243276259044365147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8099606616948930835}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  destroyVFX: {fileID: 0}
 --- !u!1001 &6928664174347154302
 PrefabInstance:
   m_ObjectHideFlags: 0

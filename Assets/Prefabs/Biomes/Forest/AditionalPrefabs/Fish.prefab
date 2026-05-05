@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6524412938679637749}
   - component: {fileID: 2547030564869648324}
   - component: {fileID: 6008628729623366297}
+  - component: {fileID: 6259679693962528190}
   m_Layer: 0
   m_Name: Fish
   m_TagString: Enemy
@@ -108,6 +109,22 @@ MonoBehaviour:
   randomXMax: 8
   randomZRange: 3
   playerTag: Player
+--- !u!114 &6259679693962528190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8092977340246846854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  - shield
+  destroyVFX: {fileID: 0}
 --- !u!1001 &6271352189829927042
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1863785388243541582}
   - component: {fileID: 4982919494858181452}
   - component: {fileID: 6791844425725912170}
+  - component: {fileID: 5807398926685056675}
   m_Layer: 7
   m_Name: Animal
   m_TagString: Enemy
@@ -92,6 +93,23 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.71, y: 1.53, z: 2.2065675}
   m_Center: {x: 0.0000064969063, y: -0.00000014901164, z: 0}
+--- !u!114 &5807398926685056675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3207817493276649302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  - shield
+  - ground_pound
+  destroyVFX: {fileID: 0}
 --- !u!1 &7059129825452611462
 GameObject:
   m_ObjectHideFlags: 0
