@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MagnetPerk
   abilityId: magnet
   displayName: Magnet
-  description: 
-  icon: {fileID: 0}
+  description: Attracts collectibles
+  icon: {fileID: 21300000, guid: 095b8753ea3700e45b850e153616be99, type: 3}
   maxLevel: 3
   baseRadius: 10
   radiusPerLevel: 2.5

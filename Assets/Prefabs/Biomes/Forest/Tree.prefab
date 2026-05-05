@@ -14,7 +14,8 @@ GameObject:
   - component: {fileID: 6619454725042764265}
   - component: {fileID: 4866800458956609212}
   - component: {fileID: 6271253829721520153}
-  m_Layer: 0
+  - component: {fileID: -3838840646992231529}
+  m_Layer: 7
   m_Name: Tree
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -152,3 +153,20 @@ CapsuleCollider:
   m_Height: 11.73
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 6.1375475, z: 0}
+--- !u!114 &-3838840646992231529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132065474207181821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  - shield
+  - ground_pound
+  destroyVFX: {fileID: 0}
