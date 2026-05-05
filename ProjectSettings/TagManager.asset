@@ -4,24 +4,20 @@
 TagManager:
   serializedVersion: 3
   tags:
+  - Wall
   - Enemy
   - BlockWall
-  - Wall
-  - Collectible
-  - MissileObstacle
-  - ShieldObstacle
-  - Hole
-  - BreakableObstacle
+  - SplineNode
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
   - Wall
-  - CameraIgnore
-  - Ground
+  - Obstacle
+  - 
   - 
   - 
   - 

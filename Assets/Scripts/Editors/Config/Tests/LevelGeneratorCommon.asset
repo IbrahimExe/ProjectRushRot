@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b280391926c0a4a926d6c281446040, type: 3}
+  m_Name: LevelGeneratorCommon
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.LevelGeneratorCommon
+  NoiseConfig: {fileID: 11400000, guid: 29c1145334f2ace48b63f5efe9d56581, type: 2}
+  TerrainConfig: {fileID: 11400000, guid: 27223b0383d65944d8422b8c483b7bb1, type: 2}
+  PrefabCatalog: {fileID: 11400000, guid: add801bdd27484d47a2243fb184bd8a6, type: 2}
+  OverlayConfig: {fileID: 11400000, guid: a44941fed6d430440b6ad2793bbb21fa, type: 2}
+  SpawnConfig: {fileID: 11400000, guid: 30d2e88f809c0a948bb094e9fe257134, type: 2}
+  UniformScale: 1
+  ChunkWidth: 10
+  ChunkLength: 10
+  HeightCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  HeightMultiplier: 20
+  ChunkWorldSize: 240
+  TextureResolution: 246
+  VertexResolution: 120

@@ -23,7 +23,7 @@ MonoBehaviour:
   rotationSpeed: 100
   baseGrip: 10
   turnGrip: 2.5
-  jumpForce: 25
+  jumpForce: 30
   wallRunCooldown: 0
   wallRunDuration: 2
   wallRunSpeedMultiplier: 1.1

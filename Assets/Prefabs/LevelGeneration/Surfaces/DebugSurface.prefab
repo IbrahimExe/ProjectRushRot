@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8768507585483049307}
   - component: {fileID: 4497517991913300342}
   - component: {fileID: 6934308593712956000}
-  m_Layer: 8
+  m_Layer: 3
   m_Name: DebugSurface
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -107,6 +107,18 @@ public class PlayerControllerBase : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
+        RB = GetComponent<Rigidbody>();
+
+        // overrides if character is selected from Main Menu
+        if (CharacterDataPersistence.Instance != null)
+        {
+            PlayerCharacterData persistedCharacter = CharacterDataPersistence.Instance.GetSelectedCharacter();
+            if (persistedCharacter != null)
+            {
+                characterData = persistedCharacter;
+            }
+        }
+
         if (characterData != null) ChangeCharacter(characterData);
         else SetBaseStats();
     }
