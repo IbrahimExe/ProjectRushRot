@@ -49,20 +49,50 @@ public class MissilePerk : AbilityBase
 
         Collider[] hits = ctx.GetNearby(searchRadius);
 
+        Collider bestTarget = null;
+        float bestScore = float.MaxValue;
+
+        Vector3 playerPos = ctx.playerTransform.position;
+        Vector3 forward = ctx.playerTransform.forward;
+
         foreach (Collider hit in hits)
         {
-            if (ctx.TryDestroyWithAbility(hit, abilityId))
+            if (hit == null)
+                continue;
+
+            IAbilityDestructible destructible = hit.GetComponentInParent<IAbilityDestructible>();
+
+            if (destructible == null)
+                continue;
+
+            if (!destructible.CanBeDestroyedBy(abilityId))
+                continue;
+
+            Vector3 toTarget = hit.bounds.center - playerPos;
+
+            if (Vector3.Dot(forward, toTarget.normalized) <= 0.25f)
+                continue;
+
+            float distance = toTarget.sqrMagnitude;
+
+            if (distance < bestScore)
             {
-                currentMissiles--;
-
-                if (currentMissiles < GetMaxMissiles(level) && rechargeTimer <= 0f)
-                    rechargeTimer = GetCooldown(level);
-
-                return true;
+                bestScore = distance;
+                bestTarget = hit;
             }
         }
 
-        return false;
+        if (bestTarget == null)
+            return false;
+
+        ctx.TryDestroyWithAbility(bestTarget, abilityId);
+
+        currentMissiles--;
+
+        if (currentMissiles < GetMaxMissiles(level) && rechargeTimer <= 0f)
+            rechargeTimer = GetCooldown(level);
+
+        return true;
     }
 
     private int GetMaxMissiles(int level)

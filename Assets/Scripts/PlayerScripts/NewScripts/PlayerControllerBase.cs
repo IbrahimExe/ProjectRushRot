@@ -46,6 +46,9 @@ public class PlayerControllerBase : MonoBehaviour
     [Header("Ground Check Settings")]
     public Transform feetTransform;
 
+    [Header("Ground Check")]
+    public LayerMask groundMask;
+
     [Header("Visual Tilt (Ground Only)")]
     public Transform cartModel;
     public Transform rayOrigin;
@@ -339,7 +342,7 @@ public class PlayerControllerBase : MonoBehaviour
 
         float rayLen = 1.0f;
 
-        if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
+        if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
         {
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
@@ -347,6 +350,7 @@ public class PlayerControllerBase : MonoBehaviour
         }
 
         RB.linearDamping = 0f;
+        GroundNormal = Vector3.up;
         return false;
     }
 
