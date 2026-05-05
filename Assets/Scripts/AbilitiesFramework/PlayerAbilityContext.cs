@@ -11,7 +11,12 @@ public class PlayerAbilityContext
     public PlayerAbilityContext(PlayerControllerBase player, LayerMask abilityMask, PerkManager perkManager)
     {
         this.player = player;
+
         this.rb = player.RB;
+
+        if (this.rb == null)
+            this.rb = player.GetComponent<Rigidbody>();
+
         this.playerTransform = player.transform;
         this.abilityMask = abilityMask;
         this.perkManager = perkManager;
