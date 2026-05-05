@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96cc3f6cd0262644c8e63aee47afb90a, type: 3}
+  m_Name: FullIndiePrefabCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::PrefabCatalog
+  Definitions:
+  - Name: Animal
+    ID: ANIMAL
+    Category: 0
+    Variants:
+    - {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
+    Footprint: 1
+  - Name: Rock
+    ID: ROCK
+    Category: 0
+    Variants:
+    - {fileID: 7952636126433885707, guid: c98c66f24b5d84a408d37b11824266f6, type: 3}
+    - {fileID: 2052224328857356354, guid: 21091730ddc153c4d83e7f3189033484, type: 3}
+    - {fileID: 6382724045599630178, guid: 202032cc34d2ead4ea116af620025396, type: 3}
+    Footprint: 1
+  - Name: Tree
+    ID: TREE
+    Category: 0
+    Variants:
+    - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
+    Footprint: 1
+  - Name: People
+    ID: PEOPLE
+    Category: 0
+    Variants:
+    - {fileID: 5761199161377964958, guid: 1d833f6e22b0d0947a6e00c66b4170a9, type: 3}
+    - {fileID: 6164530991874043845, guid: 2cc3b411b0d7fef48993642f3c398397, type: 3}
+    - {fileID: 8220712369187974472, guid: 045466d10a3267a4aa3896d65be1ac74, type: 3}
+    - {fileID: 539994085667621224, guid: 6e0d2d04a9c17a140b13a31baa514431, type: 3}
+    Footprint: 1
+  - Name: JumpPad
+    ID: JUMPPAD
+    Category: 0
+    Variants:
+    - {fileID: 7366290418948599023, guid: 1a2ba29e32c8c614d9f0f280e89d9058, type: 3}
+    Footprint: 3
+  - Name: Spawner
+    ID: SPAWNER
+    Category: 0
+    Variants:
+    - {fileID: 8923245167267913275, guid: e821f7503fd08b54c87fe13e288d7cc3, type: 3}
+    Footprint: 1
