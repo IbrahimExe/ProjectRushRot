@@ -38,6 +38,12 @@ public class GroundPoundPerk : AbilityBase
 
     public override bool TryUse(PlayerAbilityContext ctx, int level)
     {
+        if (ctx == null || ctx.player == null || ctx.rb == null)
+        {
+            Debug.LogError("GroundPoundPerk: Missing context, player, or Rigidbody.");
+            return false;
+        }
+
         if (cooldownTimer > 0f)
             return false;
 

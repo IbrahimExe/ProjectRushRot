@@ -64,7 +64,7 @@ public class ShieldPerk : AbilityBase
             return;
 
         shieldVisual = Instantiate(shieldVisualPrefab);
-        shieldVisual.transform.SetParent(ctx.playerTransform);
+        shieldVisual.transform.SetParent(ctx.playerTransform, false);
         shieldVisual.transform.localPosition = Vector3.zero;
         shieldVisual.transform.localRotation = Quaternion.identity;
         shieldVisual.transform.localScale = Vector3.one * shieldRadius * visualScaleMultiplier;
@@ -87,7 +87,9 @@ public class ShieldPerk : AbilityBase
         if (shieldVisual == null)
             return;
 
-        shieldVisual.SetActive(shieldReady);
+        shieldVisual.transform.SetParent(ctx.playerTransform, false);
         shieldVisual.transform.localPosition = Vector3.zero;
+        shieldVisual.transform.localRotation = Quaternion.identity;
+        shieldVisual.SetActive(shieldReady);
     }
 }

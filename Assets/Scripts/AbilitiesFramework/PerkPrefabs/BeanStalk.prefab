@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5123384198847823110}
   - component: {fileID: 1693603038664162964}
   - component: {fileID: 74909913344158897}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -124,9 +124,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87008894ac51fae4787658a625a72a43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeanstalkSurface
-  stickForce: 45
-  forwardBoostForce: 18
-  maxStalkSpeed: 35
+  stickForce: 150
+  forwardBoostForce: 40
+  maxStalkSpeed: 75
 --- !u!1 &7723736405663047533
 GameObject:
   m_ObjectHideFlags: 0
@@ -140,7 +140,7 @@ GameObject:
   - component: {fileID: 5264975471939101258}
   - component: {fileID: 2317222496951069218}
   - component: {fileID: 4182653608470749490}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -252,7 +252,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeanstalkSurface
   stickForce: 150
-  forwardBoostForce: 25
+  forwardBoostForce: 40
   maxStalkSpeed: 75
 --- !u!1 &7825579389614122000
 GameObject:
