@@ -371,6 +371,10 @@ public class PlayerControllerBase : MonoBehaviour
 
         if (Physics.Raycast(rayOrigin.position, Vector3.down, out RaycastHit hit, rayLength))
         {
+            if (hit.collider.isTrigger)
+            {
+                return;
+            }
             GroundNormal = hit.normal;
             Quaternion groundTilt = Quaternion.FromToRotation(cartModel.up, GroundNormal) * cartModel.rotation;
             cartModel.rotation = Quaternion.Slerp(cartModel.rotation, groundTilt, Time.deltaTime * groundAlignSpeed);
