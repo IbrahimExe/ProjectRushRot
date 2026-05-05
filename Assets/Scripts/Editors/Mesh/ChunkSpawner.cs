@@ -90,7 +90,7 @@ public class ChunkSpawner : MonoBehaviour
             List<Vector3> candidates = rule.PlacementMode == PlacementMode.PoissonDisk
                 ? GeneratePoissonPoints(rule, targetCount)
                 : GenerateGridPoints(rule, targetCount);
-            Debug.Log($"[ChunkSpawner] Center:{_chunkCenter} WorldSize:{_chunkWorldSize} MapSize:{_mapSize}");
+            //Debug.Log($"[ChunkSpawner] Center:{_chunkCenter} WorldSize:{_chunkWorldSize} MapSize:{_mapSize}");
             foreach (var candidate in candidates)
             {
                 float rawNoise = SampleRawNoise(candidate.x, candidate.z);
