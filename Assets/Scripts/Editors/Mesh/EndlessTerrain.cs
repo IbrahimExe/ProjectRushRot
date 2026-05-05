@@ -14,6 +14,7 @@ namespace LevelGenerator
         public Transform Viewer;
         public LevelGeneratorCommon Common;
         public Material TerrainMaterial;
+        public PhysicsMaterial TerrainPhysicsMaterial;
 
         [Header("Chunk")]
         [Range(2, 240)]
@@ -24,6 +25,7 @@ namespace LevelGenerator
         public static Vector2 viewerPosition;
         Vector2 viewerPositionOld;
         public static MapGenerator mapGenerator;
+        
 
         int _chunkSize;
         int _chunksVisibleInViewDst;
@@ -112,8 +114,8 @@ namespace LevelGenerator
                     {
                         var chunk = new TerrainChunk(
                             viewedChunkCoord, _chunkSize, transform,
-                            TerrainMaterial, detailLevels, maxViewDist, _scale);
-                        _terrainChunkDictionary.Add(viewedChunkCoord, chunk);
+                            TerrainMaterial, detailLevels, maxViewDist, _scale, TerrainPhysicsMaterial);
+                        _terrainChunkDictionary.Add(viewedChunkCoord, chunk); 
                     }
                 }
             }
@@ -128,6 +130,8 @@ namespace LevelGenerator
             MeshRenderer _meshRenderer;
             MeshFilter _meshFilter;
             MeshCollider _meshCollider;
+            PhysicsMaterial _physicsMaterial;
+
             Texture2D _texture;
             float _maxViewDist;
 
@@ -143,7 +147,8 @@ namespace LevelGenerator
             float _scale;
 
             public TerrainChunk(Vector2 coord, int size, Transform parent,
-                Material material, LODInfo[] detailLevels, float maxViewDist, float scale)
+                Material material, LODInfo[] detailLevels, float maxViewDist, float scale,
+                PhysicsMaterial physicsMaterial)
             {
                 _scale = scale;
                 this.detailLevels = detailLevels;
@@ -159,11 +164,19 @@ namespace LevelGenerator
                 _meshObject.transform.position = positionV3 * _scale;
                 _meshObject.transform.localScale = Vector3.one * _scale;
 
+                //assign to layer 3:Ground for raycasting purposes (e.g. player movement)
+                _meshObject.layer = 3;
+
+
+               
+
                 _meshRenderer = _meshObject.AddComponent<MeshRenderer>();
                 _meshFilter = _meshObject.AddComponent<MeshFilter>();
                 _meshCollider = _meshObject.AddComponent<MeshCollider>();
                 _meshRenderer.material = new Material(material);
                 _spawner = _meshObject.AddComponent<ChunkSpawner>();
+                _physicsMaterial = physicsMaterial;
+                _meshCollider.sharedMaterial = _physicsMaterial;
 
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);
