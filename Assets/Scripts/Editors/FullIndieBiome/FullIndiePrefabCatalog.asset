@@ -31,6 +31,7 @@ MonoBehaviour:
     ID: TREE
     Category: 0
     Variants:
+    - {fileID: 3132356496452668757, guid: 5e624f7a1b1b6674280622a49f3b5390, type: 3}
     - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
     Footprint: 1
   - Name: People
@@ -53,4 +54,16 @@ MonoBehaviour:
     Category: 0
     Variants:
     - {fileID: 8923245167267913275, guid: e821f7503fd08b54c87fe13e288d7cc3, type: 3}
+    Footprint: 1
+  - Name: Bear
+    ID: BEAR
+    Category: 0
+    Variants:
+    - {fileID: 4117830706354083783, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+    Footprint: 1
+  - Name: Fish
+    ID: FISH
+    Category: 0
+    Variants:
+    - {fileID: 8092977340246846854, guid: 89270b25ddfb53c44a5631a7c3c5426e, type: 3}
     Footprint: 1

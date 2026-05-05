@@ -15,7 +15,7 @@ MonoBehaviour:
   FullDistance: 500
   SimDistance: 300
   StandInDistance: 700
-  Density: 1
+  Density: 0.5
   Rules:
   - PrefabDefID: ROCK
     PlacementMode: 0
@@ -35,19 +35,19 @@ MonoBehaviour:
     BlockedBy: 
   - PrefabDefID: PEOPLE
     PlacementMode: 0
-    DensityMultiplier: 0
-    MinSpacing: 0
+    DensityMultiplier: 0.02
+    MinSpacing: 2
     HeightMin: 0.4
     HeightMax: 0.99
     MaxSlope: 0
     BlockedBy: 
   - PrefabDefID: JUMPPAD
     PlacementMode: 0
-    DensityMultiplier: 0
-    MinSpacing: 0
+    DensityMultiplier: 0.01
+    MinSpacing: 200
     HeightMin: 0.41
     HeightMax: 0.6
-    MaxSlope: 0
+    MaxSlope: 50
     BlockedBy: 
   - PrefabDefID: ANIMAL
     PlacementMode: 0
@@ -63,5 +63,21 @@ MonoBehaviour:
     MinSpacing: 0
     HeightMin: 0.41
     HeightMax: 0.59
+    MaxSlope: 0
+    BlockedBy: 
+  - PrefabDefID: FISH
+    PlacementMode: 0
+    DensityMultiplier: 0.2
+    MinSpacing: 3
+    HeightMin: 0
+    HeightMax: 0.2
+    MaxSlope: 0
+    BlockedBy: 
+  - PrefabDefID: BEAR
+    PlacementMode: 0
+    DensityMultiplier: 0.2
+    MinSpacing: 3
+    HeightMin: 0.8
+    HeightMax: 1
     MaxSlope: 0
     BlockedBy: 

@@ -45,6 +45,6 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   HeightMultiplier: 20
-  ChunkWorldSize: 240
+  ChunkWorldSize: 1
   TextureResolution: 512
-  VertexResolution: 240
+  VertexResolution: 120
