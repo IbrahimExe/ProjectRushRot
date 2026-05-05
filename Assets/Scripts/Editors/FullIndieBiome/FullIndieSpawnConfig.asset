@@ -19,7 +19,7 @@ MonoBehaviour:
   Rules:
   - PrefabDefID: ROCK
     PlacementMode: 0
-    DensityMultiplier: 0
+    DensityMultiplier: 0.01
     MinSpacing: 0
     HeightMin: 0.27
     HeightMax: 0.59
@@ -51,7 +51,7 @@ MonoBehaviour:
     BlockedBy: 
   - PrefabDefID: ANIMAL
     PlacementMode: 0
-    DensityMultiplier: 0
+    DensityMultiplier: 0.02
     MinSpacing: 0
     HeightMin: 0.3
     HeightMax: 1

@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: FullIndieTerrainConfig
   m_EditorClassIdentifier: Assembly-CSharp::TerrainConfig
   Regions:
+  - Name: DeepWater
+    Height: 0.21
+    Color: {r: 0.0038714937, g: 0.4587634, b: 0.8207547, a: 1}
+    BlendWidth: 0
+    BlendMode: 0
+    Texture: {fileID: 0}
+    BlendSettings:
+      BayerMatrixSize: 0
+      BayerStrength: 0
+      BlueNoiseTexture: {fileID: 0}
+      BlueNoiseStrength: 0
+      VoronoiJitter: 0
+      VoronoiCells: 0
   - Name: 
     Height: 0.26
     Color: {r: 0, g: 0.55506897, b: 1, a: 1}
