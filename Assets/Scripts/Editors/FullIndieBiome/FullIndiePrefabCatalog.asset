@@ -59,7 +59,7 @@ MonoBehaviour:
     ID: BEAR
     Category: 0
     Variants:
-    - {fileID: 4117830706354083783, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+    - {fileID: 7909263937607849396, guid: 9bcc040e3a28ab24e84fa66017f17d14, type: 3}
     Footprint: 1
   - Name: Fish
     ID: FISH

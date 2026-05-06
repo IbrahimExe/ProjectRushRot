@@ -28,7 +28,7 @@ public class PlayerAbilityRunner : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.LogError("ABILITY RUNNER ENABLED");
+        Debug.Log("ABILITY RUNNER ENABLED");
     }
 
     private void Start()

@@ -165,6 +165,8 @@ namespace LevelGenerator
                 _meshRenderer.material = new Material(material);
                 _spawner = _meshObject.AddComponent<ChunkSpawner>();
 
+                _meshObject.layer = 3; 
+
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);
 
