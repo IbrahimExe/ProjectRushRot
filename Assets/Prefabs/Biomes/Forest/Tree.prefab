@@ -70,7 +70,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 3152351394207331309, guid: 2a8cb2afe84fe7d4f86b93bdba59d79c, type: 3}
+  - {fileID: 2100000, guid: 3c8183d25b6a3fd44b06a91408fbbcdc, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -105,8 +105,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10acae625874f254d9914269f1dcadd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FallingTree
-  probabilityStayUpright: 20
-  biasTowardPlayer: 0.75
+  probabilityStayUpright: 85
+  biasTowardPlayer: 1
   fallDuration: 2
   presenceTrigger: {fileID: 0}
 --- !u!135 &4866800458956609212
