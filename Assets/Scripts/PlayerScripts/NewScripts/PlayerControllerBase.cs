@@ -343,14 +343,12 @@ public class PlayerControllerBase : MonoBehaviour
 
         float rayLen = 1.0f;
 
-<<<<<<< HEAD
         // Visualise the ray in scene view
-        Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
+       // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
 
-        if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
-=======
+
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
->>>>>>> main
+
         {
             // Visualise the hit point
             Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
