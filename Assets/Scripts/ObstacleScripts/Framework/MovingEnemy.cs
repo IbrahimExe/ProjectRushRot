@@ -17,9 +17,9 @@ public class MovingEnemy : MonoBehaviour
 
     [Header("Wander")]
     public float wanderSpeed = 2f;
-    public float wanderRadius = 6f;        // How far from spawn it can roam
+    public float wanderRadius = 6f;        
     public float waypointReachedDist = 0.5f;
-    public float wanderPauseDuration = 1.5f; // How long to idle at each waypoint
+    public float wanderPauseDuration = 1.5f;
 
     private Vector3 _wanderTarget;
     private Vector3 _spawnPosition;
@@ -29,8 +29,8 @@ public class MovingEnemy : MonoBehaviour
     // Chase
 
     [Header("Chase")]
-    public float losePlayerRange = 20f;    // Gives up chase beyond this distance
-    public float losePlayerDelay = 3f;     // Seconds before giving up after losing sight
+    public float losePlayerRange = 20f;    
+    public float losePlayerDelay = 3f;     
 
     private Transform _player;
     private float _losePlayerTimer = 0f;
@@ -61,10 +61,10 @@ public class MovingEnemy : MonoBehaviour
         SnapToGround();
         PickNewWanderTarget();
 
-        // Ensure a trigger sphere is present - can also be set up in the prefab
+        // Ensure a trigger sphere is present
         SetupDetectionSphere();
 
-        // Register after all Awakes have run - safe for runtime-spawned enemies
+        // Register after all Awakes have run
         if (EnemyManager.Instance != null)
             EnemyManager.Instance.Register(this);
         else
@@ -72,7 +72,20 @@ public class MovingEnemy : MonoBehaviour
                 "Make sure an EnemyManager is in the scene.");
     }
 
-    // Called when the spawner destroys this enemy (e.g. it falls behind the runner)
+    // If we dont want to use the EnemyManager's manual update
+
+    //private void Update()
+    //{
+    //    UpdateGrounding();
+
+    //    switch(_state)
+    //    {
+    //        case EnemyState.Wandering: UpdateWander(); break;
+    //        case EnemyState.Chasing: UpdateChase(); break;
+    //    }
+    //}
+
+    // Called when the spawner destroys this enemy
     void OnDestroy() => EnemyManager.Instance?.Unregister(this);
 
     // Called by the detection sphere child object
@@ -81,11 +94,9 @@ public class MovingEnemy : MonoBehaviour
         _player = player;
         _state = EnemyState.Chasing;
         _losePlayerTimer = 0f;
-
-        Debug.Log($"{name} spotted the player - chasing!");
     }
 
-    // Main Update (called by EnemyManager)
+    // Main Update
 
     public void ManualUpdate()
     {
@@ -175,8 +186,6 @@ public class MovingEnemy : MonoBehaviour
         _losePlayerTimer = 0f;
         _isPaused = false;
         PickNewWanderTarget();
-
-        Debug.Log($"{name} lost the player - wandering.");
     }
 
     // Shared Steering
@@ -261,7 +270,6 @@ public class MovingEnemy : MonoBehaviour
 
     void SetupDetectionSphere()
     {
-        // Only auto-create if no PlayerDetector child exists yet
         if (GetComponentInChildren<PlayerDetector>() != null) return;
 
         GameObject detector = new GameObject("PlayerDetector");
@@ -271,7 +279,7 @@ public class MovingEnemy : MonoBehaviour
 
         SphereCollider col = detector.AddComponent<SphereCollider>();
         col.isTrigger = true;
-        col.radius = 8f; // detection radius - tune this in Inspector via PlayerDetector
+        col.radius = 8f; // detection radius - tune this in player detector
 
         detector.AddComponent<PlayerDetector>();
     }

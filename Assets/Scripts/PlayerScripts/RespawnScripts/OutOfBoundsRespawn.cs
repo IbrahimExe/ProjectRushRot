@@ -76,7 +76,6 @@ public class OutOfBoundsRespawn : MonoBehaviour
 
         savedCheckpoints.Add(checkpoint);
         currentRespawnAttempts = 0;
-        Debug.Log("Checkpoint saved at: " + checkpoint);
     }
 
     public void RespawnPlayer()

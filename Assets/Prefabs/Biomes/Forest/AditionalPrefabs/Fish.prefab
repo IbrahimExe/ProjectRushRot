@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 8092977340246846854}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -694.78937, y: 3.82, z: 939.4228}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -46,7 +46,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a29143fa06bf177459504b9937d97f0c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.67
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: a29143fa06bf177459504b9937d97f0c, type: 3}
       propertyPath: m_LocalPosition.z
@@ -175,11 +175,14 @@ MonoBehaviour:
   speed: 20
   rotateTowardDirection: 1
   rotationSpeed: 360
+  reverseOnCollision: 0
+  startDelayMin: 0
+  startDelayMax: 2
   useLerp: 0
   lerpStartDistance: 3
   lerpSpeed: 8
-  localOffsetA: {x: 0, y: 25, z: 0}
-  localOffsetB: {x: 0, y: -20, z: 0}
+  localOffsetA: {x: 0, y: 20, z: 0}
+  localOffsetB: {x: 0, y: -15, z: 0}
   randomizePoints: 0
   randomXMin: 3
   randomXMax: 8
