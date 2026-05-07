@@ -1,5 +1,58 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &156803044820168104
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3091785354773273136}
+  - component: {fileID: 4060409025446109933}
+  m_Layer: 0
+  m_Name: DestructibleHitBox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3091785354773273136
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156803044820168104}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4173764387197937956}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4060409025446109933
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156803044820168104}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1.6639954, z: 1.856941}
+  m_Center: {x: 0, y: 0.89585173, z: 0.04044285}
 --- !u!1 &3207817493276649302
 GameObject:
   m_ObjectHideFlags: 0
@@ -11,6 +64,7 @@ GameObject:
   - component: {fileID: 4173764387197937956}
   - component: {fileID: 1863785388243541582}
   - component: {fileID: 6791844425725912170}
+  - component: {fileID: 707046692329073497}
   m_Layer: 0
   m_Name: Animal
   m_TagString: Enemy
@@ -32,6 +86,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8536061735665093854}
+  - {fileID: 3091785354773273136}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!114 &1863785388243541582
@@ -48,7 +103,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AfraidAnimal
   maxConeAngleTowardPlayer: 90
   presenceTrigger: {fileID: 1647947134314232257}
-  runSpeed: 6
+  runSpeed: 12.5
   groundCheckDistance: 2
   groundOffset: 0.5
   groundFollowSpeed: 10
@@ -77,6 +132,23 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.71, y: 1.7511452, z: 1.7550303}
   m_Center: {x: 0.0000065088275, y: 0.8420252, z: 0.03663302}
+--- !u!114 &707046692329073497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3207817493276649302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
+  destroyableByAbilities:
+  - missile
+  - shield
+  - ground_pound
+  destroyVFX: {fileID: 0}
 --- !u!1 &7059129825452611462
 GameObject:
   m_ObjectHideFlags: 0
