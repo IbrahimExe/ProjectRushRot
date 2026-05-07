@@ -1,3 +1,4 @@
+using LevelGenerator;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -322,10 +323,18 @@ public class PlayerControllerBase : MonoBehaviour
 
         float rayLen = 1.0f;
 
+        // Visualise the ray in scene view
+        Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
+
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen))
         {
+            // Visualise the hit point
+            Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
+
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
+            string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
+            //Debug.Log("Grounded on region: " + region);
             return true;
         }
 

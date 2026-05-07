@@ -28,7 +28,7 @@ namespace LevelGenerator
         int _chunkSize;
         int _chunksVisibleInViewDst;
 
-        Dictionary<Vector2, TerrainChunk> _terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
+        static Dictionary<Vector2, TerrainChunk> _terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
         static List<TerrainChunk> terrainChunksVisibleLastUpdate = new List<TerrainChunk>();
 
         void OnValidate()
@@ -62,6 +62,12 @@ namespace LevelGenerator
                 viewerPositionOld = viewerPosition;
                 UpdateVisibleChunks(); }
         }
+        public static MapData? GetCachedMapData(Vector2 chunkCoord)
+        {
+            if (_terrainChunkDictionary.TryGetValue(chunkCoord, out TerrainChunk chunk))
+                return chunk.GetMapData();
+            return null;
+        }
 
         void UpdateVisibleChunks()
         {
@@ -94,6 +100,8 @@ namespace LevelGenerator
             }
         }
 
+
+
         public class TerrainChunk
         {
             GameObject _meshObject;
@@ -116,6 +124,7 @@ namespace LevelGenerator
             int previousLODindex = -1;
 
             float _scale;
+            public MapData? GetMapData() => _mapDataReceived ? _mapData : (MapData?)null;
 
             public TerrainChunk(Vector2 coord, int size, Transform parent,
                 Material material, LODInfo[] detailLevels, float maxViewDist, float scale)
@@ -241,7 +250,11 @@ namespace LevelGenerator
             }
 
             public bool IsVisible() => _meshObject.activeSelf;
+
+
         }
+
+
 
         // Holds a mesh for one LOD level (requests from mapGenerator on demand, caches result)
         class LODMesh
