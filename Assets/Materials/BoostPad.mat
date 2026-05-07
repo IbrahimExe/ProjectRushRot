@@ -130,7 +130,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 0
-    - _curveStrength: 0
+    - _curveStrength: 0.0001
     m_Colors:
     - _BaseColor: {r: 0.15337591, g: 0.7747088, b: 0.8867924, a: 1}
     - _Color: {r: 0.15337586, g: 0.7747088, b: 0.8867924, a: 1}
