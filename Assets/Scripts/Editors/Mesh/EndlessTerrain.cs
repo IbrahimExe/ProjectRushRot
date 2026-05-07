@@ -37,6 +37,25 @@ namespace LevelGenerator
             chunkWorldSize = Mathf.Max(1f, chunkWorldSize);
         }
 
+        void OnEnable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        void OnDisable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            mapGenerator = null;
+            viewerPosition = Vector2.zero;
+            viewerPositionOld = Vector2.zero;
+            terrainChunksVisibleLastUpdate.Clear();
+            _terrainChunkDictionary.Clear();
+        }
+
         void Start()
         {
 
@@ -55,7 +74,13 @@ namespace LevelGenerator
 
         void Update()
         {
-            viewerPosition = new Vector2(Viewer.position.x, Viewer.position.z) / _scale;
+
+            if (Viewer != null)
+            {
+                viewerPosition = new Vector2(Viewer.position.x, Viewer.position.z) / _scale;
+            }else{
+                    viewerPosition = Vector2.zero;
+            }
 
             if ((viewerPositionOld - viewerPosition ).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate)
                 { 
@@ -148,6 +173,8 @@ namespace LevelGenerator
                 _meshCollider = _meshObject.AddComponent<MeshCollider>();
                 _meshRenderer.material = new Material(material);
                 _spawner = _meshObject.AddComponent<ChunkSpawner>();
+
+                _meshObject.layer = 3; 
 
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);

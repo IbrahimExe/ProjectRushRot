@@ -32,6 +32,7 @@ MonoBehaviour:
   dashCooldown: 2
   dashSpeedBoostMultiplier: 1.15
   dashBoostDuration: 1.5
+  baseNumOfJumps: 1
   numOfJumps: 1
   xpMultiplierOnKill: 1
   canAirSideDash: 0

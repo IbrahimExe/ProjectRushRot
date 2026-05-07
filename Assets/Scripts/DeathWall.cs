@@ -90,7 +90,7 @@ public class DeathWall : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Time.timeScale = 0f;
 
-        Destroy(obj);
+        //Destroy(obj);
         Debug.Log("DeathWall: Player killed.");
     }
 

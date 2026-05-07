@@ -86,7 +86,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 922de6ba06c8d5a4fa8f9ad58ceba026, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SplineNodeManager
-  connectionRange: 100
+  connectionRange: 60
   sortAxis: {x: 0, y: 0, z: 1}
 --- !u!114 &1252685522473519392
 MonoBehaviour:
@@ -105,10 +105,18 @@ MonoBehaviour:
   - prefab: {fileID: 0}
     Prefab: {fileID: 2685720301320703557, guid: 6d6e7489ab941df438cfcb298192e263, type: 3}
     probability: 0
-    Probability: 0
+    Probability: 30
+  - prefab: {fileID: 0}
+    Prefab: {fileID: 2685720301320703557, guid: 7d85d4de14a6a3149b593d5083106bec, type: 3}
+    probability: 0
+    Probability: 65
+  - prefab: {fileID: 0}
+    Prefab: {fileID: 2685720301320703557, guid: 52559fb35a686d24cab9324964ec84dd, type: 3}
+    probability: 0
+    Probability: 5
   m_Method: 1
   m_Space: 0
-  m_Spacing: {x: 20, y: 20}
+  m_Spacing: {x: 14.5, y: 14.5}
   m_Up: 1
   m_Forward: 0
   m_PositionOffset:
