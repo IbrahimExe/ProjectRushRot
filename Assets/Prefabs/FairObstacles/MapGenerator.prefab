@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.MapGenerator
   drawMode: 2
-  Common: {fileID: 11400000, guid: 61f53479b0fcbae4180ebf7c545100be, type: 2}
+  Common: {fileID: 11400000, guid: 3107af82675ea9c4f9a826dabff96dfd, type: 2}
   levelOfDetail: 0
   meshHeightMultiplier: 20
   meshHeightCurve:
@@ -210,9 +210,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  meshScale: 0.75
-  noiseWorldScale: 5.19
-  autoUpdate: 0
+  meshScale: 1
+  noiseWorldScale: 1
+  autoUpdate: 1
 --- !u!114 &4768514359574662280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -229,19 +229,19 @@ MonoBehaviour:
   - distanceFraction: 150
     lod: 0
     useForCollider: 0
-  - distanceFraction: 300
+  - distanceFraction: 400
     lod: 1
     useForCollider: 1
-  - distanceFraction: 400
+  - distanceFraction: 500
     lod: 2
     useForCollider: 0
-  - distanceFraction: 500
+  - distanceFraction: 700
     lod: 3
     useForCollider: 0
-  - distanceFraction: 700
+  - distanceFraction: 900
     lod: 5
     useForCollider: 0
-  - distanceFraction: 1000
+  - distanceFraction: 1500
     lod: 6
     useForCollider: 0
   Viewer: {fileID: 0}

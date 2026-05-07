@@ -178,6 +178,8 @@ namespace LevelGenerator
                 _physicsMaterial = physicsMaterial;
                 _meshCollider.sharedMaterial = _physicsMaterial;
 
+                _meshObject.layer = 3; 
+
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);
 

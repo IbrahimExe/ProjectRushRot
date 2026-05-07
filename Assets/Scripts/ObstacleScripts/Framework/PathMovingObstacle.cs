@@ -201,7 +201,7 @@ public class PathMovingObstacle : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag(playerTag)) return;
-        FlipDirection();
+        //FlipDirection();
     }
 
 #if UNITY_EDITOR
