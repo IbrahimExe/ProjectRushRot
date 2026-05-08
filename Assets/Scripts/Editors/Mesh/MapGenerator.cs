@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 namespace LevelGenerator
 {
@@ -82,24 +83,26 @@ namespace LevelGenerator
 
         void Update()
         {
+            
+            _mapDataBuffer.Clear();
             lock (mapDataThreadInfoQueue)
-            {
                 while (mapDataThreadInfoQueue.Count > 0)
-                {
-                    var threadInfo = mapDataThreadInfoQueue.Dequeue();
-                    threadInfo.callback(threadInfo.parameter);
-                }
-            }
+                    _mapDataBuffer.Add(mapDataThreadInfoQueue.Dequeue());
 
+            foreach (var info in _mapDataBuffer)
+                info.callback(info.parameter);
+
+            _meshDataBuffer.Clear();
             lock (meshDataThreadInfoQueue)
-            {
                 while (meshDataThreadInfoQueue.Count > 0)
-                {
-                    var threadInfo = meshDataThreadInfoQueue.Dequeue();
-                    threadInfo.callback(threadInfo.parameter);
-                }
-            }
+                    _meshDataBuffer.Add(meshDataThreadInfoQueue.Dequeue());
+
+            foreach (var info in _meshDataBuffer)
+                info.callback(info.parameter);
         }
+
+        List<MapThreadInfo<MapData>> _mapDataBuffer = new List<MapThreadInfo<MapData>>();
+        List<MapThreadInfo<MeshData>> _meshDataBuffer = new List<MapThreadInfo<MeshData>>();
 
         public MapData GenerateMapData(Vector2 centre)
         {
@@ -259,6 +262,36 @@ namespace LevelGenerator
                     return regions[i].Name;
 
             return string.Empty;
+        }
+
+        public static float GetHeightAtWorldPosition(Vector3 worldPosition)
+        {
+            if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)
+                return 0f;
+
+            float uniformScale = mapInstance.Common.UniformScale;
+            int chunkSize = Mathf.RoundToInt((mapChunkSize - 1) * mapInstance.meshScale);
+            Vector2 pos2D = new Vector2(worldPosition.x / uniformScale, worldPosition.z / uniformScale);
+
+            Vector2 chunkCoord = new Vector2(
+                Mathf.RoundToInt(pos2D.x / chunkSize),
+                Mathf.RoundToInt(pos2D.y / chunkSize));
+
+            MapData? mapData = EndlessTerrain.GetCachedMapData(chunkCoord);
+            if (mapData == null) return 0f;
+
+            Vector2 chunkCenter = chunkCoord * chunkSize;
+            float u = (pos2D.x - chunkCenter.x) / chunkSize + 0.5f;
+            float v = 0.5f - (pos2D.y - chunkCenter.y) / chunkSize;
+            int x = Mathf.Clamp(Mathf.RoundToInt(u * (mapChunkSize - 1)), 0, mapChunkSize - 1);
+            int z = Mathf.Clamp(Mathf.RoundToInt(v * (mapChunkSize - 1)), 0, mapChunkSize - 1);
+
+            float noiseValue = mapData.Value.heightMap[x, z];
+
+            // Apply height curve and multiplier — same as the mesh does
+            return mapInstance.meshHeightCurve.Evaluate(noiseValue) * mapInstance.meshHeightMultiplier * uniformScale;
+
+            //REPLACE RAYCAST HEIGHT CHECK WITH float groundY = MapGenerator.GetHeightAtWorldPosition(transform.position);
         }
 
         void OnValidate()
