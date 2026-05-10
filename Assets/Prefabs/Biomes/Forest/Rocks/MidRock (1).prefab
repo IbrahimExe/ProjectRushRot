@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4582189302213913492}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: MidRock (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 1348572797711898472}
   - component: {fileID: 2706342820534474551}
   - component: {fileID: 8088836825732267851}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Rock
   m_TagString: Untagged
   m_Icon: {fileID: 0}

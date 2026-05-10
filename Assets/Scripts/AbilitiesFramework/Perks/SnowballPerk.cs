@@ -3,22 +3,45 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Perks/Snowball")]
 public class SnowBallPerk : AbilityBase
 {
+    public GameObject bridgePrefab;
     public float baseBridgeLength = 10f;
-    public float baseBridgeDuration = 3f;
+    public float lengthPerLevel = 3f;
+    public float bridgeDuration = 3f;
+    public float detectionRadius = 8f;
+    public string holeTag = "Hole";
 
-    public override StatModifier[] GetStatModifiers(int level) => new[]
+    public override bool TryUse(PlayerAbilityContext ctx, int level)
     {
-        new StatModifier("snowBallBridgeLength",   2f * level,  StatModifier.ModType.Flat),
-        new StatModifier("snowBallBridgeDuration", 0.5f * level, StatModifier.ModType.Flat)
-    };
+        if (bridgePrefab == null)
+            return false;
 
-    public override void OnApply(PlayerControllerBase player, int level)
-    {
-        // player.snowBallEnabled = true;
-    }
+        Collider[] hits = Physics.OverlapSphere(
+            ctx.playerTransform.position,
+            detectionRadius,
+            ctx.abilityMask
+        );
 
-    public override void OnRemove(PlayerControllerBase player)
-    {
-        // player.snowBallEnabled = false;
+        foreach (Collider hit in hits)
+        {
+            if (!hit.CompareTag(holeTag))
+                continue;
+
+            Vector3 pos = hit.bounds.center;
+            pos.y = ctx.playerTransform.position.y - 0.5f;
+
+            GameObject bridge = Instantiate(bridgePrefab, pos, ctx.playerTransform.rotation);
+
+            float length = baseBridgeLength + lengthPerLevel * (level - 1);
+            bridge.transform.localScale = new Vector3(
+                bridge.transform.localScale.x,
+                bridge.transform.localScale.y,
+                length
+            );
+
+            Destroy(bridge, bridgeDuration);
+            return true;
+        }
+
+        return false;
     }
 }

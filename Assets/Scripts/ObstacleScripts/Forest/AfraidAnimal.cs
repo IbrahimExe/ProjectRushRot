@@ -1,3 +1,4 @@
+using LevelGenerator;
 using UnityEngine;
 
 public class AfraidAnimal : MonoBehaviour
@@ -14,18 +15,37 @@ public class AfraidAnimal : MonoBehaviour
     [Header("Movement (kept simple)")]
     [SerializeField] private float runSpeed = 6f;
 
+    [Header("Grounding")]
+    [SerializeField] private float groundCheckDistance = 2f;
+    [SerializeField] private float groundOffset = 0.5f;
+    [SerializeField] private float groundFollowSpeed = 10f;
+    [SerializeField] private float maxClimbAngle = 45f;
+    [SerializeField] private LayerMask groundLayer;
+
     private Transform player;
     private bool playerInRange;
     private bool startled;
     private Vector3 runDir;
 
+    public MapGenerator MapGenerator;
     private void Reset()
     {
         presenceTrigger = GetComponent<Collider>();
     }
 
+    private void Start()
+    {
+        if (MapGenerator == null)
+        {
+            MapGenerator = FindFirstObjectByType<MapGenerator>();
+        }
+        SnapToGround();
+    }
+
     private void Update()
     {
+
+        UpdateGrounding();
         if (!playerInRange || startled == true) { MoveIfStartled(); return; }
 
         // "Listening": any of these keys pressed startles it
@@ -99,14 +119,16 @@ public class AfraidAnimal : MonoBehaviour
         return d.normalized;
     }
 
-    private void OnTriggerEnter(Collider other)
+    // Called by PresenceTriggerRelay on the child sphere-trigger object.
+    public void OnPresenceTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
         player = other.transform;
         playerInRange = true;
     }
 
-    private void OnTriggerExit(Collider other)
+    // Called by PresenceTriggerRelay on the child sphere-trigger object.
+    public void OnPresenceTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
         playerInRange = false;
@@ -117,5 +139,45 @@ public class AfraidAnimal : MonoBehaviour
     {
         // Destroy if it collides with anything at all
         Destroy(gameObject);
+    }
+
+    void SnapToGround()
+    {
+        //Vector3 origin = transform.position + Vector3.up * 5f;
+        //if (Physics.Raycast(origin, Vector3.down,
+        //    out RaycastHit hit, groundCheckDistance + 5f, groundLayer))
+        //{
+        //    Vector3 pos = transform.position;
+        //    pos.y = hit.point.y + groundOffset;
+        //    transform.position = pos;
+        //}
+
+        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+        transform.position = new Vector3(transform.position.x, groundHeight + groundOffset, transform.position.z);
+    }
+    void UpdateGrounding()
+    {
+        //if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down,
+        //    out RaycastHit hit, groundCheckDistance, groundLayer))
+        //{
+        //    float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+        //    if (slopeAngle <= maxClimbAngle)
+        //    {
+        //        Vector3 pos = transform.position;
+        //        pos.y = Mathf.Lerp(pos.y, hit.point.y + groundOffset, groundFollowSpeed * Time.deltaTime);
+        //        transform.position = pos;
+        //    }
+        //}
+        //else
+        //{
+        //    Vector3 pos = transform.position;
+        //    pos.y -= 9.8f * Time.deltaTime;
+        //    transform.position = pos;
+        //}
+
+        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+        Vector3 pos = transform.position;
+        pos.y = Mathf.Lerp(pos.y, groundHeight + groundOffset, groundFollowSpeed * Time.deltaTime);
+        transform.position = pos;
     }
 }

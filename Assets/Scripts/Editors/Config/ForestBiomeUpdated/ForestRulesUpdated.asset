@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c27130811e49a2541b8f0117a8bc94f6, type: 3}
+  m_Name: ForestRulesUpdated
+  m_EditorClassIdentifier: Assembly-CSharp::NeighborRulesConfig
+  catalog: {fileID: 11400000, guid: b9f8c59c4edfa5647b0e753bca11222f, type: 2}
+  surfaceRules: []
+  occupantRules: []
