@@ -138,14 +138,29 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+
+        if (pauseAudio)
+            AudioListener.pause = false;
+
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.ClearAllPerks();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void OnQuitToMenuButton()
     {
         Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+
+        if (pauseAudio)
+            AudioListener.pause = false;
+
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.ClearAllPerks();
 
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);
