@@ -3,5 +3,7 @@
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Boxophobic.SkyboxCubemapExtended.Editor.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Unity.Splines.Examples.csproj" />
   <Project Path="Boxophobic.Utils.Scripts.csproj" />
+  <Project Path="Unity.Splines.Examples.Editor.csproj" />
 </Solution>
