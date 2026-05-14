@@ -179,10 +179,6 @@ public class ChunkSpawner : MonoBehaviour
             case SpawnState.Full:
             case SpawnState.Simulating:
                 if (def.Variants == null || def.Variants.Count == 0) break;
-<<<<<<< Updated upstream
-                var prefab = PickVariant(def, inst.WorldPosition);
-                inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
-=======
 
                 if (_poolManager != null && _poolManager.TryFetch(inst.PrefabDefID, out GameObject pooled))
                 {
@@ -196,7 +192,6 @@ public class ChunkSpawner : MonoBehaviour
                     inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
                 }
 
->>>>>>> Stashed changes
                 SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
                 break;
         }
@@ -218,21 +213,6 @@ public class ChunkSpawner : MonoBehaviour
         }
     }
 
-<<<<<<< Updated upstream
-=======
-    void DestroyInstance(SpawnedInstance inst)
-    {
-        if (inst.ActiveObject == null) return;
-
-        if (_poolManager != null)
-            _poolManager.Recycle(inst.PrefabDefID, inst.ActiveObject);
-        else
-            Destroy(inst.ActiveObject);
-
-        inst.ActiveObject = null;
-    }
-
->>>>>>> Stashed changes
     //Placement helpers
     List<Vector3> GeneratePoissonPoints(SpawnRule rule, int targetCount)
     {
