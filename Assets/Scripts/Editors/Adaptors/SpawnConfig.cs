@@ -19,6 +19,9 @@ public class SpawnRule
     [Range(0.01f, 10f)]
     public float DensityMultiplier = 1f;
 
+    [Tooltip("Enable physics/AI when player is within SimDistance. Disable for static objects like trees and rocks.")]
+    public bool EnableSimulation = false;
+
     [Tooltip("Minimum world-unit distance between instances of this rule.")]
     public float MinSpacing = 5f;
 

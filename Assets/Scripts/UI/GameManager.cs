@@ -1,11 +1,15 @@
 using System.Collections;
+using TMPro;
+using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 [DisallowMultipleComponent]
 public class GameManager : MonoBehaviour
 {
+
+    [SerializeField] private ObjectPoolManager _poolManager;
+
     [Header("UI (assign in inspector)")]
     public GameObject pauseMenuUI;      // Full pause panel
     public GameObject countdownUI;      // Panel for countdown
@@ -35,6 +39,8 @@ public class GameManager : MonoBehaviour
     {
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
+        _poolManager.Initialize();
+        ServiceLocator.Register<ObjectPoolManager>(_poolManager);
     }
 
     void Update()

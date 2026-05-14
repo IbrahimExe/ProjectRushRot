@@ -1,6 +1,5 @@
 using LevelGenerator;
 using System.Collections.Generic;
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 public enum SpawnState
@@ -30,6 +29,7 @@ public class ChunkSpawner : MonoBehaviour
     int          _seed;
     Transform _spawnRoot;
     ObjectPoolManager _poolManager;
+    
 
     // Heightmap and normals from MapData
     float[,]  _heightMap;
@@ -59,6 +59,7 @@ public class ChunkSpawner : MonoBehaviour
         _normals         = bakedNormals;
         _spawnRoot = spawnRoot;
         _poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        Debug.Log($"[ChunkSpawner] PoolManager: {(_poolManager != null ? "found" : "NULL")}");
 
         _catalog.RebuildCache();
 
@@ -152,16 +153,15 @@ public class ChunkSpawner : MonoBehaviour
             (target == SpawnState.Full || target == SpawnState.Simulating) &&
             (inst.State == SpawnState.Full || inst.State == SpawnState.Simulating))
         {
-            SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
+            var r = GetRuleForDef(inst.PrefabDefID);
+            SetSimulation(inst.ActiveObject, target == SpawnState.Simulating && r != null && r.EnableSimulation);
             inst.State = target;
             return;
         }
 
-        // Destroy only when actually leaving the Full/Sim tier
         if (inst.ActiveObject != null)
         {
-            Destroy(inst.ActiveObject);
-            inst.ActiveObject = null;
+            DestroyInstance(inst);
         }
 
         var def = _catalog.GetByID(inst.PrefabDefID);
@@ -173,7 +173,6 @@ public class ChunkSpawner : MonoBehaviour
                 break;
 
             case SpawnState.StandIn:
-                // TODO
                 break;
 
             case SpawnState.Full:
@@ -182,35 +181,53 @@ public class ChunkSpawner : MonoBehaviour
 
                 if (_poolManager != null && _poolManager.TryFetch(inst.PrefabDefID, out GameObject pooled))
                 {
+                    Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
                     pooled.transform.SetPositionAndRotation(inst.WorldPosition, inst.Rotation);
                     pooled.SetActive(true);
                     inst.ActiveObject = pooled;
                 }
                 else
                 {
+                    Debug.Log($"[ChunkSpawner] Pool miss: {inst.PrefabDefID}, poolManager null: {_poolManager == null}");
                     var prefab = PickVariant(def, inst.WorldPosition);
                     inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
                 }
 
-                SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
+                var rule = GetRuleForDef(inst.PrefabDefID);
+                SetSimulation(inst.ActiveObject, target == SpawnState.Simulating && rule != null && rule.EnableSimulation);
                 break;
         }
 
         inst.State = target;
     }
+    SpawnRule GetRuleForDef(string prefabDefID)
+{
+    if (_spawnConfig == null) return null;
+    foreach (var rule in _spawnConfig.Rules)
+        if (rule.PrefabDefID == prefabDefID) return rule;
+    return null;
+}
 
     // Called by TerrainChunk.SetVisible(false)
     public void Despawn()
     {
         foreach (var inst in _instances)
         {
-            if (inst.ActiveObject != null)
-            {
-                Destroy(inst.ActiveObject);
-                inst.ActiveObject = null;
-            }
+            DestroyInstance(inst);
             inst.State = SpawnState.None;
         }
+    }
+
+    void DestroyInstance(SpawnedInstance inst)
+    {
+        if (inst.ActiveObject == null) return;
+
+        if (_poolManager != null)
+            _poolManager.Recycle(inst.PrefabDefID, inst.ActiveObject);
+        else
+            Destroy(inst.ActiveObject);
+
+        inst.ActiveObject = null;
     }
 
     //Placement helpers
@@ -342,14 +359,12 @@ public class ChunkSpawner : MonoBehaviour
 
     void SetSimulation(GameObject obj, bool active)
     {
-        // Enable/disable physics and AI components
+        if (!active) return; // never disable kinematic from here — let the prefab control default state
+
         foreach (var rb in obj.GetComponentsInChildren<Rigidbody>())
             rb.isKinematic = !active;
 
         foreach (var col in obj.GetComponentsInChildren<Collider>())
             col.enabled = active;
-
-        // Animator stays on — disable only AI via a common interface if needed
-        // designers handle behaviour through their own component setup
     }
 }
