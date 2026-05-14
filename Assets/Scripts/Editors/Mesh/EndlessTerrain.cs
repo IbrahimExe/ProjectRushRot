@@ -103,6 +103,20 @@ namespace LevelGenerator
             int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / _chunkSize);
             int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / _chunkSize);
 
+            // Evict chunks too far away
+            var toEvict = new List<Vector2>();
+            foreach (var pair in _terrainChunkDictionary)
+            {
+                Vector2 chunkWorldPos = pair.Key * _chunkSize;
+                if (Vector2.Distance(viewerPosition, chunkWorldPos) > maxViewDist * 2f)
+                    toEvict.Add(pair.Key);
+            }
+            foreach (var key in toEvict)
+            {
+                _terrainChunkDictionary[key].Dispose();
+                _terrainChunkDictionary.Remove(key);
+            }
+
             for (int yOffset = -_chunksVisibleInViewDst; yOffset <= _chunksVisibleInViewDst; yOffset++)
             {
                 for (int xOffset = -_chunksVisibleInViewDst; xOffset <= _chunksVisibleInViewDst; xOffset++)
@@ -110,10 +124,7 @@ namespace LevelGenerator
                     Vector2 viewedChunkCoord = new Vector2(currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
 
                     if (_terrainChunkDictionary.ContainsKey(viewedChunkCoord))
-                    {
                         _terrainChunkDictionary[viewedChunkCoord].UpdateTerrainChunk();
-                        
-                    }
                     else
                     {
                         var chunk = new TerrainChunk(
@@ -269,6 +280,15 @@ namespace LevelGenerator
                 SetVisible(visible);
             }
 
+            public void Dispose()
+            {
+                if (_spawner != null) _spawner.Despawn();
+                if (_texture != null) Object.Destroy(_texture);
+                if (lODMeshes != null)
+                    foreach (var lod in lODMeshes)
+                        if (lod.Mesh != null) Object.Destroy(lod.Mesh);
+                Object.Destroy(_meshObject);
+            }
             public void SetVisible(bool visible)
             {
                 _meshObject.SetActive(visible);
