@@ -157,8 +157,7 @@ public class ChunkSpawner : MonoBehaviour
         // Destroy only when actually leaving the Full/Sim tier
         if (inst.ActiveObject != null)
         {
-            Destroy(inst.ActiveObject);
-            inst.ActiveObject = null;
+            DestroyInstance(inst);
         }
 
         var def = _catalog.GetByID(inst.PrefabDefID);
@@ -177,7 +176,14 @@ public class ChunkSpawner : MonoBehaviour
             case SpawnState.Simulating:
                 if (def.Variants == null || def.Variants.Count == 0) break;
                 var prefab = PickVariant(def, inst.WorldPosition);
-                inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
+
+                // Try pool first, fall back to Instantiate
+                ObjectPool pool = PoolRegistry.Get(inst.PrefabDefID);
+                if (pool != null)
+                    inst.ActiveObject = pool.Get(inst.WorldPosition, inst.Rotation);
+                else
+                    inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
+
                 SetSimulation(inst.ActiveObject, target == SpawnState.Simulating);
                 break;
         }
@@ -190,13 +196,22 @@ public class ChunkSpawner : MonoBehaviour
     {
         foreach (var inst in _instances)
         {
-            if (inst.ActiveObject != null)
-            {
-                Destroy(inst.ActiveObject);
-                inst.ActiveObject = null;
-            }
+            DestroyInstance(inst);
             inst.State = SpawnState.None;
         }
+    }
+
+    void DestroyInstance(SpawnedInstance inst)
+    {
+        if (inst.ActiveObject == null) return;
+
+        ObjectPool pool = PoolRegistry.Get(inst.PrefabDefID);
+        if (pool != null)
+            pool.Return(inst.ActiveObject);
+        else
+            Destroy(inst.ActiveObject);
+
+        inst.ActiveObject = null;
     }
 
     //Placement helpers
@@ -318,6 +333,7 @@ public class ChunkSpawner : MonoBehaviour
         float deg = (float)(rng.NextDouble() * 360f);
         return Quaternion.Euler(0, deg, 0);
     }
+
 
     GameObject PickVariant(PrefabDef def, Vector3 pt)
     {
