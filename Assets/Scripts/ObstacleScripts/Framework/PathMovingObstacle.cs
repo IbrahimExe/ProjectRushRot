@@ -114,6 +114,12 @@ public class PathMovingObstacle : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!rb.isKinematic)
+        {
+            //Debug.LogWarning($"[PathMovingObstacle] isKinematic was false on {gameObject.name} Forcing back.", gameObject);
+            rb.isKinematic = true;
+        }
+
         if (!_moving)
         {
             _startDelayTimer -= Time.fixedDeltaTime;
