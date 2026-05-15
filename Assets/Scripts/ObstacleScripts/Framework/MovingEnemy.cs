@@ -1,25 +1,23 @@
+using LevelGenerator;
 using UnityEngine;
 
 public class MovingEnemy : MonoBehaviour
 {
     // State
-
     private enum EnemyState { Wandering, Chasing }
     private EnemyState _state = EnemyState.Wandering;
 
     // General
-
     [Header("Movement")]
     public float moveSpeed = 4f;
     public float rotationSpeed = 5f;
 
     // Wander
-
     [Header("Wander")]
     public float wanderSpeed = 2f;
-    public float wanderRadius = 6f;        // How far from spawn it can roam
+    public float wanderRadius = 6f;        
     public float waypointReachedDist = 0.5f;
-    public float wanderPauseDuration = 1.5f; // How long to idle at each waypoint
+    public float wanderPauseDuration = 1.5f;
 
     private Vector3 _wanderTarget;
     private Vector3 _spawnPosition;
@@ -27,16 +25,14 @@ public class MovingEnemy : MonoBehaviour
     private bool _isPaused = false;
 
     // Chase
-
     [Header("Chase")]
-    public float losePlayerRange = 20f;    // Gives up chase beyond this distance
-    public float losePlayerDelay = 3f;     // Seconds before giving up after losing sight
+    public float losePlayerRange = 20f;    
+    public float losePlayerDelay = 3f;     
 
     private Transform _player;
     private float _losePlayerTimer = 0f;
 
     // Obstacle Avoidance
-
     [Header("Obstacle Avoidance")]
     public float detectionRange = 3f;
     public float avoidanceStrength = 2f;
@@ -45,7 +41,6 @@ public class MovingEnemy : MonoBehaviour
     public LayerMask obstacleLayer;
 
     // Ground Following
-
     [Header("Ground Following")]
     public float groundCheckDistance = 5f;
     public float groundOffset = 0.5f;
@@ -53,18 +48,23 @@ public class MovingEnemy : MonoBehaviour
     public float maxClimbAngle = 45f;
     public LayerMask groundLayer;
 
-    // Unity Events
+    public MapGenerator MapGenerator;
 
+    // Unity Events
     void Start()
     {
+        if (MapGenerator == null)
+        {
+            MapGenerator = FindFirstObjectByType<MapGenerator>();
+        }
         _spawnPosition = transform.position;
         SnapToGround();
         PickNewWanderTarget();
 
-        // Ensure a trigger sphere is present - can also be set up in the prefab
+        // Ensure a trigger sphere is present
         SetupDetectionSphere();
 
-        // Register after all Awakes have run - safe for runtime-spawned enemies
+        // Register after all Awakes have run
         if (EnemyManager.Instance != null)
             EnemyManager.Instance.Register(this);
         else
@@ -72,7 +72,20 @@ public class MovingEnemy : MonoBehaviour
                 "Make sure an EnemyManager is in the scene.");
     }
 
-    // Called when the spawner destroys this enemy (e.g. it falls behind the runner)
+    // If we dont want to use the EnemyManager's manual update
+
+    //private void Update()
+    //{
+    //    UpdateGrounding();
+
+    //    switch(_state)
+    //    {
+    //        case EnemyState.Wandering: UpdateWander(); break;
+    //        case EnemyState.Chasing: UpdateChase(); break;
+    //    }
+    //}
+
+    // Called when the spawner destroys this enemy
     void OnDestroy() => EnemyManager.Instance?.Unregister(this);
 
     // Called by the detection sphere child object
@@ -81,11 +94,9 @@ public class MovingEnemy : MonoBehaviour
         _player = player;
         _state = EnemyState.Chasing;
         _losePlayerTimer = 0f;
-
-        Debug.Log($"{name} spotted the player - chasing!");
     }
 
-    // Main Update (called by EnemyManager)
+    // Main Update
 
     public void ManualUpdate()
     {
@@ -175,8 +186,6 @@ public class MovingEnemy : MonoBehaviour
         _losePlayerTimer = 0f;
         _isPaused = false;
         PickNewWanderTarget();
-
-        Debug.Log($"{name} lost the player - wandering.");
     }
 
     // Shared Steering
@@ -214,34 +223,44 @@ public class MovingEnemy : MonoBehaviour
 
     void SnapToGround()
     {
-        if (Physics.Raycast(transform.position + Vector3.up * 2f, Vector3.down,
-            out RaycastHit hit, groundCheckDistance + 2f, groundLayer))
-        {
-            Vector3 pos = transform.position;
-            pos.y = hit.point.y + groundOffset;
-            transform.position = pos;
-        }
+        //if (Physics.Raycast(transform.position + Vector3.up * 2f, Vector3.down,
+        //    out RaycastHit hit, groundCheckDistance + 2f, groundLayer))
+        //{
+        //    Vector3 pos = transform.position;
+        //    pos.y = hit.point.y + groundOffset;
+        //    transform.position = pos;
+        //}
+
+        // get the ground height at the spawn position and set it there
+        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+        transform.position = new Vector3(transform.position.x, groundHeight + groundOffset, transform.position.z);
     }
 
     void UpdateGrounding()
     {
-        if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down,
-            out RaycastHit hit, groundCheckDistance, groundLayer))
-        {
-            float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
-            if (slopeAngle <= maxClimbAngle)
-            {
-                Vector3 pos = transform.position;
-                pos.y = Mathf.Lerp(pos.y, hit.point.y + groundOffset, groundFollowSpeed * Time.deltaTime);
-                transform.position = pos;
-            }
-        }
-        else
-        {
-            Vector3 pos = transform.position;
-            pos.y -= 9.8f * Time.deltaTime;
-            transform.position = pos;
-        }
+        //if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down,
+        //    out RaycastHit hit, groundCheckDistance, groundLayer))
+        //{
+        //    float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+        //    if (slopeAngle <= maxClimbAngle)
+        //    {
+        //        Vector3 pos = transform.position;
+        //        pos.y = Mathf.Lerp(pos.y, hit.point.y + groundOffset, groundFollowSpeed * Time.deltaTime);
+        //        transform.position = pos;
+        //    }
+        //}
+        //else
+        //{
+        //    Vector3 pos = transform.position;
+        //    pos.y -= 9.8f * Time.deltaTime;
+        //    transform.position = pos;
+        //}
+
+        // update the Y position based on the height at the current XZ position
+        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+        Vector3 pos = transform.position;
+        pos.y = Mathf.Lerp(pos.y, groundHeight + groundOffset, groundFollowSpeed * Time.deltaTime);
+        transform.position = pos;
     }
 
     // Movement
@@ -261,7 +280,6 @@ public class MovingEnemy : MonoBehaviour
 
     void SetupDetectionSphere()
     {
-        // Only auto-create if no PlayerDetector child exists yet
         if (GetComponentInChildren<PlayerDetector>() != null) return;
 
         GameObject detector = new GameObject("PlayerDetector");
@@ -271,7 +289,7 @@ public class MovingEnemy : MonoBehaviour
 
         SphereCollider col = detector.AddComponent<SphereCollider>();
         col.isTrigger = true;
-        col.radius = 8f; // detection radius - tune this in Inspector via PlayerDetector
+        col.radius = 8f; // detection radius - tune this in player detector
 
         detector.AddComponent<PlayerDetector>();
     }

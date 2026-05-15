@@ -33,7 +33,6 @@ public class PlayerDetector : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log($"{name} detected player entering range!");
             _enemy.OnPlayerEnterRange(other.transform);
         }
     }

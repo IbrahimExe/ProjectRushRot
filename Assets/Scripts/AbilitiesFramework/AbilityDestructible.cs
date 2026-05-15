@@ -9,7 +9,16 @@ public interface IAbilityDestructible
 public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 {
     [SerializeField] private string[] destroyableByAbilities;
-    [SerializeField] private GameObject destroyVFX;
+
+    [Header("Pooling")]
+    [SerializeField] private bool returnToPoolInsteadOfDestroy = false;
+
+    private PooledObject pooledObject;
+
+    private void Awake()
+    {
+        pooledObject = GetComponent<PooledObject>();
+    }
 
     public bool CanBeDestroyedBy(string abilityId)
     {
@@ -27,9 +36,13 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
         if (!CanBeDestroyedBy(abilityId))
             return;
 
-        if (destroyVFX != null)
-            Instantiate(destroyVFX, transform.position, Quaternion.identity);
-
-        Destroy(gameObject);
+        if (returnToPoolInsteadOfDestroy && pooledObject != null)
+        {
+            pooledObject.ReturnToPool();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }

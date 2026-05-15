@@ -40,6 +40,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 699835495974583329}
     m_Modifications:
+    - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: rayCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: moveSpeed
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: wanderSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: raySpreadAngle
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4117830706354083783, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
       propertyPath: m_Name
       value: Bear

@@ -84,4 +84,14 @@ public class PlayerAbilityRunner : MonoBehaviour
     {
         perkManager.Apply(perk);
     }
+
+    public void RecalculateStats()
+    {
+        perkManager.RecalculateStats();
+    }
+
+    public void ClearAllPerks()
+    {
+        perkManager.ClearAllPerks();
+    }
 }

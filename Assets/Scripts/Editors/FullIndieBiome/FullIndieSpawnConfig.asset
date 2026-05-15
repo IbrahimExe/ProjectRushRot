@@ -33,14 +33,6 @@ MonoBehaviour:
     HeightMax: 1
     MaxSlope: 13.2
     BlockedBy: 
-  - PrefabDefID: PEOPLE
-    PlacementMode: 0
-    DensityMultiplier: 0.02
-    MinSpacing: 2
-    HeightMin: 0.4
-    HeightMax: 0.99
-    MaxSlope: 0
-    BlockedBy: 
   - PrefabDefID: JUMPPAD
     PlacementMode: 0
     DensityMultiplier: 0.01
@@ -55,14 +47,6 @@ MonoBehaviour:
     MinSpacing: 0
     HeightMin: 0.3
     HeightMax: 1
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: SPAWNER
-    PlacementMode: 0
-    DensityMultiplier: 0.1
-    MinSpacing: 0
-    HeightMin: 0.6
-    HeightMax: 0.8
     MaxSlope: 0
     BlockedBy: 
   - PrefabDefID: FISH

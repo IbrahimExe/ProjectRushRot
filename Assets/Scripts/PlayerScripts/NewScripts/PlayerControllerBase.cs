@@ -550,5 +550,12 @@ public class PlayerControllerBase : MonoBehaviour
             dash.dashBoostDuration = newData.dashBoostDuration;
 
         }
+
+        PlayerAbilityRunner runner = GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+        {
+            runner.RecalculateStats();
+        }
     }
 }

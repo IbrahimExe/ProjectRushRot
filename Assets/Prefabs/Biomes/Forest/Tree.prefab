@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 4866800458956609212}
   - component: {fileID: 6271253829721520153}
   - component: {fileID: -3838840646992231529}
+  - component: {fileID: -3065108485767748364}
   m_Layer: 0
   m_Name: Tree
   m_TagString: Untagged
@@ -32,7 +33,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 22.44501, y: 0, z: 78.7922}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalScale: {x: 8, y: 8, z: 8}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -128,7 +129,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 50
+  m_Radius: 30
   m_Center: {x: 0.000000059604645, y: 6.1375475, z: 0}
 --- !u!136 &6271253829721520153
 CapsuleCollider:
@@ -169,4 +170,18 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
-  destroyVFX: {fileID: 0}
+  useDestroyVFX: 1
+  vfxLifetime: 1.5
+  returnToPoolInsteadOfDestroy: 1
+--- !u!114 &-3065108485767748364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132065474207181821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d4267afc5dce049a76a4eb9c67d4df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PooledObject

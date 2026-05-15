@@ -14,6 +14,13 @@ public class PathMovingObstacle : MonoBehaviour
     [Tooltip("How fast the obstacle rotates toward its direction (degrees per second). 0 = instant snap.")]
     public float rotationSpeed = 360f;
 
+    [Tooltip("Check if you want the obstacle to flip direction when it collides with something except for the player.")]
+    public bool reverseOnCollision = false;
+
+    [Tooltip("Random delay before the obstacle starts moving. Set both to 0 to disable.")]
+    public float startDelayMin = 0f;
+    public float startDelayMax = 2f;
+
     // Approach Lerp
     [Header("Approach Lerp")]
     [Tooltip("When true, the obstacle will smoothly decelerate as it nears each path point.")]
@@ -64,38 +71,57 @@ public class PathMovingObstacle : MonoBehaviour
 
     private Vector3 CurrentTarget => movingToA ? worldTargetA : worldTargetB;
 
+    // Start delay
+    private float _startDelayTimer = 0f;
+    private bool  _moving         = false;
+
     // -------------------------------------------------------------------------
 
-    private void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
         col = GetComponent<Collider>();
+    }
 
-        Vector3 spawnPos = transform.position;
-
+    private void Start()
+    {
+        // Randomize offsets before computing world targets
         if (randomizePoints)
         {
-            // Point A: negative X
             float xA = -Random.Range(randomXMin, randomXMax);
             float zA = Random.Range(-randomZRange, randomZRange);
             localOffsetA = new Vector3(xA, 0f, zA);
 
-            // Point B: positive X
             float xB = Random.Range(randomXMin, randomXMax);
             float zB = Random.Range(-randomZRange, randomZRange);
             localOffsetB = new Vector3(xB, 0f, zB);
         }
 
-        // Convert local offsets to world-space targets
-        worldTargetA = spawnPos + transform.TransformDirection(localOffsetA);
-        worldTargetB = spawnPos + transform.TransformDirection(localOffsetB);
+        // TransformPoint converts a local-space point to world-space
+        // correctly accounting for the object's final position AND rotation.
+        // Using Start (not Awake) ensures any spawner-applied position/rotation
+        // has already been set before we bake the targets.
+        worldTargetA = transform.TransformPoint(localOffsetA);
+        worldTargetB = transform.TransformPoint(localOffsetB);
 
         movingToA = false;
+
+        // Pick a random start delay for this instance
+        _startDelayTimer = Random.Range(startDelayMin, startDelayMax);
+        _moving = (_startDelayTimer <= 0f);
     }
 
     private void FixedUpdate()
     {
+        if (!_moving)
+        {
+            _startDelayTimer -= Time.fixedDeltaTime;
+            if (_startDelayTimer <= 0f)
+                _moving = true;
+            return;
+        }
+
         MoveTowardTarget();
     }
 
@@ -201,17 +227,15 @@ public class PathMovingObstacle : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag(playerTag)) return;
-        //FlipDirection();
+        if (!reverseOnCollision) return;
+        FlipDirection();
     }
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
-        Vector3 origin = Application.isPlaying ? worldTargetA - transform.TransformDirection(localOffsetA) + transform.TransformDirection(localOffsetA)
-                                               : transform.position;
-
-        Vector3 a = Application.isPlaying ? worldTargetA : transform.position + transform.TransformDirection(localOffsetA);
-        Vector3 b = Application.isPlaying ? worldTargetB : transform.position + transform.TransformDirection(localOffsetB);
+        Vector3 a = Application.isPlaying ? worldTargetA : transform.TransformPoint(localOffsetA);
+        Vector3 b = Application.isPlaying ? worldTargetB : transform.TransformPoint(localOffsetB);
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawSphere(a, 0.2f);
