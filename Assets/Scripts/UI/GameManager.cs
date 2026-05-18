@@ -1,11 +1,15 @@
 using System.Collections;
+using TMPro;
+using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 [DisallowMultipleComponent]
 public class GameManager : MonoBehaviour
 {
+
+    [SerializeField] private ObjectPoolManager _poolManager;
+
     [Header("UI (assign in inspector)")]
     public GameObject pauseMenuUI;      // Full pause panel
     public GameObject countdownUI;      // Panel for countdown
@@ -35,6 +39,8 @@ public class GameManager : MonoBehaviour
     {
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
+        _poolManager.Initialize();
+        ServiceLocator.Register<ObjectPoolManager>(_poolManager);
     }
 
     void Update()
@@ -138,14 +144,29 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+
+        if (pauseAudio)
+            AudioListener.pause = false;
+
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.ClearAllPerks();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void OnQuitToMenuButton()
     {
         Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+
+        if (pauseAudio)
+            AudioListener.pause = false;
+
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.ClearAllPerks();
 
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);
