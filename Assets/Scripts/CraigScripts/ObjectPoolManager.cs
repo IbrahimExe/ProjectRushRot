@@ -17,6 +17,11 @@ public class ObjectPoolManager : MonoBehaviour
     private Dictionary<string, Queue<GameObject>> _poolDictionary = new Dictionary<string, Queue<GameObject>>();
     private bool _initialized = false;
 
+    //private void Awake()
+    //{
+    //    SystemLoader.CallOnComplete(Initialize);
+    //}
+
     public void Initialize()
     {
         Debug.Log("Initializing ObjectPoolManager...");

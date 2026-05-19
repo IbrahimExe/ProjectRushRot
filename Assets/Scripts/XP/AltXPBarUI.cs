@@ -16,8 +16,14 @@ public class AltXPBarUI : MonoBehaviour
 
     public bool IsXPBarReset = false;
 
-    void Start()
+    private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // start
         if (AltExpManager.Instance == null)
         {
             Debug.LogError("No ExperienceManager found in scene.");

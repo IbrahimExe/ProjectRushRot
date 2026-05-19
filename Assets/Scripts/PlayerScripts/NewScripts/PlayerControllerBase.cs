@@ -101,13 +101,18 @@ public class PlayerControllerBase : MonoBehaviour
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // awake
         RB = GetComponent<Rigidbody>();
 
         if (characterData != null)
             characterData.ResetRuntimeValues();
-    }
-    void Start()
-    {
+
+        // start
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 

@@ -35,8 +35,14 @@ public class GameManager : MonoBehaviour
     //health
     [SerializeField] private float hp = 3f;
 
-    void Start()
+    private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // start
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
         _poolManager.Initialize();

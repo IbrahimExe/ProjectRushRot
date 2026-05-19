@@ -15,6 +15,12 @@ public class PlayerAbilityRunner : MonoBehaviour
 
     private void Awake()
     {
+       SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        //awake
         if (player == null)
             player = GetComponent<PlayerControllerBase>();
 
@@ -24,16 +30,15 @@ public class PlayerAbilityRunner : MonoBehaviour
 
         foreach (AbilityBase perk in startingPerks)
             perkManager.Apply(perk);
+
+        // start
+         Debug.Log("PlayerAbilityRunner INITIALIZED");
     }
 
     private void OnEnable()
     {
         Debug.Log("ABILITY RUNNER ENABLED");
-    }
-
-    private void Start()
-    {
-        Debug.Log("PlayerAbilityRunner STARTED");
+        SystemLoader.CallOnComplete(Initialize);
     }
 
     private void Update()

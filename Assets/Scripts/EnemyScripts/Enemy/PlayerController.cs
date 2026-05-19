@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float speed = 20f;
-    [SerializeField] private float turnSpeed = 100f;
+    //[SerializeField] private float turnSpeed = 100f;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private bool shouldFaceMoveDirection = false;

@@ -24,13 +24,28 @@ public class OutOfBoundsRespawn : MonoBehaviour
     private float lastRespawnTime = -Mathf.Infinity;
     [SerializeField] private float respawnCooldown = 0.2f;
 
-    private void Start()
+    //private void Start()
+    //{
+    //    Ray ray = new Ray(originOfRaycast.position, Vector3.down);
+
+    //    if (Physics.Raycast(ray, out RaycastHit hit, lengthOfRaycast, groundLayer))
+    //    {
+    //        SaveCheckpoint(hit.point.y);
+    //    }
+    //}
+
+    private void Awake()
+    {
+        SystemLoader.CallOnComplete(Inititialize);
+    }
+
+    private void Inititialize()
     {
         Ray ray = new Ray(originOfRaycast.position, Vector3.down);
 
         if (Physics.Raycast(ray, out RaycastHit hit, lengthOfRaycast, groundLayer))
         {
-             SaveCheckpoint(hit.point.y);
+            SaveCheckpoint(hit.point.y);
         }
     }
 

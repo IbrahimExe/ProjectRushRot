@@ -16,10 +16,10 @@ public class AfraidAnimal : MonoBehaviour
     [SerializeField] private float runSpeed = 6f;
 
     [Header("Grounding")]
-    [SerializeField] private float groundCheckDistance = 2f;
+    //[SerializeField] private float groundCheckDistance = 2f;
     [SerializeField] private float groundOffset = 0.5f;
     [SerializeField] private float groundFollowSpeed = 10f;
-    [SerializeField] private float maxClimbAngle = 45f;
+    //[SerializeField] private float maxClimbAngle = 45f;
     [SerializeField] private LayerMask groundLayer;
 
     private Transform player;
