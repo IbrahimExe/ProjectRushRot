@@ -35,7 +35,7 @@ public class CardUI : MonoBehaviour
         if (abilityRunner == null)
             abilityRunner = FindFirstObjectByType<PlayerAbilityRunner>();
 
-        Debug.Log($"Applying: {data.name} | Effect: {data.cardEffect}");
+       // Debug.Log($"Applying: {data.name} | Effect: {data.cardEffect}");
 
         switch (data.cardEffect)
         {
@@ -92,7 +92,7 @@ public class CardUI : MonoBehaviour
                 break;
 
             default:
-                Debug.LogWarning("Unknown card effect: " + data.cardEffect);
+               // Debug.LogWarning("Unknown card effect: " + data.cardEffect);
                 break;
         }
     }
