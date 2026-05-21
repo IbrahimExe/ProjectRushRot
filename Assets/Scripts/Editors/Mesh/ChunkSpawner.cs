@@ -40,6 +40,7 @@ public class ChunkSpawner : MonoBehaviour
     AnimationCurve _heightCurve;
 
     List<SpawnedInstance> _instances = new List<SpawnedInstance>();
+    Dictionary<string, int> _poolOverflow = new Dictionary<string, int>();
     bool _placed = false;
 
     // Called by TerrainChunk after MapData and mesh are ready
@@ -181,16 +182,23 @@ public class ChunkSpawner : MonoBehaviour
 
                 if (_poolManager != null && _poolManager.TryFetch(inst.PrefabDefID, out GameObject pooled))
                 {
-                    Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
+                    // Successful fetch — reduce overflow count if it was tracked
+                    if (_poolOverflow.ContainsKey(inst.PrefabDefID) && _poolOverflow[inst.PrefabDefID] > 0)
+                        _poolOverflow[inst.PrefabDefID]--;
+
                     pooled.transform.SetPositionAndRotation(inst.WorldPosition, inst.Rotation);
                     pooled.SetActive(true);
                     inst.ActiveObject = pooled;
                 }
                 else
                 {
-                    Debug.Log($"[ChunkSpawner] Pool miss: {inst.PrefabDefID}, poolManager null: {_poolManager == null}");
-                    var prefab = PickVariant(def, inst.WorldPosition);
-                    inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
+                    if (!_poolOverflow.ContainsKey(inst.PrefabDefID))
+                        _poolOverflow[inst.PrefabDefID] = 0;
+                    _poolOverflow[inst.PrefabDefID]++;
+
+                    Debug.LogWarning($"[ChunkSpawner] Pool too small for '{inst.PrefabDefID}' — overflow: {_poolOverflow[inst.PrefabDefID]}");
+                    inst.State = SpawnState.None;
+                    break;
                 }
 
                 var rule = GetRuleForDef(inst.PrefabDefID);

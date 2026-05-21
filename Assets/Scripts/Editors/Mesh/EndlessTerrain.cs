@@ -30,30 +30,12 @@ namespace LevelGenerator
 
         static Dictionary<Vector2, TerrainChunk> _terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
         static List<TerrainChunk> terrainChunksVisibleLastUpdate = new List<TerrainChunk>();
+        static Queue<GameObject> _chunkShellPool = new Queue<GameObject>();
 
         void OnValidate()
         {
             vertexResolution = Mathf.Max(2, (vertexResolution / 2) * 2);
             chunkWorldSize = Mathf.Max(1f, chunkWorldSize);
-        }
-
-        void OnEnable()
-        {
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-
-        void OnDisable()
-        {
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-        }
-
-        void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-        {
-            mapGenerator = null;
-            viewerPosition = Vector2.zero;
-            viewerPositionOld = Vector2.zero;
-            terrainChunksVisibleLastUpdate.Clear();
-            _terrainChunkDictionary.Clear();
         }
 
         void Start()
@@ -140,7 +122,17 @@ namespace LevelGenerator
             }
         }
 
+        public static void CleanupForReload()
+        {
+            foreach (var chunk in _terrainChunkDictionary.Values)
+                chunk.Dispose();
 
+            _terrainChunkDictionary.Clear();
+            terrainChunksVisibleLastUpdate.Clear();
+            _chunkShellPool.Clear();
+            mapGenerator = null;
+            viewerPosition = Vector2.zero;
+        }
 
         public class TerrainChunk
         {
@@ -167,7 +159,7 @@ namespace LevelGenerator
             public MapData? GetMapData() => _mapDataReceived ? _mapData : (MapData?)null;
 
             public TerrainChunk(Vector2 coord, int size, Transform parent,
-                Material material, LODInfo[] detailLevels, float maxViewDist, float scale)
+            Material material, LODInfo[] detailLevels, float maxViewDist, float scale)
             {
                 _scale = scale;
                 this.detailLevels = detailLevels;
@@ -178,16 +170,15 @@ namespace LevelGenerator
 
                 Vector3 positionV3 = new Vector3(_position.x, 0, _position.y);
 
-                _meshObject = new GameObject("Terrain Chunk");
+                _meshObject = GetShell(parent, material);
                 _meshObject.transform.parent = parent;
                 _meshObject.transform.position = positionV3 * _scale;
                 _meshObject.transform.localScale = Vector3.one * _scale;
 
-                _meshRenderer = _meshObject.AddComponent<MeshRenderer>();
-                _meshFilter = _meshObject.AddComponent<MeshFilter>();
-                _meshCollider = _meshObject.AddComponent<MeshCollider>();
-                _meshRenderer.material = new Material(material);
-                _spawner = _meshObject.AddComponent<ChunkSpawner>();
+                _meshRenderer = _meshObject.GetComponent<MeshRenderer>();
+                _meshFilter = _meshObject.GetComponent<MeshFilter>();
+                _meshCollider = _meshObject.GetComponent<MeshCollider>();
+                _spawner = _meshObject.GetComponent<ChunkSpawner>();
 
                 _meshObject.layer = 3; 
 
@@ -291,7 +282,7 @@ namespace LevelGenerator
                 if (lODMeshes != null)
                     foreach (var lod in lODMeshes)
                         if (lod.Mesh != null) Object.Destroy(lod.Mesh);
-                Object.Destroy(_meshObject);
+                ReturnShell(_meshObject);
             }
             public void SetVisible(bool visible)
             {
@@ -305,6 +296,36 @@ namespace LevelGenerator
 
         }
 
+        static GameObject GetShell(Transform parent, Material material)
+        {
+            GameObject shell;
+            if (_chunkShellPool.Count > 0)
+            {
+                shell = _chunkShellPool.Dequeue();
+                shell.transform.SetParent(parent);
+                shell.SetActive(false);
+            }
+            else
+            {
+                shell = new GameObject("Terrain Chunk");
+                shell.AddComponent<MeshRenderer>();
+                shell.AddComponent<MeshFilter>();
+                shell.AddComponent<MeshCollider>();
+                shell.AddComponent<ChunkSpawner>();
+                shell.layer = 3;
+            }
+            shell.GetComponent<MeshRenderer>().material = new Material(material);
+            return shell;
+        }
+
+        static void ReturnShell(GameObject shell)
+        {
+            shell.GetComponent<MeshFilter>().mesh = null;
+            shell.GetComponent<MeshCollider>().sharedMesh = null;
+            shell.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = null;
+            shell.SetActive(false);
+            _chunkShellPool.Enqueue(shell);
+        }
 
 
         // Holds a mesh for one LOD level (requests from mapGenerator on demand, caches result)

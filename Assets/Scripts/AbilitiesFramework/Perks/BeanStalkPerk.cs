@@ -46,11 +46,11 @@ public class BeanStalkPerk : AbilityBase
 
         ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
 
-        if (poolManager == null)
-        {
-            Debug.LogError("ObjectPoolManager service not found.");
-            return false;
-        }
+        //if (poolManager == null)
+        //{
+        //    Debug.LogError("ObjectPoolManager service not found.");
+        //    return false;
+        //}
 
         ClearOldPieces();
 

@@ -21,7 +21,7 @@ public class PlayerAbilityRunner : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.Log("ABILITY RUNNER ENABLED");
+        //Debug.Log("ABILITY RUNNER ENABLED");
 
         if (!initialized)
             SystemLoader.CallOnComplete(Initialize);
@@ -52,7 +52,7 @@ public class PlayerAbilityRunner : MonoBehaviour
         }
 
         initialized = true;
-        Debug.Log("PlayerAbilityRunner INITIALIZED");
+        //Debug.Log("PlayerAbilityRunner INITIALIZED");
     }
 
     private void Update()
@@ -64,37 +64,37 @@ public class PlayerAbilityRunner : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
-            Debug.Log("Pressed 1: trying missile");
+           // Debug.Log("Pressed 1: trying missile");
             bool used = perkManager.TryUse("missile");
-            Debug.Log("Missile used: " + used);
+           // Debug.Log("Missile used: " + used);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            Debug.Log("Pressed 2: trying shield");
+           // Debug.Log("Pressed 2: trying shield");
             bool used = perkManager.TryUse("shield");
-            Debug.Log("Shield used: " + used);
+           // Debug.Log("Shield used: " + used);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            Debug.Log("Pressed 3: trying ground pound");
+           // Debug.Log("Pressed 3: trying ground pound");
             bool used = perkManager.TryUse("ground_pound");
-            Debug.Log("Ground pound used: " + used);
+           // Debug.Log("Ground pound used: " + used);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            Debug.Log("Pressed 4: trying snowball");
+            //Debug.Log("Pressed 4: trying snowball");
             bool used = perkManager.TryUse("snowball");
-            Debug.Log("Snowball used: " + used);
+           // Debug.Log("Snowball used: " + used);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha5))
         {
-            Debug.Log("Pressed 5: trying beanstalk");
+           // Debug.Log("Pressed 5: trying beanstalk");
             bool used = perkManager.TryUse("beanstalk");
-            Debug.Log("Beanstalk used: " + used);
+            //Debug.Log("Beanstalk used: " + used);
         }
     }
 

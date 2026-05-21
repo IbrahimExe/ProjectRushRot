@@ -1,6 +1,6 @@
+using LevelGenerator;
 using System.Collections;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -155,9 +155,11 @@ public class GameManager : MonoBehaviour
             AudioListener.pause = false;
 
         PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
-
         if (runner != null)
             runner.ClearAllPerks();
+
+        // Clear terrain state before reload
+        EndlessTerrain.CleanupForReload();
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
@@ -165,20 +167,20 @@ public class GameManager : MonoBehaviour
     public void OnQuitToMenuButton()
     {
         Time.timeScale = 1f;
-
-        if (pauseAudio)
-            AudioListener.pause = false;
+        if (pauseAudio) AudioListener.pause = false;
 
         PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+        if (runner != null) runner.ClearAllPerks();
 
-        if (runner != null)
-            runner.ClearAllPerks();
+        EndlessTerrain.CleanupForReload();
 
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);
         else
             Application.Quit();
     }
+
+
 
     // Utility: returns true if either winScreen or loseScreen is present and active in hierarchy
     private bool IsWinOrLoseActive()

@@ -94,15 +94,15 @@ public class PerkManager
 
     public bool TryUse(string abilityId)
     {
-        Debug.Log("Trying ability: " + abilityId);
+       // Debug.Log("Trying ability: " + abilityId);
 
         if (!active.TryGetValue(abilityId, out RuntimePerk runtime))
         {
-            Debug.LogWarning("Ability not active/found: " + abilityId);
+            //Debug.LogWarning("Ability not active/found: " + abilityId);
             return false;
         }
 
-        Debug.Log("Found ability: " + runtime.ability.displayName + " Level: " + runtime.level);
+        //Debug.Log("Found ability: " + runtime.ability.displayName + " Level: " + runtime.level);
         return runtime.ability.TryUse(ctx, runtime.level);
     }
 
