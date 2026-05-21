@@ -10,39 +10,56 @@ public class PlayerAbilityRunner : MonoBehaviour
 
     private PlayerAbilityContext ctx;
     private PerkManager perkManager;
+    private bool initialized;
 
     public PerkManager Perks => perkManager;
 
     private void Awake()
     {
-       SystemLoader.CallOnComplete(Initialize);
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void OnEnable()
+    {
+        Debug.Log("ABILITY RUNNER ENABLED");
+
+        if (!initialized)
+            SystemLoader.CallOnComplete(Initialize);
     }
 
     private void Initialize()
     {
-        //awake
+        if (initialized)
+            return;
+
         if (player == null)
             player = GetComponent<PlayerControllerBase>();
+
+        if (player == null)
+        {
+            Debug.LogError("PlayerAbilityRunner: Missing PlayerControllerBase.");
+            return;
+        }
 
         perkManager = new PerkManager();
         ctx = new PlayerAbilityContext(player, abilityMask, perkManager);
         perkManager.Initialize(ctx);
 
         foreach (AbilityBase perk in startingPerks)
-            perkManager.Apply(perk);
+        {
+            if (perk != null)
+                perkManager.Apply(perk);
+        }
 
-        // start
-         Debug.Log("PlayerAbilityRunner INITIALIZED");
-    }
-
-    private void OnEnable()
-    {
-        Debug.Log("ABILITY RUNNER ENABLED");
-        SystemLoader.CallOnComplete(Initialize);
+        initialized = true;
+        Debug.Log("PlayerAbilityRunner INITIALIZED");
     }
 
     private void Update()
     {
+        if (!initialized || perkManager == null)
+            return;
+
         perkManager.Tick(Time.deltaTime);
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -80,23 +97,33 @@ public class PlayerAbilityRunner : MonoBehaviour
             Debug.Log("Beanstalk used: " + used);
         }
     }
+
     private void FixedUpdate()
     {
+        if (!initialized || perkManager == null)
+            return;
+
         perkManager.FixedTick(Time.fixedDeltaTime);
     }
 
     public void AddPerk(AbilityBase perk)
     {
-        perkManager.Apply(perk);
+        if (!initialized || perkManager == null)
+            Initialize();
+
+        if (perkManager != null && perk != null)
+            perkManager.Apply(perk);
     }
 
     public void RecalculateStats()
     {
-        perkManager.RecalculateStats();
+        if (perkManager != null)
+            perkManager.RecalculateStats();
     }
 
     public void ClearAllPerks()
     {
-        perkManager.ClearAllPerks();
+        if (perkManager != null)
+            perkManager.ClearAllPerks();
     }
 }

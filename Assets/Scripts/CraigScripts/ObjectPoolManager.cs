@@ -61,6 +61,29 @@ public class ObjectPoolManager : MonoBehaviour
         return poolQueue.TryDequeue(out pooledObj);
     }
 
+    public GameObject Get(string poolName, Vector3 position, Quaternion rotation)
+    {
+        if (!TryFetch(poolName, out GameObject obj) || obj == null)
+        {
+            Debug.LogError($"Pool {poolName} is empty or does not exist.");
+            return null;
+        }
+
+        obj.transform.SetParent(null);
+        obj.transform.SetPositionAndRotation(position, rotation);
+        obj.SetActive(true);
+
+        return obj;
+    }
+
+    public void Return(string poolName, GameObject obj)
+    {
+        if (obj == null)
+            return;
+
+        Recycle(poolName, obj);
+    }
+
     public void Recycle(string poolname, GameObject pooledObj)
     {
         if (!_poolDictionary.ContainsKey(poolname))

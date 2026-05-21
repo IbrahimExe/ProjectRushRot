@@ -60,6 +60,18 @@ public class AppLoader : SystemLoader
 
         PerkManager pm = new PerkManager();
         ServiceLocator.Register<PerkManager>(pm);
+
+        ObjectPoolManager poolManager = FindMonoSystem<ObjectPoolManager>();
+
+        if (poolManager != null)
+        {
+            poolManager.Initialize();
+            ServiceLocator.Register<ObjectPoolManager>(poolManager);
+        }
+        else
+        {
+            Debug.LogError("ObjectPoolManager not found in scene.");
+        }
     }
 
     private T FindMonoSystem<T>() where T : MonoBehaviour

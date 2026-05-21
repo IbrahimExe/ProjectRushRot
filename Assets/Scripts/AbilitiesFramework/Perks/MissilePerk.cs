@@ -107,9 +107,6 @@ public class MissilePerk : AbilityBase
 
     private void UpdateVisuals(PlayerAbilityContext ctx, int level)
     {
-        if (missileVisualPrefab == null)
-            return;
-
         int maxAvailable = GetMaxMissiles(level);
         EnsureVisualCount(maxAvailable);
 
@@ -142,18 +139,33 @@ public class MissilePerk : AbilityBase
 
     private void EnsureVisualCount(int amount)
     {
+        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+
+        if (poolManager == null)
+        {
+            Debug.LogError("ObjectPoolManager service not found.");
+            return;
+        }
+
         while (visuals.Count < amount)
         {
-            ObjectPool pool = PoolRegistry.Get("MissileVisual");
+            GameObject visual = poolManager.Get("MissileVisual", Vector3.zero, Quaternion.identity);
 
-            if (pool == null)
-            {
-                Debug.LogError("MissileVisual pool not found.");
+            if (visual == null)
                 return;
-            }
 
-            GameObject visual = pool.Get(Vector3.zero, Quaternion.identity);
             visual.SetActive(false);
+
+            Collider col = visual.GetComponent<Collider>();
+            if (col != null)
+                col.enabled = false;
+
+            Rigidbody rb = visual.GetComponent<Rigidbody>();
+            if (rb != null)
+                rb.isKinematic = true;
+
+            visual.layer = LayerMask.NameToLayer("Ignore Raycast");
+
             visuals.Add(visual);
         }
     }
