@@ -164,11 +164,11 @@ public class MissilePerk : AbilityBase
     {
         ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
 
-        if (poolManager == null)
-        {
-            Debug.LogError("ObjectPoolManager service not found.");
-            return;
-        }
+        //if (poolManager == null)
+        //{
+        //    Debug.LogError("ObjectPoolManager service not found.");
+        //    return;
+        //}
 
         while (visuals.Count < amount)
         {
