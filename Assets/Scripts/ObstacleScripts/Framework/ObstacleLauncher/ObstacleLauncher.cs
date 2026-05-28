@@ -1,11 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.ProBuilder;
 
 [RequireComponent(typeof(LaunchBehavior))]
 public class ObstacleLauncher : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private ProjectilePool pool;
+    [Header("Projectiles")]
+    [SerializeField] private List<Projectile> projectilePrefabs;
     [SerializeField] private Transform launchPoint;
 
     [Header("Detection")]
@@ -13,11 +13,9 @@ public class ObstacleLauncher : MonoBehaviour
     [SerializeField] private LayerMask playerLayer;
 
     private LaunchBehavior launchBehavior;
-    private bool playerInRange;
 
     private void Awake()
     {
-        // Grab whichever LaunchBehavior component is on this GameObject
         launchBehavior = GetComponent<LaunchBehavior>();
     }
 
@@ -30,12 +28,17 @@ public class ObstacleLauncher : MonoBehaviour
 
     private void TryLaunch(Vector3 targetPosition)
     {
-        Projectile projectile = pool.Get();
+        if (projectilePrefabs.Count == 0) return;
+
+        Projectile prefab = projectilePrefabs[Random.Range(0, projectilePrefabs.Count)];
+        Projectile projectile = ProjectilePoolManager.Instance.Get(prefab);
+        if (projectile == null) return;
+
         projectile.transform.position = launchPoint.position;
         projectile.transform.rotation = launchPoint.rotation;
 
-        Rigidbody rb = projectile.GetComponent<Rigidbody>();
-        launchBehavior.Launch(rb, launchPoint.position, targetPosition);
+        launchBehavior.Launch(projectile.Rb, launchPoint.position, targetPosition);
+        projectile.OnLaunched();
     }
 
     private void OnDrawGizmosSelected()

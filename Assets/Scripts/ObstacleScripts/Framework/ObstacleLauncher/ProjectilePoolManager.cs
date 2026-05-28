@@ -3,22 +3,22 @@ using System.Collections.Generic;
 
 public class ProjectilePoolManager : MonoBehaviour
 {
-    //public static ProjectilePoolManager Instance {  get; private set; }
+    public static ProjectilePoolManager Instance {  get; private set; }
 
     [SerializeField] private List<ProjectilePoolEntry> poolEntries;
 
     private Dictionary<Projectile, ProjectilePool> pools;
 
-    private void Awake()
-    {
+    //private void Awake()
+    //{
         
-    }
+    //}
 
     public void Initialize()
     {
-        //if (Instance! = null) { Destroy(gameObject); return; }
+        if (Instance != null) { Destroy(gameObject); return; }
 
-        //Instance = this;
+        Instance = this;
 
         DontDestroyOnLoad(gameObject);
         BuildPools();

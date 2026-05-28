@@ -8,7 +8,7 @@ public class ProjectilePool
     public ProjectilePool(Projectile prefab, int defaultCapacity, int maxSize)
     {
         pool = new ObjectPool<Projectile>(
-            createFunc: () => { var p = Object.Instantiate(prefab); p.Init(this); return p; },
+            createFunc: () => { var p = Object.Instantiate(prefab); p.Init(prefab); return p; },
             actionOnGet: p => p.gameObject.SetActive(true),
             actionOnRelease: p => p.gameObject.SetActive(false),
             actionOnDestroy: p => Object.Destroy(p.gameObject),
