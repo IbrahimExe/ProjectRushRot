@@ -72,6 +72,17 @@ public class AppLoader : SystemLoader
         {
             Debug.LogError("ObjectPoolManager not found in scene.");
         }
+
+        ProjectilePoolManager projectilePoolManager = FindMonoSystem<ProjectilePoolManager>();
+        if (projectilePoolManager != null)
+        {
+            projectilePoolManager.Initialize();
+            ServiceLocator.Register<ProjectilePoolManager>(projectilePoolManager);
+        }
+        else
+        {
+            Debug.LogError("ProjectilePoolManager not found in scene.");
+        }
     }
 
     private T FindMonoSystem<T>() where T : MonoBehaviour
