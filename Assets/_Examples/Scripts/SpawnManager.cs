@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class SpawnManager : MonoBehaviour
 {
-    [SerializeField] private List<ObjectSpawner> _spawners;
+    [SerializeField] private List<BaseObjectSpawner> _spawners;
 
     public void Initialize()
     {

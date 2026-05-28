@@ -264,8 +264,11 @@ MonoBehaviour:
   - Name: Deer
     Prefab: {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
     InitialSize: 50
-  - Name: Tree
+  - Name: Tree_1
     Prefab: {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
+    InitialSize: 100
+  - Name: Tree_2
+    Prefab: {fileID: 3132356496452668757, guid: 5e624f7a1b1b6674280622a49f3b5390, type: 3}
     InitialSize: 100
 --- !u!1 &557980706
 GameObject:
@@ -646,13 +649,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1518999098}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4507052918ae4c84ea8bf29559f45705, type: 3}
+  m_Script: {fileID: 11500000, guid: d3f1c0f8a807cb940a9487a209fde90b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ObjectSpawner
+  m_EditorClassIdentifier: Assembly-CSharp::WeightedObjectSpawner
   _spawnInterval: 0.5
   _spawnRadius: 200
   _objectLifetime: 30
-  _poolName: Tree
+  _spawnEntries:
+  - PoolName: Tree_1
+    Weight: 50
+  - PoolName: Tree_2
+    Weight: 50
 --- !u!1 &1823818477
 GameObject:
   m_ObjectHideFlags: 0
