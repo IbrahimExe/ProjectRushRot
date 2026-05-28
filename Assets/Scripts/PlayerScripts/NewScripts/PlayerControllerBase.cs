@@ -88,6 +88,8 @@ public class PlayerControllerBase : MonoBehaviour
     public float MaxSpeedMultiplier { get; set; } = 1f;    // dash boost uses this
     public bool SuppressVelocityOverride { get; set; } = false; // bounce uses this
 
+    public string lastGroundRegion;
+
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
     public float baseDashKillWindow = 0.25f;
@@ -356,7 +358,13 @@ public class PlayerControllerBase : MonoBehaviour
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
-            //Debug.Log("Grounded on region: " + region);
+            if (region != null) {
+                if (region != lastGroundRegion)
+                {
+                    // Debug.Log("Landed on new region: " + region);
+                    lastGroundRegion = region;
+                }
+            }
             return true;
         }
 

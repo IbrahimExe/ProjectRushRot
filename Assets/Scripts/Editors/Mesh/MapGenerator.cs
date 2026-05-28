@@ -264,6 +264,11 @@ namespace LevelGenerator
             return string.Empty;
         }
 
+        public static void GetSlope() {
+        
+        //tbd
+        
+        }
         public static float GetHeightAtWorldPosition(Vector3 worldPosition)
         {
             if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)
