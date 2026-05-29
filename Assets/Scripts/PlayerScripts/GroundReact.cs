@@ -7,11 +7,17 @@ public class GroundReact : MonoBehaviour
     private string currentRegion;
 
     [Header("Ground Particles")]
+    public string GrassTag = "GRASS";
+    public string SandTag = "SAND";
+    public string WaterTag = "WATER";
+    public string StoneTag = "STONE";
+    public string ForestTag = "FOREST";
+
     public ParticleSystem[] waterSplash;
     public ParticleSystem[] grassTrail;
     public ParticleSystem[] sandTrail;
-    public ParticleSystem[] StoneTrail;
-    public ParticleSystem[] ForestTrail;
+    public ParticleSystem[] stoneTrail;
+    public ParticleSystem[] forestTrail;
 
     void Start() {
     
@@ -52,12 +58,12 @@ public class GroundReact : MonoBehaviour
 
                 case "STONE":
                 Debug.Log("Player is now on Stone. Playing stone particle.");
-                newParticle = StoneTrail;
+                newParticle = stoneTrail;
                 break;
 
                 case "FOREST":
                 Debug.Log("Player is now in a Forest. Playing forest particle.");
-                newParticle = ForestTrail;
+                newParticle = forestTrail;
                 break;
 
             default:
