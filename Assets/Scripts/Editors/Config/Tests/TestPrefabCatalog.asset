@@ -17,13 +17,13 @@ MonoBehaviour:
     ID: ANIMAL
     Category: 0
     Variants:
-    - {fileID: 2450004879686260535, guid: a3ca3280324f7eb41b653fe1c52a242d, type: 3}
+    - {fileID: 3207817493276649302, guid: edc38d9ae2f3da7499993dfd1a7476cc, type: 3}
     Footprint: 1
   - Name: Tree
     ID: TREE
     Category: 0
     Variants:
-    - {fileID: 7350175523002830834, guid: eef7f14a6bba6e74d9122ddea5936222, type: 3}
+    - {fileID: 132065474207181821, guid: 5a6907d5b77ee484ab5b08f4012dd11d, type: 3}
     Footprint: 1
   - Name: Rock
     ID: ROCK
