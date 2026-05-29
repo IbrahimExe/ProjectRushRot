@@ -344,32 +344,27 @@ public class PlayerControllerBase : MonoBehaviour
             return false;
 
         float rayLen = 1.0f;
-
-        // Visualise the ray in scene view
        // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
 
-
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
-
         {
-            // Visualise the hit point
-            Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
-
+            //Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
+
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
-            if (region != null) {
-                if (region != lastGroundRegion)
-                {
-                    // Debug.Log("Landed on new region: " + region);
-                    lastGroundRegion = region;
-                }
+            if (!string.IsNullOrEmpty(region) && region != lastGroundRegion)
+            {
+               // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
+                lastGroundRegion = region;
             }
+
             return true;
         }
 
         RB.linearDamping = 0f;
         GroundNormal = Vector3.up;
+        lastGroundRegion = string.Empty; // clear when airborne
         return false;
     }
 

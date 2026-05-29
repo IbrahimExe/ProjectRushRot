@@ -59,7 +59,7 @@ public class ChunkSpawner : MonoBehaviour
         _normals         = bakedNormals;
         _spawnRoot = spawnRoot;
         _poolManager = ServiceLocator.Get<ObjectPoolManager>();
-        Debug.Log($"[ChunkSpawner] PoolManager: {(_poolManager != null ? "found" : "NULL")}");
+        //Debug.Log($"[ChunkSpawner] PoolManager: {(_poolManager != null ? "found" : "NULL")}");
 
         _catalog.RebuildCache();
 
@@ -181,14 +181,14 @@ public class ChunkSpawner : MonoBehaviour
 
                 if (_poolManager != null && _poolManager.TryFetch(inst.PrefabDefID, out GameObject pooled))
                 {
-                    Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
+                   // Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
                     pooled.transform.SetPositionAndRotation(inst.WorldPosition, inst.Rotation);
                     pooled.SetActive(true);
                     inst.ActiveObject = pooled;
                 }
                 else
                 {
-                    Debug.Log($"[ChunkSpawner] Pool miss: {inst.PrefabDefID}, poolManager null: {_poolManager == null}");
+                    //Debug.Log($"[ChunkSpawner] Pool miss: {inst.PrefabDefID}, poolManager null: {_poolManager == null}");
                     var prefab = PickVariant(def, inst.WorldPosition);
                     inst.ActiveObject = Instantiate(prefab, inst.WorldPosition, inst.Rotation, _spawnRoot);
                 }

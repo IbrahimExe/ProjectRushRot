@@ -60,7 +60,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         if (!_poolDictionary.ContainsKey(poolname))
         {
-            Debug.LogError($"Pool with name {poolname} does not exist. Cannot recycle object.");
+           // Debug.LogError($"Pool with name {poolname} does not exist. Cannot recycle object.");
             return;
         }
 
