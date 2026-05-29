@@ -395,7 +395,9 @@ public class DashAbility : MonoBehaviour
             RB.linearVelocity *= (1f - lateDashSpeedPenaltyFraction);
         }
 
-        Destroy(otherGO);
+        //Destroy(otherGO);
+        // disable instead of destroy so they can spawn later from the pool
+        otherGO.SetActive(false);
 
         if (dashKillCount < dashKillCap)
             dashKillCount++;

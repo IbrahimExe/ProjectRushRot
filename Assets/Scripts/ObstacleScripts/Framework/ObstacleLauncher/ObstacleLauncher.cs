@@ -1,0 +1,49 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(LaunchBehavior))]
+public class ObstacleLauncher : MonoBehaviour
+{
+    [Header("Projectiles")]
+    [SerializeField] private List<Projectile> projectilePrefabs;
+    [SerializeField] private Transform launchPoint;
+
+    [Header("Detection")]
+    [SerializeField] private float detectionRadius = 8f;
+    [SerializeField] private LayerMask playerLayer;
+
+    private LaunchBehavior launchBehavior;
+
+    private void Awake()
+    {
+        launchBehavior = GetComponent<LaunchBehavior>();
+    }
+
+    private void Update()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius, playerLayer);
+        if (hits.Length > 0)
+            TryLaunch(hits[0].transform.position);
+    }
+
+    private void TryLaunch(Vector3 targetPosition)
+    {
+        if (projectilePrefabs.Count == 0) return;
+
+        Projectile prefab = projectilePrefabs[Random.Range(0, projectilePrefabs.Count)];
+        Projectile projectile = ProjectilePoolManager.Instance.Get(prefab);
+        if (projectile == null) return;
+
+        projectile.transform.position = launchPoint.position;
+        projectile.transform.rotation = launchPoint.rotation;
+
+        launchBehavior.Launch(projectile.Rb, launchPoint.position, targetPosition);
+        projectile.OnLaunched();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectionRadius);
+    }
+}

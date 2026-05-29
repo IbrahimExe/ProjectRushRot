@@ -10,8 +10,14 @@ public class LevelTimer : MonoBehaviour
     // NEW — stores the final formatted time
     private string finalFormattedTime = "00:00.00";
 
-    void Start()
+    private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }   
+
+    private void Initialize()
+    {
+        // start
         timerText = GetComponent<TextMeshProUGUI>();
         startTime = Time.time;
     }
