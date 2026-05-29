@@ -56,20 +56,6 @@ public class PerkManager
         RecalculateStats();
     }
 
-    public void ClearAllPerks()
-    {
-        foreach (RuntimePerk runtime in active.Values)
-        {
-            runtime.ability.OnRemove(ctx);
-        }
-
-        active.Clear();
-        states.Clear();
-
-        if (ctx != null && ctx.player != null)
-            ctx.player.SetBaseStats();
-    }
-
     public int GetLevel(string abilityId)
     {
         return active.TryGetValue(abilityId, out RuntimePerk runtime) ? runtime.level : 0;
@@ -122,7 +108,7 @@ public class PerkManager
         RecalculateStats();
     }
 
-    public void RecalculateStats()
+    private void RecalculateStats()
     {
         ctx.player.SetBaseStats();
 

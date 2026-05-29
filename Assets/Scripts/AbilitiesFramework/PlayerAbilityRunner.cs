@@ -28,7 +28,7 @@ public class PlayerAbilityRunner : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.Log("ABILITY RUNNER ENABLED");
+        Debug.LogError("ABILITY RUNNER ENABLED");
     }
 
     private void Start()
@@ -83,15 +83,5 @@ public class PlayerAbilityRunner : MonoBehaviour
     public void AddPerk(AbilityBase perk)
     {
         perkManager.Apply(perk);
-    }
-
-    public void RecalculateStats()
-    {
-        perkManager.RecalculateStats();
-    }
-
-    public void ClearAllPerks()
-    {
-        perkManager.ClearAllPerks();
     }
 }
