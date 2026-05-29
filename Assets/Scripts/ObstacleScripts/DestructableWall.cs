@@ -81,7 +81,7 @@ public class DestructableWall : MonoBehaviour
         }
 
         // 2) Fallback: PlayerController2 (older controller) — read private bools via reflection
-        var pc2 = go.GetComponentInParent<PlayerControllerBase>();
+        var pc2 = go.GetComponentInParent<PlayerController2>();
         if (pc2 != null)
         {
             var t = pc2.GetType();

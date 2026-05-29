@@ -40,14 +40,8 @@ public class CameraZoom : MonoBehaviour
     private float lookBackTarget = 0f;
     private bool isLookingBack = false;
 
-    private void Awake()
+    void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // start 
         orbitalFollow = vcam.GetComponent<CinemachineOrbitalFollow>();
         originalRangeMin = orbitalFollow.HorizontalAxis.Range.x;
         originalRangeMax = orbitalFollow.HorizontalAxis.Range.y;

@@ -56,20 +56,6 @@ public class PerkManager
         RecalculateStats();
     }
 
-    public void ClearAllPerks()
-    {
-        foreach (RuntimePerk runtime in active.Values)
-        {
-            runtime.ability.OnRemove(ctx);
-        }
-
-        active.Clear();
-        states.Clear();
-
-        if (ctx != null && ctx.player != null)
-            ctx.player.SetBaseStats();
-    }
-
     public int GetLevel(string abilityId)
     {
         return active.TryGetValue(abilityId, out RuntimePerk runtime) ? runtime.level : 0;
@@ -94,15 +80,15 @@ public class PerkManager
 
     public bool TryUse(string abilityId)
     {
-       // Debug.Log("Trying ability: " + abilityId);
+        Debug.Log("Trying ability: " + abilityId);
 
         if (!active.TryGetValue(abilityId, out RuntimePerk runtime))
         {
-            //Debug.LogWarning("Ability not active/found: " + abilityId);
+            Debug.LogWarning("Ability not active/found: " + abilityId);
             return false;
         }
 
-        //Debug.Log("Found ability: " + runtime.ability.displayName + " Level: " + runtime.level);
+        Debug.Log("Found ability: " + runtime.ability.displayName + " Level: " + runtime.level);
         return runtime.ability.TryUse(ctx, runtime.level);
     }
 
@@ -122,7 +108,7 @@ public class PerkManager
         RecalculateStats();
     }
 
-    public void RecalculateStats()
+    private void RecalculateStats()
     {
         ctx.player.SetBaseStats();
 

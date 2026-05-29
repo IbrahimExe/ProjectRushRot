@@ -25,14 +25,8 @@ public class DeathWall : MonoBehaviour
     private bool hasKilled = false;
     private float currentSpeed;
 
-    private void Awake()
+    void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        //start
         currentSpeed = BaseSpeed;
 
         if (playerRb != null)

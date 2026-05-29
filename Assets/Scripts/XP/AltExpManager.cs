@@ -91,12 +91,6 @@ public class AltExpManager : MonoBehaviour
 
     private void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // awake
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
 

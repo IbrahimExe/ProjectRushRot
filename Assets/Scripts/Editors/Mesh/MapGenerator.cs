@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
 namespace LevelGenerator
 {
@@ -17,8 +16,6 @@ namespace LevelGenerator
             this.colorMap = colorMap;
         }
     }
-
-
 
     public class MapGenerator : MonoBehaviour
     {
@@ -52,8 +49,6 @@ namespace LevelGenerator
             meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         }
 
-
-
         public void RequestMapData(Vector2 centre, Action<MapData> callback)
         {
             ThreadStart threadStart = delegate { MapDataThread(centre, callback); };
@@ -83,26 +78,24 @@ namespace LevelGenerator
 
         void Update()
         {
-            
-            _mapDataBuffer.Clear();
             lock (mapDataThreadInfoQueue)
+            {
                 while (mapDataThreadInfoQueue.Count > 0)
-                    _mapDataBuffer.Add(mapDataThreadInfoQueue.Dequeue());
+                {
+                    var threadInfo = mapDataThreadInfoQueue.Dequeue();
+                    threadInfo.callback(threadInfo.parameter);
+                }
+            }
 
-            foreach (var info in _mapDataBuffer)
-                info.callback(info.parameter);
-
-            _meshDataBuffer.Clear();
             lock (meshDataThreadInfoQueue)
+            {
                 while (meshDataThreadInfoQueue.Count > 0)
-                    _meshDataBuffer.Add(meshDataThreadInfoQueue.Dequeue());
-
-            foreach (var info in _meshDataBuffer)
-                info.callback(info.parameter);
+                {
+                    var threadInfo = meshDataThreadInfoQueue.Dequeue();
+                    threadInfo.callback(threadInfo.parameter);
+                }
+            }
         }
-
-        List<MapThreadInfo<MapData>> _mapDataBuffer = new List<MapThreadInfo<MapData>>();
-        List<MapThreadInfo<MeshData>> _meshDataBuffer = new List<MapThreadInfo<MeshData>>();
 
         public MapData GenerateMapData(Vector2 centre)
         {
@@ -218,80 +211,6 @@ namespace LevelGenerator
                     TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
             //redo collision mesh if needed
             
-        }
-
-        public static MapGenerator mapInstance;
-        void Awake()
-        {
-            mapInstance = this;
-        }
-        public static string GetRegionAtWorldPosition(Vector3 worldPosition)
-        {
-            if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)
-                return string.Empty;
-
-            float uniformScale = mapInstance.Common.UniformScale;
-            int chunkSize = Mathf.RoundToInt((mapChunkSize - 1) * mapInstance.meshScale);
-
-            Vector2 pos2D = new Vector2(worldPosition.x / uniformScale, worldPosition.z / uniformScale);
-
-            Vector2 chunkCoord = new Vector2(
-                Mathf.RoundToInt(pos2D.x / chunkSize),
-                Mathf.RoundToInt(pos2D.y / chunkSize));
-
-            Vector2 chunkCenter = chunkCoord * chunkSize;
-
-            //Debug.Log($"[Region] worldPos:{worldPosition} pos2D:{pos2D} chunkSize:{chunkSize} chunkCoord:{chunkCoord} chunkCenter:{chunkCenter}");
-
-            MapData? mapData = EndlessTerrain.GetCachedMapData(chunkCoord);
-            //Debug.Log($"[Region] mapData found: {mapData.HasValue}");
-            if (mapData == null) return string.Empty;
-
-            float u = (pos2D.x - chunkCenter.x) / chunkSize + 0.5f;
-            float v = 0.5f - (pos2D.y - chunkCenter.y) / chunkSize; // inverted
-            int x = Mathf.Clamp(Mathf.RoundToInt(u * (mapChunkSize - 1)), 0, mapChunkSize - 1);
-            int z = Mathf.Clamp(Mathf.RoundToInt(v * (mapChunkSize - 1)), 0, mapChunkSize - 1);
-
-            float noiseValue = mapData.Value.heightMap[x, z];
-
-            //Debug.Log($"[Region] u:{u:F3} v:{v:F3} x:{x} z:{z} noise:{noiseValue:F3}");
-
-            var regions = mapInstance.Common.TerrainConfig.Regions;
-            for (int i = 0; i < regions.Count; i++)
-                if (noiseValue <= regions[i].Height)
-                    return regions[i].Name;
-
-            return string.Empty;
-        }
-
-        public static float GetHeightAtWorldPosition(Vector3 worldPosition)
-        {
-            if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)
-                return 0f;
-
-            float uniformScale = mapInstance.Common.UniformScale;
-            int chunkSize = Mathf.RoundToInt((mapChunkSize - 1) * mapInstance.meshScale);
-            Vector2 pos2D = new Vector2(worldPosition.x / uniformScale, worldPosition.z / uniformScale);
-
-            Vector2 chunkCoord = new Vector2(
-                Mathf.RoundToInt(pos2D.x / chunkSize),
-                Mathf.RoundToInt(pos2D.y / chunkSize));
-
-            MapData? mapData = EndlessTerrain.GetCachedMapData(chunkCoord);
-            if (mapData == null) return 0f;
-
-            Vector2 chunkCenter = chunkCoord * chunkSize;
-            float u = (pos2D.x - chunkCenter.x) / chunkSize + 0.5f;
-            float v = 0.5f - (pos2D.y - chunkCenter.y) / chunkSize;
-            int x = Mathf.Clamp(Mathf.RoundToInt(u * (mapChunkSize - 1)), 0, mapChunkSize - 1);
-            int z = Mathf.Clamp(Mathf.RoundToInt(v * (mapChunkSize - 1)), 0, mapChunkSize - 1);
-
-            float noiseValue = mapData.Value.heightMap[x, z];
-
-            // Apply height curve and multiplier — same as the mesh does
-            return mapInstance.meshHeightCurve.Evaluate(noiseValue) * mapInstance.meshHeightMultiplier * uniformScale;
-
-            //REPLACE RAYCAST HEIGHT CHECK WITH float groundY = MapGenerator.GetHeightAtWorldPosition(transform.position);
         }
 
         void OnValidate()
