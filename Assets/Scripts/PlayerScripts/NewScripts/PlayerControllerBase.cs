@@ -1,3 +1,4 @@
+using LevelGenerator;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -100,13 +101,18 @@ public class PlayerControllerBase : MonoBehaviour
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // awake
         RB = GetComponent<Rigidbody>();
 
         if (characterData != null)
             characterData.ResetRuntimeValues();
-    }
-    void Start()
-    {
+
+        // start
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
@@ -342,10 +348,20 @@ public class PlayerControllerBase : MonoBehaviour
 
         float rayLen = 1.0f;
 
+        // Visualise the ray in scene view
+       // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
+
+
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
+
         {
+            // Visualise the hit point
+            Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
+
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
+            string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
+            //Debug.Log("Grounded on region: " + region);
             return true;
         }
 
@@ -538,6 +554,13 @@ public class PlayerControllerBase : MonoBehaviour
             dash.dashSpeedBoostMultiplier = newData.dashSpeedBoostMultiplier;
             dash.dashBoostDuration = newData.dashBoostDuration;
 
+        }
+
+        PlayerAbilityRunner runner = GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+        {
+            runner.RecalculateStats();
         }
     }
 }

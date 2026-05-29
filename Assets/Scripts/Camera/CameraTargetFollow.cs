@@ -15,8 +15,14 @@ public class CameraTargetFollow : MonoBehaviour
         "High = constraint fights fast turns.\n")]
     public float rotationSmoothSpeed = 25f;
 
-    private void Start()
+    private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // start
         if (playerTransform == null)
         {
             Debug.LogError("CameraTargetFollow: Player Transform reference is not set.");

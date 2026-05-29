@@ -17,7 +17,7 @@ MonoBehaviour:
   modelScale: {x: 100, y: 100, z: 100}
   modelRotation: {x: 0, y: -90, z: -90}
   maxMoveSpeed: 70
-  acceleration: 30
+  acceleration: 35
   deceleration: 25
   mass: 1
   rotationSpeed: 100
@@ -32,6 +32,7 @@ MonoBehaviour:
   dashCooldown: 1.5
   dashSpeedBoostMultiplier: 1.15
   dashBoostDuration: 2
+  baseNumOfJumps: 1
   numOfJumps: 2
   xpMultiplierOnKill: 2
   canAirSideDash: 0

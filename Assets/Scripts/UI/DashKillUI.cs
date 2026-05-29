@@ -43,16 +43,20 @@ public class DashKillUI : MonoBehaviour
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // awake
         if (pulseTarget != null)
             baseScale = pulseTarget.localScale;
 
         // Start hidden 
         if (widgetRoot != null)
             widgetRoot.SetActive(false);
-    }
 
-    private void Start()
-    {
+        // start
         if (dashAbility == null)
             Debug.LogWarning("[DashKillUI] DashAbility not assigned — drag it in from the player.");
 

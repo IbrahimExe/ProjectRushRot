@@ -1,11 +1,15 @@
+using LevelGenerator;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 [DisallowMultipleComponent]
 public class GameManager : MonoBehaviour
 {
+
+    [SerializeField] private ObjectPoolManager _poolManager;
+
     [Header("UI (assign in inspector)")]
     public GameObject pauseMenuUI;      // Full pause panel
     public GameObject countdownUI;      // Panel for countdown
@@ -31,10 +35,18 @@ public class GameManager : MonoBehaviour
     //health
     [SerializeField] private float hp = 3f;
 
-    void Start()
+    private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    private void Initialize()
+    {
+        // start
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
+        _poolManager.Initialize();
+        ServiceLocator.Register<ObjectPoolManager>(_poolManager);
     }
 
     void Update()
@@ -138,7 +150,17 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+
+        if (pauseAudio)
+            AudioListener.pause = false;
+
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+        if (runner != null)
+            runner.ClearAllPerks();
+
+        // Clear terrain state before reload
+        EndlessTerrain.CleanupForReload();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
@@ -147,11 +169,18 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         if (pauseAudio) AudioListener.pause = false;
 
+        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+        if (runner != null) runner.ClearAllPerks();
+
+        EndlessTerrain.CleanupForReload();
+
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);
         else
             Application.Quit();
     }
+
+
 
     // Utility: returns true if either winScreen or loseScreen is present and active in hierarchy
     private bool IsWinOrLoseActive()
