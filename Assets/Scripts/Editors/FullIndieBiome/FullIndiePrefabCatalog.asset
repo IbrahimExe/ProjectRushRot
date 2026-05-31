@@ -49,11 +49,11 @@ MonoBehaviour:
     Variants:
     - {fileID: 7366290418948599023, guid: 1a2ba29e32c8c614d9f0f280e89d9058, type: 3}
     Footprint: 3
-  - Name: Spawner
-    ID: SPAWNER
+  - Name: Zombie
+    ID: ZOMBIE
     Category: 0
     Variants:
-    - {fileID: 8923245167267913275, guid: e821f7503fd08b54c87fe13e288d7cc3, type: 3}
+    - {fileID: 6138303866977512807, guid: a8efc7edb4c07e24f81ca9210baca4bb, type: 3}
     Footprint: 1
   - Name: Bear
     ID: BEAR
