@@ -11,6 +11,8 @@ public class ObstacleLauncher : MonoBehaviour
     [Header("Detection")]
     [SerializeField] private float detectionRadius = 8f;
     [SerializeField] private LayerMask playerLayer;
+    public bool playerInRange;
+    public Transform PlayerTransform { get; private set; }
 
     [Header("Timing")]
     [SerializeField] private float cooldown = 2f;
@@ -29,7 +31,15 @@ public class ObstacleLauncher : MonoBehaviour
 
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius, playerLayer);
         if (hits.Length > 0)
+        {
             TryLaunch(hits[0].transform.position);
+            playerInRange = true;
+            PlayerTransform = hits[0].transform;
+        }
+        else if (playerInRange)
+        {
+            playerInRange = false;
+        }
     }
 
     private void TryLaunch(Vector3 targetPosition)
