@@ -427,6 +427,7 @@ MonoBehaviour:
   baseMaxMoveSpeed: 60
   baseAcceleration: 25
   baseDeceleration: 25
+  brakeMultiplier: 2.5
   backwardAcceleration: 15
   rotationSpeed: 100
   linearDrag: 0.2
@@ -442,6 +443,9 @@ MonoBehaviour:
   coyoteTime: 0.12
   jumpBuffer: 0.12
   feetTransform: {fileID: 3971334911968303865}
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 0
   cartModel: {fileID: 1590221126607413222}
   rayOrigin: {fileID: 3971334911968303865}
   rayLength: 1.5
@@ -458,7 +462,13 @@ MonoBehaviour:
   dash: {fileID: 7188365373034891474}
   wallRun: {fileID: 8129584585677567498}
   wallJump: {fileID: 5394457895109117774}
+  baseDashKillWindow: 0.25
+  baseJumpAwayImpulse: 50
+  baseJumpUpImpulse: 25
+  baseWallRunDuration: 4
+  baseWallRunSpeed: 45
   currentJumps: 0
+  bonusAirJumps: 0
 --- !u!114 &7188365373034891474
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -484,6 +494,7 @@ MonoBehaviour:
   sideDashDuration: 0.5
   sideDashUpOffset: 28
   hitWindowAfterDash: 0.25
+  lateDashSpeedPenaltyFraction: 0.5
   dashKillCap: 10
   secondsToKeepMultiplier: 10
   cartModel: {fileID: 1590221126607413222}
@@ -560,9 +571,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoom
   vcam: {fileID: 2946657206990674743}
   playerRb: {fileID: 2854710723262664737}
+  dashAbility: {fileID: 0}
   baseFOV: 60
   maxFOV: 110
   speedForMax: 1000
+  fovSmoothTime: 0.15
+  speedSmoothTime: 0.2
+  dashFovSmoothTime: 0.08
   lookBackKey: 102
   rotationSpeed: 10
   lookBackFOV: 60
@@ -605,7 +620,7 @@ MonoBehaviour:
   lengthOfRaycast: 100
   groundLayer:
     serializedVersion: 2
-    m_Bits: 256
+    m_Bits: 0
   maxCheckpoints: 3
   maxRespawnAttempts: 2
   timeBetweenRespawnAttempts: 2

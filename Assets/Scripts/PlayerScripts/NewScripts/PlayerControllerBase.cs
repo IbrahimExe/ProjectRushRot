@@ -73,6 +73,9 @@ public class PlayerControllerBase : MonoBehaviour
 
     private float lastWallJumpTime = -999f;
 
+    [Header("Debuff Runtime")]
+    public float debuffMoveMultiplier = 1f;
+
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -263,10 +266,10 @@ public class PlayerControllerBase : MonoBehaviour
         Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up).normalized;
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
-        float maxForward = maxMoveSpeed * MaxSpeedMultiplier;
+        float maxForward = maxMoveSpeed * MaxSpeedMultiplier * debuffMoveMultiplier;
 
         if (v > 0f)
-            RB.AddForce(forward * acceleration * v, ForceMode.Acceleration);
+            RB.AddForce(forward * acceleration * debuffMoveMultiplier * v, ForceMode.Acceleration);
         else if (v < 0f)
             RB.AddForce(-forward * backwardAcceleration * -v, ForceMode.Acceleration);
 
@@ -290,7 +293,7 @@ public class PlayerControllerBase : MonoBehaviour
         if (IsGrounded)
         {
             Vector3 sideways = Vector3.Project(planarVel, transform.right);
-            float speedFactor = planarVel.magnitude / maxMoveSpeed;
+            float speedFactor = planarVel.magnitude / Mathf.Max(0.01f, maxMoveSpeed * debuffMoveMultiplier);
             float turnAmount = Mathf.Abs(h) * speedFactor;
             float targetGrip = Mathf.Lerp(baseGrip, turnGrip, turnAmount);
 

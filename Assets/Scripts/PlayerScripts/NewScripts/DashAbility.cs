@@ -126,6 +126,7 @@ public class DashAbility : MonoBehaviour
     private void HandleDashInput()
     {
         if (motor == null) return;
+        if (!isActiveAndEnabled) return;
 
         bool hasAirSideDash = motor.characterData != null && motor.characterData.canAirSideDash;
 
