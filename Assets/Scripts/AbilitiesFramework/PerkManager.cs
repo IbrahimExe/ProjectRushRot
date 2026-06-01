@@ -162,14 +162,6 @@ public class PerkManager
             case "bonusAirJumps":
                 ctx.player.bonusAirJumps += Mathf.RoundToInt(mod.value);
                 break;
-
-            case "debuffAmountMultiplier":
-                ctx.player.debuffAmountMultiplier *= mod.value;
-                break;
-
-            case "debuffDurationMultiplier":
-                ctx.player.debuffDurationMultiplier *= mod.value;
-                break;
         }
     }
 }

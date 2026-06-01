@@ -1,4 +1,3 @@
- using LevelGenerator;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -73,14 +72,6 @@ public class PlayerControllerBase : MonoBehaviour
 
     private float lastWallJumpTime = -999f;
 
-    [Header("Debuff Runtime")]
-    public float debuffMoveMultiplier = 1f;
-    public float debuffJumpMultiplier = 1f;
-
-    [Header("Debuff Resistance")]
-    public float debuffAmountMultiplier = 1f;
-    public float debuffDurationMultiplier = 1f;
-
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -109,18 +100,13 @@ public class PlayerControllerBase : MonoBehaviour
 
     private void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // awake
         RB = GetComponent<Rigidbody>();
 
         if (characterData != null)
             characterData.ResetRuntimeValues();
-
-        // start
+    }
+    void Start()
+    {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
@@ -187,9 +173,6 @@ public class PlayerControllerBase : MonoBehaviour
 
         jumpForce = baseJumpForce;
         bonusAirJumps = 0;
-
-        debuffAmountMultiplier = 1f;
-        debuffDurationMultiplier = 1f;
     }
 
     public void NotifyWallJump()
@@ -274,10 +257,10 @@ public class PlayerControllerBase : MonoBehaviour
         Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up).normalized;
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
-        float maxForward = maxMoveSpeed * MaxSpeedMultiplier * debuffMoveMultiplier;
+        float maxForward = maxMoveSpeed * MaxSpeedMultiplier;
 
         if (v > 0f)
-            RB.AddForce(forward * acceleration * debuffMoveMultiplier * v, ForceMode.Acceleration);
+            RB.AddForce(forward * acceleration * v, ForceMode.Acceleration);
         else if (v < 0f)
             RB.AddForce(-forward * backwardAcceleration * -v, ForceMode.Acceleration);
 
@@ -301,7 +284,7 @@ public class PlayerControllerBase : MonoBehaviour
         if (IsGrounded)
         {
             Vector3 sideways = Vector3.Project(planarVel, transform.right);
-            float speedFactor = planarVel.magnitude / Mathf.Max(0.01f, maxMoveSpeed * debuffMoveMultiplier);
+            float speedFactor = planarVel.magnitude / maxMoveSpeed;
             float turnAmount = Mathf.Abs(h) * speedFactor;
             float targetGrip = Mathf.Lerp(baseGrip, turnGrip, turnAmount);
 
@@ -334,7 +317,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void DoNormalJump()
     {
-        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         currentJumps = 1;
     }
 
@@ -348,7 +331,7 @@ public class PlayerControllerBase : MonoBehaviour
     public void DoAirJump()
     {
         RB.linearVelocity = new Vector3(RB.linearVelocity.x, 0f, RB.linearVelocity.z);
-        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         currentJumps++;
     }
 
@@ -359,20 +342,10 @@ public class PlayerControllerBase : MonoBehaviour
 
         float rayLen = 1.0f;
 
-        // Visualise the ray in scene view
-       // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
-
-
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
-
         {
-            // Visualise the hit point
-            Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
-
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
-            string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
-            //Debug.Log("Grounded on region: " + region);
             return true;
         }
 
@@ -565,13 +538,6 @@ public class PlayerControllerBase : MonoBehaviour
             dash.dashSpeedBoostMultiplier = newData.dashSpeedBoostMultiplier;
             dash.dashBoostDuration = newData.dashBoostDuration;
 
-        }
-
-        PlayerAbilityRunner runner = GetComponent<PlayerAbilityRunner>();
-
-        if (runner != null)
-        {
-            runner.RecalculateStats();
         }
     }
 }
