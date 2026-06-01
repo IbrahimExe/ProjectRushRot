@@ -144,19 +144,16 @@ public class MissilePerk : AbilityBase
     {
         while (visuals.Count < amount)
         {
-            GameObject visual = Instantiate(missileVisualPrefab);
+            ObjectPool pool = PoolRegistry.Get("MissileVisual");
+
+            if (pool == null)
+            {
+                Debug.LogError("MissileVisual pool not found.");
+                return;
+            }
+
+            GameObject visual = pool.Get(Vector3.zero, Quaternion.identity);
             visual.SetActive(false);
-
-            Collider col = visual.GetComponent<Collider>();
-            if (col != null)
-                col.enabled = false;
-
-            Rigidbody rb = visual.GetComponent<Rigidbody>();
-            if (rb != null)
-                rb.isKinematic = true;
-
-            visual.layer = LayerMask.NameToLayer("Ignore Raycast");
-
             visuals.Add(visual);
         }
     }

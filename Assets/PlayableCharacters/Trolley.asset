@@ -17,7 +17,7 @@ MonoBehaviour:
   modelScale: {x: 1, y: 1, z: 1}
   modelRotation: {x: 0, y: -90, z: 0}
   maxMoveSpeed: 60
-  acceleration: 30
+  acceleration: 35
   deceleration: 25
   mass: 1
   rotationSpeed: 100
