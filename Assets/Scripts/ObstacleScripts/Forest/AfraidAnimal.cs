@@ -137,8 +137,9 @@ public class AfraidAnimal : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        // Destroy if it collides with anything at all
-        Destroy(gameObject);
+        // disable the object so it return to the pool and doesn't cause a memoryleak
+        gameObject.SetActive(false);
+
     }
 
     void SnapToGround()
