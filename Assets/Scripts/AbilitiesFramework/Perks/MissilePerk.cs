@@ -160,4 +160,24 @@ public class MissilePerk : AbilityBase
             visuals.Add(visual);
         }
     }
+
+    public override float GetCooldownPercent()
+    {
+        int maxAvailable = maxMissiles;
+
+        if (currentMissiles > 0)
+            return 1f;
+
+        float cooldown = GetCooldown(1);
+
+        if (cooldown <= 0f)
+            return 1f;
+
+        return 1f - Mathf.Clamp01(rechargeTimer / cooldown);
+    }
+
+    public override bool IsReady()
+    {
+        return currentMissiles > 0;
+    }
 }

@@ -11,6 +11,7 @@ public class ShieldPerk : AbilityBase
     public GameObject shieldVisualPrefab;
     public float visualScaleMultiplier = 2f;
 
+    private float currentCooldown;
     private float cooldownTimer;
     private bool shieldReady;
     private GameObject shieldVisual;
@@ -53,7 +54,8 @@ public class ShieldPerk : AbilityBase
             return;
 
         shieldReady = false;
-        cooldownTimer = Mathf.Max(5f, baseCooldown - cooldownReductionPerLevel * (level - 1));
+        currentCooldown = Mathf.Max(5f, baseCooldown - cooldownReductionPerLevel * (level - 1));
+        cooldownTimer = currentCooldown;
 
         UpdateVisual(ctx);
     }
@@ -91,5 +93,21 @@ public class ShieldPerk : AbilityBase
         shieldVisual.transform.localPosition = Vector3.zero;
         shieldVisual.transform.localRotation = Quaternion.identity;
         shieldVisual.SetActive(shieldReady);
+    }
+
+    public override float GetCooldownPercent()
+    {
+        if (shieldReady)
+            return 1f;
+
+        if (currentCooldown <= 0f)
+            return 1f;
+
+        return 1f - Mathf.Clamp01(cooldownTimer / currentCooldown);
+    }
+
+    public override bool IsReady()
+    {
+        return shieldReady;
     }
 }
