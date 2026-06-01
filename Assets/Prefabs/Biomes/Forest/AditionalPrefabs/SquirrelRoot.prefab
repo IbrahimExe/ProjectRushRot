@@ -207,7 +207,7 @@ MonoBehaviour:
   projectilePrefabs:
   - {fileID: 8427297465576109279, guid: 459281ac57f6f71429efd0bdbaf0132d, type: 3}
   launchPoint: {fileID: 2870971106475394433}
-  detectionRadius: 50
+  detectionRadius: 60
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
@@ -226,7 +226,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleRotator
   obstacleLauncher: {fileID: 2836688588980493770}
-  rotationSpeed: 100
+  rotationSpeed: 150
 --- !u!1 &7159070397187133128
 GameObject:
   m_ObjectHideFlags: 0

@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d58971be86487284e8a2fe8753dc981a, type: 2}
+  - {fileID: 2100000, guid: 50994a368ee4bf140bc7c7e77eca900e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -110,9 +110,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5899826
-  m_Height: 40.894497
+  m_Height: 48.885498
   m_Direction: 1
-  m_Center: {x: 0.012943434, y: -9.917628, z: -0.00000014228974}
+  m_Center: {x: 0.012943417, y: -5.922162, z: -0.00000015153327}
 --- !u!1 &7739569365764078801
 GameObject:
   m_ObjectHideFlags: 0
@@ -124,6 +124,7 @@ GameObject:
   - component: {fileID: 4145468129189278461}
   - component: {fileID: 7786118996475550429}
   - component: {fileID: 1961651555123757697}
+  - component: {fileID: 3159792352142372401}
   - component: {fileID: 6465949596440885018}
   m_Layer: 0
   m_Name: BirdPoo
@@ -178,6 +179,21 @@ MonoBehaviour:
   poo: {fileID: 8951054075297917801}
   pooPuddle: {fileID: 1262865807398397174}
   rb: {fileID: 6465949596440885018}
+--- !u!114 &3159792352142372401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7739569365764078801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1bae0f22fe4d154886c910133c13724, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlowingObstacle
+  debuffType: 0
+  debuffAmount: 0.3
+  debuffDuration: 3
 --- !u!54 &6465949596440885018
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -272,7 +288,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d58971be86487284e8a2fe8753dc981a, type: 2}
+  - {fileID: 2100000, guid: 50994a368ee4bf140bc7c7e77eca900e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

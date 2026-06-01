@@ -169,7 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fd4cb69252f8774696370aa2ac3fd63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DropLaunch
-  dropForce: 1
+  dropForce: 2
 --- !u!114 &7286491953971725063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -185,7 +185,7 @@ MonoBehaviour:
   projectilePrefabs:
   - {fileID: 7786118996475550429, guid: 92f98a9659c03fb40ac81757734608a0, type: 3}
   launchPoint: {fileID: 5459314566891463144}
-  detectionRadius: 50
+  detectionRadius: 70
   playerLayer:
     serializedVersion: 2
     m_Bits: 256

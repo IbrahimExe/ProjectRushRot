@@ -11,6 +11,7 @@ public class ObstacleLauncher : MonoBehaviour
     [Header("Detection")]
     [SerializeField] private float detectionRadius = 8f;
     [SerializeField] private LayerMask playerLayer;
+
     public bool playerInRange;
     public Transform PlayerTransform { get; private set; }
 
