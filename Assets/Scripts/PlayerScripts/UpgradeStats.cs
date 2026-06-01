@@ -17,22 +17,43 @@ public class UpgradeStats : MonoBehaviour
     public void UpgradeMaxSpeedPercent(float percent)
     {
         float amount = player.baseMaxMoveSpeed * percent;
-        player.addMaxSpeed(amount);
-       // Debug.Log($"Upgraded Max Speed by {amount}");
+
+        player.baseMaxMoveSpeed += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     public void UpgradeAccelerationPercent(float percent)
     {
         float amount = player.baseAcceleration * percent;
-        player.addAcceleration(amount);
-       // Debug.Log($"Upgraded Acceleration by {amount}");
+
+        player.baseAcceleration += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     public void UpgradeJumpForcePercent(float percent)
     {
         float amount = player.baseJumpForce * percent;
-        player.addJumpForce(amount);
-        //Debug.Log($"Upgraded Jump Force by {amount}");
+
+        player.baseJumpForce += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     // ─────────────────────────────────────────────
@@ -41,7 +62,7 @@ public class UpgradeStats : MonoBehaviour
 
     /// effectValue  = flat seconds added to wallRunDuration.
     /// effectValue2 = flat amount added to wallRunSpeedMultiplier.
- 
+
     public void UpgradeWallRun(float durationFlat, float speedMultiplierFlat)
     {
         player.addWallRunDuration(durationFlat);

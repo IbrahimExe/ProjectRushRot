@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FullIndieTerrainConfig
   m_EditorClassIdentifier: Assembly-CSharp::TerrainConfig
   Regions:
-  - Name: DeepWater
+  - Name: DEEPWATER
     Height: 0.21
     Color: {r: 0.0038714937, g: 0.4587634, b: 0.8207547, a: 1}
     BlendWidth: 0
@@ -26,7 +26,7 @@ MonoBehaviour:
       BlueNoiseStrength: 0
       VoronoiJitter: 0
       VoronoiCells: 0
-  - Name: 
+  - Name: WATER
     Height: 0.26
     Color: {r: 0, g: 0.55506897, b: 1, a: 1}
     BlendWidth: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
       BlueNoiseStrength: 0
       VoronoiJitter: 0
       VoronoiCells: 0
-  - Name: 
+  - Name: SAND
     Height: 0.35
     Color: {r: 0.8962264, g: 0.7263209, b: 0.4185208, a: 1}
     BlendWidth: 0
@@ -52,7 +52,7 @@ MonoBehaviour:
       BlueNoiseStrength: 0
       VoronoiJitter: 0
       VoronoiCells: 0
-  - Name: 
+  - Name: GRASS
     Height: 0.4
     Color: {r: 0.53333336, g: 1, b: 0, a: 1}
     BlendWidth: 0
@@ -65,7 +65,7 @@ MonoBehaviour:
       BlueNoiseStrength: 0
       VoronoiJitter: 0
       VoronoiCells: 0
-  - Name: 
+  - Name: FOREST
     Height: 0.6
     Color: {r: 0.4196079, g: 0.5568628, b: 0.1372549, a: 1}
     BlendWidth: 0.29
@@ -78,7 +78,7 @@ MonoBehaviour:
       BlueNoiseStrength: 0
       VoronoiJitter: 0
       VoronoiCells: 0
-  - Name: 
+  - Name: STONE
     Height: 0.8
     Color: {r: 0.4117647, g: 0.4117647, b: 0.4117647, a: 1}
     BlendWidth: 0

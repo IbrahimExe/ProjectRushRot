@@ -14,6 +14,14 @@ public class PlayerDebuffReceiver : MonoBehaviour
     private bool jumpDebuffActive;
     private bool dashDebuffActive;
 
+    public bool IsSlowActive => slowActive;
+    public bool IsJumpDebuffActive => jumpDebuffActive;
+    public bool IsDashDebuffActive => dashDebuffActive;
+
+    public float SlowTimeLeft { get; private set; }
+    public float JumpDebuffTimeLeft { get; private set; }
+    public float DashDebuffTimeLeft { get; private set; }
+
     private void Awake()
     {
         player = GetComponent<PlayerControllerBase>();
@@ -55,24 +63,35 @@ public class PlayerDebuffReceiver : MonoBehaviour
     {
         slowActive = true;
         player.debuffMoveMultiplier = amount;
+        SlowTimeLeft = duration;
 
-        yield return new WaitForSeconds(duration);
+        while (SlowTimeLeft > 0f)
+        {
+            SlowTimeLeft -= Time.deltaTime;
+            yield return null;
+        }
 
         player.debuffMoveMultiplier = 1f;
         slowActive = false;
-        slowRoutine = null;
+        SlowTimeLeft = 0f;
     }
 
     private IEnumerator JumpRoutine(float amount, float duration)
     {
         jumpDebuffActive = true;
+        JumpDebuffTimeLeft = duration;
 
         player.debuffJumpMultiplier = amount;
 
-        yield return new WaitForSeconds(duration);
+        while (JumpDebuffTimeLeft > 0f)
+        {
+            JumpDebuffTimeLeft -= Time.deltaTime;
+            yield return null;
+        }
 
         player.debuffJumpMultiplier = 1f;
 
+        JumpDebuffTimeLeft = 0f;
         jumpDebuffActive = false;
         jumpRoutine = null;
     }
@@ -80,15 +99,21 @@ public class PlayerDebuffReceiver : MonoBehaviour
     private IEnumerator DashRoutine(float duration)
     {
         dashDebuffActive = true;
+        DashDebuffTimeLeft = duration;
 
         if (player.dash != null)
             player.dash.enabled = false;
 
-        yield return new WaitForSeconds(duration);
+        while (DashDebuffTimeLeft > 0f)
+        {
+            DashDebuffTimeLeft -= Time.deltaTime;
+            yield return null;
+        }
 
         if (player.dash != null)
             player.dash.enabled = true;
 
+        DashDebuffTimeLeft = 0f;
         dashDebuffActive = false;
         dashRoutine = null;
     }
