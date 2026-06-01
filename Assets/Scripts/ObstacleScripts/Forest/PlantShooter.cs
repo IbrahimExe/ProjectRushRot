@@ -3,7 +3,9 @@ using UnityEngine;
 public class PlantShooter : MonoBehaviour
 {
     public Transform firePoint;
-    public GameObject projectilePrefab;
+
+    [Header("Pooling")]
+    public string projectilePoolName = "ForestPlantProjectile";
 
     public float detectionRange = 25f;
     public float fireCooldown = 2f;
@@ -12,17 +14,18 @@ public class PlantShooter : MonoBehaviour
     private Transform player;
     private float fireTimer;
 
-    private void Start()
+    private void OnEnable()
     {
-        PlayerControllerBase playerController = FindFirstObjectByType<PlayerControllerBase>();
+        fireTimer = fireCooldown;
 
-        if (playerController != null)
-            player = playerController.transform;
+        PlayerControllerBase pc = FindFirstObjectByType<PlayerControllerBase>();
+        if (pc != null)
+            player = pc.transform;
     }
 
     private void Update()
     {
-        if (player == null || projectilePrefab == null || firePoint == null)
+        if (player == null || firePoint == null)
             return;
 
         float distance = Vector3.Distance(transform.position, player.position);
@@ -55,11 +58,22 @@ public class PlantShooter : MonoBehaviour
 
     private void Fire()
     {
-        GameObject projectile = Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
+        ObjectPoolManager pool = ServiceLocator.Get<ObjectPoolManager>();
 
-        PlantProjectile proj = projectile.GetComponent<PlantProjectile>();
+        if (pool == null)
+        {
+            Debug.LogError("PlantShooter: ObjectPoolManager not found.");
+            return;
+        }
 
-        if (proj != null)
-            proj.SetTarget(player);
+        GameObject obj = pool.Get(projectilePoolName, firePoint.position, firePoint.rotation);
+
+        if (obj == null)
+            return;
+
+        PlantProjectile projectile = obj.GetComponent<PlantProjectile>();
+
+        if (projectile != null)
+            projectile.Initialize(player, projectilePoolName);
     }
 }

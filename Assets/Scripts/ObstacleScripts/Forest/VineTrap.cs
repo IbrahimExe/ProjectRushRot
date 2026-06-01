@@ -2,13 +2,13 @@ using UnityEngine;
 
 public class VineTrap : MonoBehaviour
 {
-    [Header("Debuff")]
     public DebuffType debuffType = DebuffType.Slow;
-    public float debuffAmount = 0.75f;
+    public float debuffAmount = 0.4f;
     public float debuffDuration = 3f;
 
-    [Header("Trap Settings")]
-    public bool disappearAfterTrigger = false;
+    [Header("Pooling")]
+    public string poolName = "ForestVineTrap";
+    public bool returnToPoolAfterTrigger = false;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -19,7 +19,17 @@ public class VineTrap : MonoBehaviour
 
         receiver.ApplyDebuff(debuffType, debuffAmount, debuffDuration);
 
-        if (disappearAfterTrigger)
+        if (returnToPoolAfterTrigger)
+            ReturnToPool();
+    }
+
+    private void ReturnToPool()
+    {
+        ObjectPoolManager pool = ServiceLocator.Get<ObjectPoolManager>();
+
+        if (pool != null)
+            pool.Return(poolName, gameObject);
+        else
             gameObject.SetActive(false);
     }
 }

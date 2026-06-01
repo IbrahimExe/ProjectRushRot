@@ -12,6 +12,8 @@ public class GroundPoundPerk : AbilityBase
     public float cooldown = 8f;
 
     private float cooldownTimer;
+    private float currentCooldown;
+
     private bool preparingSlam;
     private bool waitingForLanding;
     private float slamTimer;
@@ -55,7 +57,9 @@ public class GroundPoundPerk : AbilityBase
 
         preparingSlam = true;
         slamTimer = slamDelay;
-        cooldownTimer = cooldown;
+
+        currentCooldown = cooldown;
+        cooldownTimer = currentCooldown;
 
         return true;
     }
@@ -78,5 +82,18 @@ public class GroundPoundPerk : AbilityBase
         {
             ctx.TryDestroyWithAbility(hit, abilityId);
         }
+    }
+
+    public override float GetCooldownPercent()
+    {
+        if (currentCooldown <= 0f)
+            return 1f;
+
+        return 1f - Mathf.Clamp01(cooldownTimer / currentCooldown);
+    }
+
+    public override bool IsReady()
+    {
+        return cooldownTimer <= 0f && !preparingSlam && !waitingForLanding;
     }
 }

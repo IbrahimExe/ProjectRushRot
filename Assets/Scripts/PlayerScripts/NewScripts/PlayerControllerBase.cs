@@ -77,6 +77,10 @@ public class PlayerControllerBase : MonoBehaviour
     public float debuffMoveMultiplier = 1f;
     public float debuffJumpMultiplier = 1f;
 
+    [Header("Debuff Resistance")]
+    public float debuffAmountMultiplier = 1f;
+    public float debuffDurationMultiplier = 1f;
+
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -183,6 +187,9 @@ public class PlayerControllerBase : MonoBehaviour
 
         jumpForce = baseJumpForce;
         bonusAirJumps = 0;
+
+        debuffAmountMultiplier = 1f;
+        debuffDurationMultiplier = 1f;
     }
 
     public void NotifyWallJump()

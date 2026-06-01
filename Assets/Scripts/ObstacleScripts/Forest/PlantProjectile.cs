@@ -19,10 +19,12 @@ public class PlantProjectile : MonoBehaviour
 
     private Transform target;
     private float timer;
+    private string poolName;
 
-    public void SetTarget(Transform newTarget)
+    public void Initialize(Transform newTarget, string newPoolName)
     {
         target = newTarget;
+        poolName = newPoolName;
         timer = lifetime;
     }
 
@@ -37,7 +39,7 @@ public class PlantProjectile : MonoBehaviour
 
         if (timer <= 0f)
         {
-            Destroy(gameObject);
+            ReturnToPool();
             return;
         }
 
@@ -48,6 +50,7 @@ public class PlantProjectile : MonoBehaviour
         }
 
         Vector3 dir = (target.position - transform.position).normalized;
+
         transform.position += dir * speed * Time.deltaTime;
         transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
     }
@@ -64,13 +67,26 @@ public class PlantProjectile : MonoBehaviour
 
     private void TryHit(GameObject hitObject)
     {
-        PlayerDebuffReceiver receiver = hitObject.GetComponentInParent<PlayerDebuffReceiver>();
+        PlayerControllerBase player = hitObject.GetComponentInParent<PlayerControllerBase>();
 
-        if (receiver == null)
+        if (player == null)
             return;
 
-        receiver.ApplyDebuff(debuffType, debuffAmount, debuffDuration);
+        PlayerDebuffReceiver receiver = player.GetComponent<PlayerDebuffReceiver>();
 
-        Destroy(gameObject);
+        if (receiver != null)
+            receiver.ApplyDebuff(debuffType, debuffAmount, debuffDuration);
+
+        ReturnToPool();
+    }
+
+    private void ReturnToPool()
+    {
+        ObjectPoolManager pool = ServiceLocator.Get<ObjectPoolManager>();
+
+        if (pool != null && !string.IsNullOrEmpty(poolName))
+            pool.Return(poolName, gameObject);
+        else
+            gameObject.SetActive(false);
     }
 }

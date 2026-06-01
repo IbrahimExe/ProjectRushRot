@@ -22,6 +22,10 @@ public class PlayerDebuffReceiver : MonoBehaviour
 
     public void ApplyDebuff(DebuffType type, float amount, float duration)
     {
+
+        amount *= player.debuffAmountMultiplier;
+        duration *= player.debuffDurationMultiplier;
+
         switch (type)
         {
             case DebuffType.Slow:

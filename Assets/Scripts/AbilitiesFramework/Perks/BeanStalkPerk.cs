@@ -30,6 +30,7 @@ public class BeanStalkPerk : AbilityBase
     public float cooldownReductionPerLevel = 0.5f;
     public float minimumCooldown = 3f;
 
+    private float currentCooldown;
     private float cooldownTimer;
     private readonly List<GameObject> activePieces = new();
 
@@ -125,7 +126,8 @@ public class BeanStalkPerk : AbilityBase
             ctx.player.StartCoroutine(ReturnAfterDelay(piece, segmentLifetime));
         }
 
-        cooldownTimer = GetCooldown(level);
+        currentCooldown = GetCooldown(level);
+        cooldownTimer = currentCooldown;
         return true;
     }
 
@@ -178,5 +180,18 @@ public class BeanStalkPerk : AbilityBase
             obj.SetActive(false);
 
         activePieces.Remove(obj);
+    }
+
+    public override float GetCooldownPercent()
+    {
+        if (currentCooldown <= 0f)
+            return 1f;
+
+        return 1f - Mathf.Clamp01(cooldownTimer / currentCooldown);
+    }
+
+    public override bool IsReady()
+    {
+        return cooldownTimer <= 0f;
     }
 }
