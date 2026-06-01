@@ -10,6 +10,10 @@ public class PlayerDebuffReceiver : MonoBehaviour
     private Coroutine jumpRoutine;
     private Coroutine dashRoutine;
 
+    private bool slowActive;
+    private bool jumpDebuffActive;
+    private bool dashDebuffActive;
+
     private void Awake()
     {
         player = GetComponent<PlayerControllerBase>();
@@ -18,25 +22,26 @@ public class PlayerDebuffReceiver : MonoBehaviour
 
     public void ApplyDebuff(DebuffType type, float amount, float duration)
     {
-
         switch (type)
         {
             case DebuffType.Slow:
-                if (slowRoutine != null)
-                    StopCoroutine(slowRoutine);
+                if (slowActive)
+                    return;
 
                 slowRoutine = StartCoroutine(SlowRoutine(amount, duration));
                 break;
 
             case DebuffType.ReducedJump:
-                if (jumpRoutine != null)
-                    StopCoroutine(jumpRoutine);
+                if (jumpDebuffActive)
+                    return;
+
                 jumpRoutine = StartCoroutine(JumpRoutine(amount, duration));
                 break;
 
             case DebuffType.DisableDash:
-                if (dashRoutine != null)
-                    StopCoroutine(dashRoutine);
+                if (dashDebuffActive)
+                    return;
+
                 dashRoutine = StartCoroutine(DashRoutine(duration));
                 break;
         }
@@ -44,28 +49,34 @@ public class PlayerDebuffReceiver : MonoBehaviour
 
     private IEnumerator SlowRoutine(float amount, float duration)
     {
+        slowActive = true;
         player.debuffMoveMultiplier = amount;
 
         yield return new WaitForSeconds(duration);
 
         player.debuffMoveMultiplier = 1f;
+        slowActive = false;
         slowRoutine = null;
     }
 
     private IEnumerator JumpRoutine(float amount, float duration)
     {
-        player.addJumpForce(-player.baseJumpForce * amount);
+        jumpDebuffActive = true;
+
+        player.debuffJumpMultiplier = amount;
 
         yield return new WaitForSeconds(duration);
 
-        if (runner != null)
-            runner.RecalculateStats();
-        else
-            player.SetBaseStats();
+        player.debuffJumpMultiplier = 1f;
+
+        jumpDebuffActive = false;
+        jumpRoutine = null;
     }
 
     private IEnumerator DashRoutine(float duration)
     {
+        dashDebuffActive = true;
+
         if (player.dash != null)
             player.dash.enabled = false;
 
@@ -73,5 +84,8 @@ public class PlayerDebuffReceiver : MonoBehaviour
 
         if (player.dash != null)
             player.dash.enabled = true;
+
+        dashDebuffActive = false;
+        dashRoutine = null;
     }
 }

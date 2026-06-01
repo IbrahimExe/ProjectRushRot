@@ -128,7 +128,7 @@ MonoBehaviour:
   speed: 25
   lifetime: 5
   debuffType: 1
-  debuffAmount: 0.2
+  debuffAmount: 0.7
   debuffDuration: 5
 --- !u!54 &3808746602395057780
 Rigidbody:

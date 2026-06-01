@@ -1,4 +1,4 @@
-using LevelGenerator;
+ using LevelGenerator;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -75,6 +75,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     [Header("Debuff Runtime")]
     public float debuffMoveMultiplier = 1f;
+    public float debuffJumpMultiplier = 1f;
 
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
@@ -326,7 +327,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void DoNormalJump()
     {
-        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps = 1;
     }
 
@@ -340,7 +341,7 @@ public class PlayerControllerBase : MonoBehaviour
     public void DoAirJump()
     {
         RB.linearVelocity = new Vector3(RB.linearVelocity.x, 0f, RB.linearVelocity.z);
-        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps++;
     }
 
