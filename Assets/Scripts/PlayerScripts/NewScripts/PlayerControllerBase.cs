@@ -96,6 +96,8 @@ public class PlayerControllerBase : MonoBehaviour
     public float MaxSpeedMultiplier { get; set; } = 1f;    // dash boost uses this
     public bool SuppressVelocityOverride { get; set; } = false; // bounce uses this
 
+    public string lastGroundRegion;
+
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
     public float baseDashKillWindow = 0.25f;
@@ -109,18 +111,13 @@ public class PlayerControllerBase : MonoBehaviour
 
     private void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // awake
         RB = GetComponent<Rigidbody>();
 
         if (characterData != null)
             characterData.ResetRuntimeValues();
-
-        // start
+    }
+    void Start()
+    {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
@@ -358,26 +355,27 @@ public class PlayerControllerBase : MonoBehaviour
             return false;
 
         float rayLen = 1.0f;
-
-        // Visualise the ray in scene view
        // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
 
-
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
-
         {
-            // Visualise the hit point
-            Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
-
+            //Debug.DrawRay(hit.point, Vector3.up * 0.2f, Color.green, 0.5f);
             RB.linearDamping = linearDrag;
             GroundNormal = hit.normal;
+
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
-            //Debug.Log("Grounded on region: " + region);
+            if (!string.IsNullOrEmpty(region) && region != lastGroundRegion)
+            {
+               // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
+                lastGroundRegion = region;
+            }
+
             return true;
         }
 
         RB.linearDamping = 0f;
         GroundNormal = Vector3.up;
+        lastGroundRegion = string.Empty; // clear when airborne
         return false;
     }
 
