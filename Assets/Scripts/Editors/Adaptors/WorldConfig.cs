@@ -110,9 +110,13 @@ public class WorldConfig : ScriptableObject
 
     void OnValidate()
     {
-        CellSize               = Mathf.Max(100f, CellSize);
-        BorderWidth            = Mathf.Clamp(BorderWidth, 0f, CellSize * 0.5f);
+        CellSize = Mathf.Max(100f, CellSize);
+        BorderWidth = Mathf.Clamp(BorderWidth, 0f, CellSize * 0.5f);
         BiomeDistortionStrength = Mathf.Max(0f, BiomeDistortionStrength);
+
+        // Ensure humidity has a different offset from temperature by default
+        if (HumidityNoise != null && HumidityNoise.Offset == Vector2.zero)
+            HumidityNoise.Offset = new Vector2(5000f, 5000f);
     }
 
     // ── Runtime helpers ───────────────────────────────────────────────────────
@@ -128,7 +132,7 @@ public class WorldConfig : ScriptableObject
 
         foreach (var entry in Biomes)
         {
-            if (entry.Config == null) continue;
+            //if (entry.Config == null) continue;
             float dx    = temperature - entry.ClimatePosition.x;
             float dy    = humidity    - entry.ClimatePosition.y;
             float score = (dx * dx + dy * dy) / (entry.Weight * entry.Weight);

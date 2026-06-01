@@ -9,19 +9,20 @@ namespace Level.Editor
     public class WorldEditor : EditorWindow
     {
         // ── State ─────────────────────────────────────────────────────────────
-        WorldConfig      _config;
-        WorldConfig      _rt;
+        WorldConfig _config;
+        WorldConfig _rt;
         SerializedObject _so;
 
         bool _dirty = false;
-        int  _tab   = 0;
+        int _tab = 0;
 
-        static readonly string[] TAB_LABELS = { "World Noise", "Climate", "Biomes" };
+        static readonly string[] TAB_LABELS = { "World Noise", "Climate", "Biomes", "Preview" };
 
         // ── Panels ────────────────────────────────────────────────────────────
         WorldNoisePanel _noisePanel;
-        ClimatePanel    _climatePanel;
-        BiomesPanel     _biomesPanel;
+        ClimatePanel _climatePanel;
+        BiomesPanel _biomesPanel;
+        WorldPreviewPanel _previewPanel;
 
         // ── Preview image ─────────────────────────────────────────────────────
         Image _previewImage;
@@ -33,39 +34,42 @@ namespace Level.Editor
 
         void OnEnable()
         {
-            _rt      = ScriptableObject.CreateInstance<WorldConfig>();
+            _rt = ScriptableObject.CreateInstance<WorldConfig>();
             _rt.name = "WorldConfig_RT";
-            _so      = new SerializedObject(_rt);
+            _so = new SerializedObject(_rt);
 
-            _noisePanel   = new WorldNoisePanel();
+            _noisePanel = new WorldNoisePanel();
             _climatePanel = new ClimatePanel();
-            _biomesPanel  = new BiomesPanel();
+            _biomesPanel = new BiomesPanel();
+            _previewPanel = new WorldPreviewPanel();
 
-            _noisePanel.OnRepaintNeeded   += Repaint;
+            _noisePanel.OnRepaintNeeded += Repaint;
             _climatePanel.OnRepaintNeeded += Repaint;
-            _biomesPanel.OnRepaintNeeded  += Repaint;
+            _biomesPanel.OnRepaintNeeded += Repaint;
+            _previewPanel.OnRepaintNeeded += Repaint;
 
             _noisePanel.OnEnable();
             _climatePanel.OnEnable();
             _biomesPanel.OnEnable();
+            _previewPanel.OnEnable();
         }
 
         void OnDisable()
         {
             if (_rt != null) DestroyImmediate(_rt);
 
-            if (_noisePanel   != null) { _noisePanel.OnDisable();   _noisePanel.OnRepaintNeeded   -= Repaint; }
+            if (_noisePanel != null) { _noisePanel.OnDisable(); _noisePanel.OnRepaintNeeded -= Repaint; }
             if (_climatePanel != null) { _climatePanel.OnDisable(); _climatePanel.OnRepaintNeeded -= Repaint; }
-            if (_biomesPanel  != null) { _biomesPanel.OnDisable();  _biomesPanel.OnRepaintNeeded  -= Repaint; }
+            if (_biomesPanel != null) { _biomesPanel.OnDisable(); _biomesPanel.OnRepaintNeeded -= Repaint; }
+            if (_previewPanel != null) { _previewPanel.OnDisable(); _previewPanel.OnRepaintNeeded -= Repaint; }
         }
 
-        // ── UIElements shell (same pattern as LevelEditor) ────────────────────
+        // ── UIElements shell ──────────────────────────────────────────────────
 
         void CreateGUI()
         {
             rootVisualElement.Clear();
 
-            // Header above the split view
             var header = new IMGUIContainer(DrawHeader);
             header.style.flexShrink = 0;
             rootVisualElement.Add(header);
@@ -82,7 +86,7 @@ namespace Level.Editor
             leftContent.style.flexGrow = 1;
             leftScroll.Add(leftContent);
 
-            // Right — preview
+            // Right — preview image
             var rightPane = new VisualElement();
             rightPane.style.flexGrow = 1;
             rightPane.style.backgroundColor = new StyleColor(new Color(0.15f, 0.15f, 0.15f));
@@ -92,11 +96,11 @@ namespace Level.Editor
             _previewImage.style.flexGrow = 1;
             rightPane.Add(_previewImage);
 
-            // Biomes tab needs to draw nodes on top of the preview texture
-            // so we overlay an IMGUI container for the graph interaction
+            // IMGUI overlay for biome node dragging (Tab 2 only)
             var graphOverlay = new IMGUIContainer(DrawGraphOverlay);
             graphOverlay.style.position = Position.Absolute;
-            graphOverlay.style.left     = graphOverlay.style.top = graphOverlay.style.right = graphOverlay.style.bottom = 0;
+            graphOverlay.style.left = graphOverlay.style.top =
+            graphOverlay.style.right = graphOverlay.style.bottom = 0;
             rightPane.Add(graphOverlay);
         }
 
@@ -108,10 +112,7 @@ namespace Level.Editor
 
             EditorGUILayout.Space(2);
 
-            // Row 1 — WorldConfig + Seed on same line
-            EditorGUILayout.BeginHorizontal();
-
-            // Config field — full width
+            // WorldConfig field
             EditorGUI.BeginChangeCheck();
             var newCfg = (WorldConfig)EditorGUILayout.ObjectField(
                 "World Config", _config, typeof(WorldConfig), false);
@@ -122,7 +123,7 @@ namespace Level.Editor
                 if (ok) LoadConfig(newCfg);
             }
 
-            // Seed — own line below
+            // Seed — own line
             if (_so != null)
             {
                 _so.Update();
@@ -135,18 +136,17 @@ namespace Level.Editor
                 }
             }
 
-            EditorGUILayout.EndHorizontal();
-
-            // Row 2 — Tab toolbar (fixed button width)
+            // Tab bar
             int prev = _tab;
-            _tab = GUILayout.Toolbar(_tab, TAB_LABELS, GUILayout.MaxWidth(400f));
+            _tab = GUILayout.Toolbar(_tab, TAB_LABELS, GUILayout.MaxWidth(500f));
             if (_tab != prev) { GUI.FocusControl(null); UpdatePreview(); }
 
-            // Row 3 — Save bar
+            // Save bar
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            EditorGUILayout.LabelField(_dirty ? "● Unsaved changes" : "", EditorStyles.miniLabel, GUILayout.Width(130f));
+            EditorGUILayout.LabelField(_dirty ? "● Unsaved changes" : "",
+                EditorStyles.miniLabel, GUILayout.Width(130f));
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Save As New",    EditorStyles.toolbarButton, GUILayout.Width(100f))) SaveAsNew();
+            if (GUILayout.Button("Save As New", EditorStyles.toolbarButton, GUILayout.Width(100f))) SaveAsNew();
             using (new EditorGUI.DisabledGroupScope(_config == null))
                 if (GUILayout.Button("Update Loaded", EditorStyles.toolbarButton, GUILayout.Width(100f))) UpdateLoaded();
             EditorGUILayout.EndHorizontal();
@@ -164,9 +164,10 @@ namespace Level.Editor
 
             switch (_tab)
             {
-                case 0: _noisePanel.Draw(_rt,   _so); break;
+                case 0: _noisePanel.Draw(_rt, _so); break;
                 case 1: _climatePanel.Draw(_rt, _so); break;
-                case 2: _biomesPanel.Draw(_rt,  _so); break;
+                case 2: _biomesPanel.Draw(_rt, _so); break;
+                case 3: _previewPanel.Draw(_rt, _so); break;
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -177,7 +178,7 @@ namespace Level.Editor
             }
         }
 
-        // ── Graph overlay (Tab 3 only — biome node dragging) ─────────────────
+        // ── Graph overlay — biome nodes (Tab 2 only) ──────────────────────────
 
         void DrawGraphOverlay()
         {
@@ -202,9 +203,10 @@ namespace Level.Editor
             Texture2D tex = null;
             switch (_tab)
             {
-                case 0: tex = _noisePanel.BuildPreviewTexture(_rt);   break;
+                case 0: tex = _noisePanel.BuildPreviewTexture(_rt); break;
                 case 1: tex = _climatePanel.BuildPreviewTexture(_rt); break;
-                // Tab 2 draws directly via DrawGraph onto the overlay — no texture needed here
+                case 2: tex = _biomesPanel.BuildPreviewTexture(_rt); break;
+                case 3: tex = _previewPanel.BuildPreviewTexture(_rt); break;
             }
 
             if (tex != null) _previewImage.image = tex;
@@ -256,18 +258,19 @@ namespace Level.Editor
 
         void MarkAllDirty()
         {
-            if (_noisePanel   != null) _noisePanel.PreviewDirty   = true;  // expose setter below
+            if (_noisePanel != null) _noisePanel.PreviewDirty = true;
             if (_climatePanel != null) _climatePanel.PreviewDirty = true;
-            if (_biomesPanel  != null) _biomesPanel.PreviewDirty  = true;
+            if (_biomesPanel != null) _biomesPanel.PreviewDirty = true;
+            if (_previewPanel != null) _previewPanel.PreviewDirty = true;
         }
 
         void GuardRuntime()
         {
             if (_rt == null)
             {
-                _rt      = ScriptableObject.CreateInstance<WorldConfig>();
+                _rt = ScriptableObject.CreateInstance<WorldConfig>();
                 _rt.name = "WorldConfig_RT";
-                _so      = new SerializedObject(_rt);
+                _so = new SerializedObject(_rt);
                 MarkAllDirty();
             }
             else if (_so == null || _so.targetObject == null)

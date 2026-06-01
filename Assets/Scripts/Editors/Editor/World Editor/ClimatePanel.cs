@@ -93,33 +93,29 @@ namespace Level.Editor
                     }
 
                     Color pixel;
-                    if (_mergeSlider < 0.01f)
+                    float mergeT = _mergeSlider;
+                    // At 0: left half = temp, right half = hum
+                    // At 1: full square blended
+                    // Transition: the dividing line moves from center outward as merge increases
+
+                    float half = TEX * 0.5f;
+                    float boundary = half * (1f - mergeT); // shrinks to 0 as merge → 1
+
+                    if (px < half - boundary)
                     {
-                        // Split — left = temp, right = hum
-                        pixel = px < TEX / 2 ? tempC : humC;
+                        // Left of temp zone — pure temp
+                        pixel = tempC;
                     }
-                    else if (_mergeSlider > 0.99f)
+                    else if (px > half + boundary)
                     {
-                        // Fully merged
-                        pixel = new Color(
-                            (tempC.r + humC.r) * 0.5f,
-                            (tempC.g + humC.g) * 0.5f,
-                            (tempC.b + humC.b) * 0.5f);
+                        // Right of hum zone — pure hum
+                        pixel = humC;
                     }
                     else
                     {
-                        // Blend zone — left side fades from temp to merged, right side from hum to merged
-                        float splitX = TEX * (1f - _mergeSlider) * 0.5f;        // left boundary
-                        float mergedX = TEX * 0.5f;                               // center
-                        Color merged = new Color(
-                            (tempC.r + humC.r) * 0.5f,
-                            (tempC.g + humC.g) * 0.5f,
-                            (tempC.b + humC.b) * 0.5f);
-
-                        if (px < mergedX)
-                            pixel = Color.Lerp(tempC, merged, Mathf.InverseLerp(splitX, mergedX, px));
-                        else
-                            pixel = Color.Lerp(humC, merged, Mathf.InverseLerp(TEX - splitX, mergedX, px));
+                        // Overlap zone — blend based on position within it
+                        float blendZoneT = Mathf.InverseLerp(half - boundary, half + boundary, px);
+                        pixel = Color.Lerp(tempC, humC, blendZoneT);
                     }
 
                     pixels[py * TEX + px] = pixel;

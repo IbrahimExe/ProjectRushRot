@@ -13,7 +13,7 @@ public class ClimateNoiseSettings
 {
     [Tooltip("Base frequency. Keep very low (0.00001–0.001) for continental-scale variation. " +
              "Values above 0.01 produce high-frequency noise unsuitable for world shapes.")]
-    [Range(0.001f, 0.10f)]
+    [Range(0.0001f, 0.1f)]
     public float Frequency = 0.0005f;
 
     [Tooltip("Number of noise octaves. 2–4 is sufficient for climate.")]

@@ -19,7 +19,7 @@ namespace Level.Editor
         public void OnEnable() { PreviewDirty = true; }
         public void OnDisable() { if (_voronoiTex != null) UnityEngine.Object.DestroyImmediate(_voronoiTex); }
 
-        // ── Left panel draw ───────────────────────────────────────────────────
+        // ── Left panel ────────────────────────────────────────────────────────
 
         public void Draw(WorldConfig config, SerializedObject so)
         {
@@ -110,7 +110,7 @@ namespace Level.Editor
             }
         }
 
-        // ── Right panel — Biome Climate Diagram ───────────────────────────────
+        // ── Graph drawing ─────────────────────────────────────────────────────
 
         public void DrawGraph(WorldConfig config, float w, float h)
         {
@@ -122,23 +122,29 @@ namespace Level.Editor
                 PreviewDirty = false;
             }
 
-            float size = Mathf.Min(w, h) - 48f;
+            float size = Mathf.Min(w, h) - 60f;
             float ox = (w - size) * 0.5f;
-            float oy = (h - size) * 0.5f + 16f;
+            float oy = (h - size) * 0.5f + 20f;
             var gr = new Rect(ox, oy, size, size);
 
-            // Title — clarifies this is classification space, not world layout
-            GUI.Label(new Rect(ox, oy - 34f, size, 16f),
+            // Dark background behind labels for readability
+            EditorGUI.DrawRect(new Rect(ox, oy - 38f, size, 18f), new Color(0f, 0f, 0f, 0.55f));
+            GUI.Label(new Rect(ox, oy - 36f, size, 16f),
                 "Biome Climate Diagram  (classification space — not world map)",
                 EditorStyles.centeredGreyMiniLabel);
 
-            // Axis labels
+            EditorGUI.DrawRect(new Rect(ox, oy - 20f, size, 18f), new Color(0f, 0f, 0f, 0.55f));
             GUI.Label(new Rect(ox, oy - 18f, size, 16f),
                 "← Cold   Temperature   Hot →", EditorStyles.centeredGreyMiniLabel);
 
+            // Rotated Y label with dark bg
             Matrix4x4 mat = GUI.matrix;
-            GUIUtility.RotateAroundPivot(-90f, new Vector2(ox - 14f, oy + size * 0.5f));
-            GUI.Label(new Rect(ox - 14f - size * 0.5f, oy + size * 0.5f - 8f, size, 16f),
+            float labelX = ox - 18f;
+            float labelY = oy + size * 0.5f;
+            GUIUtility.RotateAroundPivot(-90f, new Vector2(labelX, labelY));
+            EditorGUI.DrawRect(new Rect(labelX - size * 0.5f, labelY - 9f, size, 18f),
+                new Color(0f, 0f, 0f, 0.55f));
+            GUI.Label(new Rect(labelX - size * 0.5f, labelY - 9f, size, 16f),
                 "← Dry   Humidity   Wet →", EditorStyles.centeredGreyMiniLabel);
             GUI.matrix = mat;
 
@@ -162,8 +168,6 @@ namespace Level.Editor
 
             HandleNodes(config, gr);
         }
-
-        // ── Voronoi texture ───────────────────────────────────────────────────
 
         public Texture2D BuildPreviewTexture(WorldConfig config)
         {
@@ -226,8 +230,6 @@ namespace Level.Editor
             _voronoiTex.Apply();
         }
 
-        // ── Node dragging ─────────────────────────────────────────────────────
-
         void HandleNodes(WorldConfig config, Rect gr)
         {
             var biomes = config.Biomes;
@@ -245,8 +247,11 @@ namespace Level.Editor
                     new Rect(gp.x - radius - 1f, gp.y - radius - 1f, radius * 2f + 2f, radius * 2f + 2f),
                     border);
                 EditorGUI.DrawRect(nr, entry.PreviewColor);
-                GUI.Label(new Rect(gp.x - 40f, gp.y + radius + 2f, 80f, 16f),
-                    entry.Name, EditorStyles.centeredGreyMiniLabel);
+
+                // Label with dark background
+                Rect labelRect = new Rect(gp.x - 40f, gp.y + radius + 2f, 80f, 16f);
+                EditorGUI.DrawRect(labelRect, new Color(0f, 0f, 0f, 0.6f));
+                GUI.Label(labelRect, entry.Name, EditorStyles.centeredGreyMiniLabel);
 
                 if (e.type == EventType.MouseDown && nr.Contains(e.mousePosition))
                 {
@@ -271,8 +276,6 @@ namespace Level.Editor
                 }
             }
         }
-
-        // ── Coordinate helpers ────────────────────────────────────────────────
 
         static Vector2 ToGraph(Vector2 c, Rect gr) => new Vector2(
             gr.xMin + (c.x + 1f) * 0.5f * gr.width,

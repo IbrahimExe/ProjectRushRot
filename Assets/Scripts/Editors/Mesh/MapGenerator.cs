@@ -80,8 +80,12 @@ namespace LevelGenerator
 
         void MeshDataThread(MapData mapData, int lod, Action<MeshData> callback)
         {
+            var curve = meshHeightCurve != null
+                ? meshHeightCurve
+                : AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
             MeshData meshData = MeshGenerator.GenerateTerrainMesh(
-                mapData.heightMap, meshHeightMultiplier, meshHeightCurve, lod, meshScale);
+                mapData.heightMap, meshHeightMultiplier, curve, lod, meshScale);
             lock (meshDataThreadInfoQueue)
                 meshDataThreadInfoQueue.Enqueue(new MapThreadInfo<MeshData>(callback, meshData));
         }
@@ -164,6 +168,12 @@ namespace LevelGenerator
 
             LevelGeneratorCommon configA = chunkSample.Primary ?? WorldConfig.OceanConfig;
             LevelGeneratorCommon configB = chunkSample.Secondary ?? configA;
+
+            if (configA == null)
+            {
+                Debug.LogWarning($"[MapGenerator] No config resolved for chunk {centre} — assign LevelGeneratorCommon to all biomes or set OceanConfig.");
+                return new MapData();
+            }
 
             // Sample both noise maps for entire chunk
             float[,] noiseMapA = SampleNoiseMap(centre, borderedSize, configA);
@@ -326,6 +336,9 @@ namespace LevelGenerator
 
         public void DrawMapInEditor()
         {
+            if (meshHeightCurve == null)
+                meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);  // must be BEFORE GenerateMapData
+
             MapDisplay display = GetComponent<MapDisplay>();
             if (display == null) return;
 
@@ -337,10 +350,17 @@ namespace LevelGenerator
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(
                     mapData.colorMap, mapChunkSize, mapChunkSize));
             else if (drawMode == DrawMode.Mesh)
+            {
+                if (mapData.heightMap == null)
+                {
+                    Debug.LogWarning("[MapGenerator] Cannot draw mesh — heightMap is null. Check biome configs.");
+                    return;
+                }
                 display.DrawMesh(
                     MeshGenerator.GenerateTerrainMesh(mapData.heightMap,
                         meshHeightMultiplier, meshHeightCurve, levelOfDetail, meshScale),
                     TextureGenerator.TextureFromColourMap(mapData.colorMap, mapChunkSize, mapChunkSize));
+            }
         }
 
         // -- Static world queries ----------------------------------------------
@@ -432,7 +452,13 @@ namespace LevelGenerator
         {
 #if UNITY_EDITOR
             if (autoUpdate)
-                UnityEditor.EditorApplication.delayCall += () => { if (this != null) DrawMapInEditor(); };
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (this == null) return;
+                    if (meshHeightCurve == null)
+                        meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+                    DrawMapInEditor();
+                };
 #endif
         }
 

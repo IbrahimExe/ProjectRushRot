@@ -1,0 +1,124 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48b8f4a616b851a4186102096ed4856c, type: 3}
+  m_Name: WorldConfigTEST
+  m_EditorClassIdentifier: Assembly-CSharp::WorldConfig
+  Seed: 0
+  WorldNoise:
+    Frequency: 0.0005
+    Octaves: 3
+    Persistence: 0.5
+    Lacunarity: 2
+    Offset: {x: 0, y: 0}
+  OceanLevel: 0.4
+  OceanConfig: {fileID: 0}
+  TemperatureNoise:
+    Frequency: 0.0002
+    Octaves: 1
+    Persistence: 0
+    Lacunarity: 1
+    Offset: {x: 0, y: 0}
+  HumidityNoise:
+    Frequency: 0.0002
+    Octaves: 1
+    Persistence: 0
+    Lacunarity: 1
+    Offset: {x: 4000, y: 0}
+  CellSize: 920
+  BorderWidth: 20
+  BiomeDistortionFrequency: 20
+  BiomeDistortionStrength: 300
+  Biomes:
+  - Name: Grass
+    Config: {fileID: 11400000, guid: 61f53479b0fcbae4180ebf7c545100be, type: 2}
+    Temperature: 0.43467933
+    Humidity: 0.038004752
+    Weight: 0.71
+    PreviewColor: {r: 0.49141127, g: 0.8113208, b: 0.3329477, a: 1}
+  - Name: Savanah
+    Config: {fileID: 0}
+    Temperature: 0.6009501
+    Humidity: -0.5510689
+    Weight: 0.77
+    PreviewColor: {r: 0.8, g: 0.56165075, b: 0.32156864, a: 1}
+  - Name: Jungle
+    Config: {fileID: 0}
+    Temperature: 0.94061756
+    Humidity: 0.93824226
+    Weight: 0.51
+    PreviewColor: {r: 0, g: 0.5283019, b: 0.017321354, a: 1}
+  - Name: Tundra
+    Config: {fileID: 0}
+    Temperature: -0.9049881
+    Humidity: -0.86698335
+    Weight: 0.73
+    PreviewColor: {r: 0.8537736, g: 1, b: 0.9949476, a: 1}
+  - Name: Mountain
+    Config: {fileID: 0}
+    Temperature: -0.51543945
+    Humidity: -0.5724466
+    Weight: 0.57
+    PreviewColor: {r: 0.748847, g: 0.73260057, b: 0.9528302, a: 1}
+  - Name: Volcano
+    Config: {fileID: 0}
+    Temperature: 0.98812354
+    Humidity: -0.95961994
+    Weight: 0.36
+    PreviewColor: {r: 0.8, g: 0.32156864, b: 0.32836086, a: 1}
+  - Name: Dessert
+    Config: {fileID: 0}
+    Temperature: 0.002375297
+    Humidity: -0.64845604
+    Weight: 0.65
+    PreviewColor: {r: 1, g: 0.88773215, b: 0.4198113, a: 1}
+  - Name: City
+    Config: {fileID: 0}
+    Temperature: 0.55581945
+    Humidity: -0.27078384
+    Weight: 0.54
+    PreviewColor: {r: 0.3207547, g: 0.3207547, b: 0.3207547, a: 1}
+  - Name: Forest
+    Config: {fileID: 0}
+    Temperature: 0.06413302
+    Humidity: 0.038004752
+    Weight: 0.56
+    PreviewColor: {r: 0.009611944, g: 0.6792453, b: 0.11389906, a: 1}
+  - Name: Swamp
+    Config: {fileID: 0}
+    Temperature: 0.002375297
+    Humidity: 0.95724463
+    Weight: 0.51
+    PreviewColor: {r: 0.18115878, g: 0.6509434, b: 0.3129684, a: 1}
+  - Name: Snow
+    Config: {fileID: 0}
+    Temperature: -0.79334915
+    Humidity: 0.7767221
+    Weight: 0.63
+    PreviewColor: {r: 1, g: 1, b: 1, a: 1}
+  - Name: Snow forest
+    Config: {fileID: 0}
+    Temperature: -0.6674584
+    Humidity: 0.002375297
+    Weight: 0.34
+    PreviewColor: {r: 0.5424528, g: 1, b: 0.8003595, a: 1}
+  - Name: Pine Forest
+    Config: {fileID: 0}
+    Temperature: -0.34916866
+    Humidity: 0.09263658
+    Weight: 0.38
+    PreviewColor: {r: 0.56259644, g: 1, b: 0.5424528, a: 1}
+  - Name: Tropics
+    Config: {fileID: 0}
+    Temperature: 0.8123515
+    Humidity: 0.27315915
+    Weight: 0.46
+    PreviewColor: {r: 0.6751999, g: 0.8, b: 0.32, a: 1}
