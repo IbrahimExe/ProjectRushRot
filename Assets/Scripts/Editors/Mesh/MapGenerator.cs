@@ -160,7 +160,7 @@ namespace LevelGenerator
             // Determine the chunk's dominant biomes from its center
             // Used for chunk-wide overlay application
             BiomeSample chunkSample = WorldGenerator.Sample(
-                new Vector2(centre.x, centre.y), WorldConfig, 0f);
+     new Vector2(centre.x, centre.y), WorldConfig);
 
             LevelGeneratorCommon configA = chunkSample.Primary ?? WorldConfig.OceanConfig;
             LevelGeneratorCommon configB = chunkSample.Secondary ?? configA;
@@ -208,8 +208,8 @@ namespace LevelGenerator
                     if (chunkSample.HasSecondary)
                     {
                         BiomeSample px = WorldGenerator.Sample(
-                            new Vector2(worldX, worldZ), WorldConfig, ha);
-                        t = px.BlendT;
+                            new Vector2(worldX, worldZ), WorldConfig);
+                        t = px.IsOcean ? 0f : px.BlendT;
                     }
 
                     blendCache[x, y] = t;

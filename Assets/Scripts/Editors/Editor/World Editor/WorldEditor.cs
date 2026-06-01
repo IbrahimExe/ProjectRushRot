@@ -111,6 +111,7 @@ namespace Level.Editor
             // Row 1 — WorldConfig + Seed on same line
             EditorGUILayout.BeginHorizontal();
 
+            // Config field — full width
             EditorGUI.BeginChangeCheck();
             var newCfg = (WorldConfig)EditorGUILayout.ObjectField(
                 "World Config", _config, typeof(WorldConfig), false);
@@ -121,15 +122,12 @@ namespace Level.Editor
                 if (ok) LoadConfig(newCfg);
             }
 
-            // Seed — fixed width so it never overflows
+            // Seed — own line below
             if (_so != null)
             {
                 _so.Update();
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(
-                    _so.FindProperty("Seed"),
-                    new GUIContent("Seed"),
-                    GUILayout.Width(120f));
+                EditorGUILayout.PropertyField(_so.FindProperty("Seed"), new GUIContent("Seed"));
                 if (EditorGUI.EndChangeCheck())
                 {
                     _so.ApplyModifiedPropertiesWithoutUndo();

@@ -28,8 +28,23 @@ public class BiomeEntry
     [Tooltip("The full LevelGeneratorCommon config stack for this biome.")]
     public LevelGeneratorCommon Config;
 
-    [Tooltip("Position on the Whittaker diagram. X = Temperature (-1 cold, 1 hot). Y = Humidity (-1 dry, 1 wet).")]
-    public Vector2 ClimatePosition = Vector2.zero;
+    [Tooltip("Temperature on the Whittaker diagram (-1 cold, 1 hot).")]
+    [Range(-1f, 1f)]
+    public float Temperature = 0f;
+
+    [Tooltip("Humidity on the Whittaker diagram (-1 dry, 1 wet).")]
+    [Range(-1f, 1f)]
+    public float Humidity = 0f;
+
+    public Vector2 ClimatePosition
+    {
+        get => new Vector2(Temperature, Humidity);
+        set
+        {
+            Temperature = value.x;
+            Humidity = value.y;
+        }
+    }
 
     [Tooltip("How large this biome's cell is on the Whittaker diagram. Higher = more common.")]
     [Range(0.01f, 2f)]
@@ -67,7 +82,11 @@ public class WorldConfig : ScriptableObject
     public ClimateNoiseSettings TemperatureNoise;
 
     [Tooltip("Large-scale humidity variation. Green = humid, Yellow = dry.")]
-    public ClimateNoiseSettings HumidityNoise;
+    public ClimateNoiseSettings HumidityNoise = new ClimateNoiseSettings
+    {
+        Offset = new Vector2(5000f, 5000f)
+    };
+
 
     // ── Tab 3: Voronoi / Biomes ───────────────────────────────────────────────
 

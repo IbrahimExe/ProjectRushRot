@@ -10,13 +10,13 @@ namespace Level.Editor
         public event Action OnRepaintNeeded;
         public bool PreviewDirty { get; set; } = true;
 
-        public int  SelectedIndex { get; private set; } = -1;
-        public int  DragIndex     { get; private set; } = -1;
+        public int SelectedIndex { get; private set; } = -1;
+        public int DragIndex { get; private set; } = -1;
 
         const int TEX = 256;
         Texture2D _voronoiTex;
 
-        public void OnEnable()  { PreviewDirty = true; }
+        public void OnEnable() { PreviewDirty = true; }
         public void OnDisable() { if (_voronoiTex != null) UnityEngine.Object.DestroyImmediate(_voronoiTex); }
 
         // ── Left panel draw ───────────────────────────────────────────────────
@@ -27,9 +27,9 @@ namespace Level.Editor
 
             Label("Voronoi Settings");
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(so.FindProperty("CellSize"),                new GUIContent("Cell Size"));
-            EditorGUILayout.PropertyField(so.FindProperty("BorderWidth"),             new GUIContent("Border Width"));
-            EditorGUILayout.PropertyField(so.FindProperty("BiomeDistortionFrequency"),new GUIContent("Distortion Freq"));
+            EditorGUILayout.PropertyField(so.FindProperty("CellSize"), new GUIContent("Cell Size"));
+            EditorGUILayout.PropertyField(so.FindProperty("BorderWidth"), new GUIContent("Border Width"));
+            EditorGUILayout.PropertyField(so.FindProperty("BiomeDistortionFrequency"), new GUIContent("Distortion Freq"));
             EditorGUILayout.PropertyField(so.FindProperty("BiomeDistortionStrength"), new GUIContent("Distortion Strength"));
             if (EditorGUI.EndChangeCheck()) MarkDirty();
 
@@ -46,8 +46,8 @@ namespace Level.Editor
             var biomes = config.Biomes;
             for (int i = 0; i < biomes.Count; i++)
             {
-                bool sel   = SelectedIndex == i;
-                var  entry = biomes[i];
+                bool sel = SelectedIndex == i;
+                var entry = biomes[i];
 
                 EditorGUILayout.BeginHorizontal(sel ? EditorStyles.helpBox : GUIStyle.none);
 
@@ -76,9 +76,9 @@ namespace Level.Editor
             {
                 biomes.Add(new BiomeEntry
                 {
-                    Name         = $"Biome {biomes.Count}",
+                    Name = $"Biome {biomes.Count}",
                     PreviewColor = Color.HSVToRGB((biomes.Count * 0.17f) % 1f, 0.6f, 0.8f),
-                    Weight       = 1f
+                    Weight = 1f
                 });
                 SelectedIndex = biomes.Count - 1;
                 MarkDirty();
@@ -92,13 +92,13 @@ namespace Level.Editor
             Label($"— {(string.IsNullOrEmpty(entry.Name) ? $"Biome {idx}" : entry.Name)}");
 
             EditorGUI.BeginChangeCheck();
-            entry.Name         = EditorGUILayout.TextField("Name",   entry.Name);
-            entry.Config       = (LevelGeneratorCommon)EditorGUILayout.ObjectField(
+            entry.Name = EditorGUILayout.TextField("Name", entry.Name);
+            entry.Config = (LevelGeneratorCommon)EditorGUILayout.ObjectField(
                 "Config", entry.Config, typeof(LevelGeneratorCommon), false);
-            entry.Weight       = EditorGUILayout.Slider("Weight / Influence", entry.Weight, 0.01f, 2f);
+            entry.Weight = EditorGUILayout.Slider("Weight / Influence", entry.Weight, 0.01f, 2f);
             entry.PreviewColor = EditorGUILayout.ColorField("Preview Color", entry.PreviewColor);
 
-            Vector2 cp         = EditorGUILayout.Vector2Field("Climate Position", entry.ClimatePosition);
+            Vector2 cp = EditorGUILayout.Vector2Field("Climate Position", entry.ClimatePosition);
             entry.ClimatePosition = new Vector2(
                 Mathf.Clamp(cp.x, -1f, 1f), Mathf.Clamp(cp.y, -1f, 1f));
 
@@ -110,7 +110,7 @@ namespace Level.Editor
             }
         }
 
-        // ── Right panel — graph + nodes ───────────────────────────────────────
+        // ── Right panel — Biome Climate Diagram ───────────────────────────────
 
         public void DrawGraph(WorldConfig config, float w, float h)
         {
@@ -123,9 +123,14 @@ namespace Level.Editor
             }
 
             float size = Mathf.Min(w, h) - 48f;
-            float ox   = (w - size) * 0.5f;
-            float oy   = (h - size) * 0.5f + 16f;
-            var   gr   = new Rect(ox, oy, size, size);
+            float ox = (w - size) * 0.5f;
+            float oy = (h - size) * 0.5f + 16f;
+            var gr = new Rect(ox, oy, size, size);
+
+            // Title — clarifies this is classification space, not world layout
+            GUI.Label(new Rect(ox, oy - 34f, size, 16f),
+                "Biome Climate Diagram  (classification space — not world map)",
+                EditorStyles.centeredGreyMiniLabel);
 
             // Axis labels
             GUI.Label(new Rect(ox, oy - 18f, size, 16f),
@@ -142,10 +147,10 @@ namespace Level.Editor
             // Border
             Handles.color = new Color(0.5f, 0.5f, 0.5f);
             Handles.DrawLines(new Vector3[] {
-                new Vector3(gr.xMin,gr.yMin), new Vector3(gr.xMax,gr.yMin),
-                new Vector3(gr.xMax,gr.yMin), new Vector3(gr.xMax,gr.yMax),
-                new Vector3(gr.xMax,gr.yMax), new Vector3(gr.xMin,gr.yMax),
-                new Vector3(gr.xMin,gr.yMax), new Vector3(gr.xMin,gr.yMin),
+                new Vector3(gr.xMin, gr.yMin), new Vector3(gr.xMax, gr.yMin),
+                new Vector3(gr.xMax, gr.yMin), new Vector3(gr.xMax, gr.yMax),
+                new Vector3(gr.xMax, gr.yMax), new Vector3(gr.xMin, gr.yMax),
+                new Vector3(gr.xMin, gr.yMax), new Vector3(gr.xMin, gr.yMin),
             });
 
             // Axis lines
@@ -158,61 +163,24 @@ namespace Level.Editor
             HandleNodes(config, gr);
         }
 
-        void HandleNodes(WorldConfig config, Rect gr)
+        // ── Voronoi texture ───────────────────────────────────────────────────
+
+        public Texture2D BuildPreviewTexture(WorldConfig config)
         {
-            var   biomes = config.Biomes;
-            Event e      = Event.current;
-
-            for (int i = 0; i < biomes.Count; i++)
-            {
-                var    entry  = biomes[i];
-                Vector2 gp   = ToGraph(entry.ClimatePosition, gr);
-                float  radius = Mathf.Lerp(6f, 18f, (entry.Weight - 0.01f) / 1.99f);
-                var    nr    = new Rect(gp.x - radius, gp.y - radius, radius * 2f, radius * 2f);
-
-                Color border = SelectedIndex == i ? Color.white : new Color(0.1f, 0.1f, 0.1f);
-                EditorGUI.DrawRect(
-                    new Rect(gp.x - radius - 1f, gp.y - radius - 1f, radius * 2f + 2f, radius * 2f + 2f),
-                    border);
-                EditorGUI.DrawRect(nr, entry.PreviewColor);
-                GUI.Label(new Rect(gp.x - 40f, gp.y + radius + 2f, 80f, 16f),
-                    entry.Name, EditorStyles.centeredGreyMiniLabel);
-
-                if (e.type == EventType.MouseDown && nr.Contains(e.mousePosition))
-                {
-                    DragIndex = SelectedIndex = i;
-                    e.Use();
-                }
-            }
-
-            if (DragIndex >= 0)
-            {
-                if (e.type == EventType.MouseDrag)
-                {
-                    var entry = biomes[DragIndex];
-                    entry.ClimatePosition  = FromGraph(e.mousePosition, gr);
-                    biomes[DragIndex]      = entry;
-                    MarkDirty();
-                    e.Use(); OnRepaintNeeded?.Invoke();
-                }
-                else if (e.type == EventType.MouseUp)
-                {
-                    DragIndex = -1; e.Use();
-                }
-            }
+            if (PreviewDirty || _voronoiTex == null)
+                RebuildVoronoi(config);
+            return _voronoiTex;
         }
-
-        // ── Voronoi texture builder ───────────────────────────────────────────
 
         void RebuildVoronoi(WorldConfig config)
         {
             if (_voronoiTex != null) UnityEngine.Object.DestroyImmediate(_voronoiTex);
             _voronoiTex = new Texture2D(TEX, TEX, TextureFormat.RGB24, false)
-                { filterMode = FilterMode.Bilinear };
+            { filterMode = FilterMode.Bilinear };
 
-            var   biomes     = config.Biomes;
-            var   pixels     = new Color[TEX * TEX];
-            float cellRef    = Mathf.Max(config.CellSize, 1f);
+            var biomes = config.Biomes;
+            var pixels = new Color[TEX * TEX];
+            float cellRef = Mathf.Max(config.CellSize, 1f);
             float normBorder = (config.BorderWidth / cellRef) * 0.5f;
 
             for (int py = 0; py < TEX; py++)
@@ -220,15 +188,15 @@ namespace Level.Editor
                 for (int px = 0; px < TEX; px++)
                 {
                     float temp = (px / (float)(TEX - 1)) * 2f - 1f;
-                    float hum  = (py / (float)(TEX - 1)) * 2f - 1f;
+                    float hum = (py / (float)(TEX - 1)) * 2f - 1f;
 
                     float nd = float.MaxValue, sd = float.MaxValue;
-                    int   ni = -1,             si = -1;
+                    int ni = -1, si = -1;
 
                     for (int b = 0; b < biomes.Count; b++)
                     {
-                        float dx    = temp - biomes[b].ClimatePosition.x;
-                        float dy    = hum  - biomes[b].ClimatePosition.y;
+                        float dx = temp - biomes[b].ClimatePosition.x;
+                        float dy = hum - biomes[b].ClimatePosition.y;
                         float score = (dx * dx + dy * dy) /
                             Mathf.Max(0.0001f, biomes[b].Weight * biomes[b].Weight);
 
@@ -258,6 +226,52 @@ namespace Level.Editor
             _voronoiTex.Apply();
         }
 
+        // ── Node dragging ─────────────────────────────────────────────────────
+
+        void HandleNodes(WorldConfig config, Rect gr)
+        {
+            var biomes = config.Biomes;
+            Event e = Event.current;
+
+            for (int i = 0; i < biomes.Count; i++)
+            {
+                var entry = biomes[i];
+                Vector2 gp = ToGraph(entry.ClimatePosition, gr);
+                float radius = Mathf.Lerp(6f, 18f, (entry.Weight - 0.01f) / 1.99f);
+                var nr = new Rect(gp.x - radius, gp.y - radius, radius * 2f, radius * 2f);
+
+                Color border = SelectedIndex == i ? Color.white : new Color(0.1f, 0.1f, 0.1f);
+                EditorGUI.DrawRect(
+                    new Rect(gp.x - radius - 1f, gp.y - radius - 1f, radius * 2f + 2f, radius * 2f + 2f),
+                    border);
+                EditorGUI.DrawRect(nr, entry.PreviewColor);
+                GUI.Label(new Rect(gp.x - 40f, gp.y + radius + 2f, 80f, 16f),
+                    entry.Name, EditorStyles.centeredGreyMiniLabel);
+
+                if (e.type == EventType.MouseDown && nr.Contains(e.mousePosition))
+                {
+                    DragIndex = SelectedIndex = i;
+                    e.Use();
+                }
+            }
+
+            if (DragIndex >= 0)
+            {
+                if (e.type == EventType.MouseDrag)
+                {
+                    var entry = biomes[DragIndex];
+                    entry.ClimatePosition = FromGraph(e.mousePosition, gr);
+                    biomes[DragIndex] = entry;
+                    MarkDirty();
+                    e.Use(); OnRepaintNeeded?.Invoke();
+                }
+                else if (e.type == EventType.MouseUp)
+                {
+                    DragIndex = -1; e.Use();
+                }
+            }
+        }
+
         // ── Coordinate helpers ────────────────────────────────────────────────
 
         static Vector2 ToGraph(Vector2 c, Rect gr) => new Vector2(
@@ -265,7 +279,7 @@ namespace Level.Editor
             gr.yMax - (c.y + 1f) * 0.5f * gr.height);
 
         static Vector2 FromGraph(Vector2 p, Rect gr) => new Vector2(
-            Mathf.Clamp((p.x - gr.xMin) / gr.width  * 2f - 1f, -1f, 1f),
+            Mathf.Clamp((p.x - gr.xMin) / gr.width * 2f - 1f, -1f, 1f),
             Mathf.Clamp((gr.yMax - p.y) / gr.height * 2f - 1f, -1f, 1f));
 
         void MarkDirty() { PreviewDirty = true; OnRepaintNeeded?.Invoke(); }
