@@ -204,7 +204,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 158ba0d39411f7c419e1eb3d4aa0f408, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleLauncher
-  projectilePrefabs: []
+  projectilePrefabs:
+  - {fileID: 8427297465576109279, guid: 459281ac57f6f71429efd0bdbaf0132d, type: 3}
   launchPoint: {fileID: 2870971106475394433}
   detectionRadius: 35
   playerLayer:

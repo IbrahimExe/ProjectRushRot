@@ -41,9 +41,21 @@ public class GroundReact : MonoBehaviour
     private Quaternion lastSafeRotation;
     private bool hasSafePosition;
 
-    void Start()
-    {
+    [Header("Respawn Protection")]
+    [SerializeField] private float respawnImmunityTime = 0.5f;
 
+    private float ignoreDeepWaterUntil = -999f;
+
+    private void Start()
+    {
+        PlayerControllerBase player = GetComponentInParent<PlayerControllerBase>();
+
+        if (player != null)
+        {
+            lastSafePosition = player.transform.position;
+            lastSafeRotation = player.transform.rotation;
+            hasSafePosition = true;
+        }
     }
 
     void Update()
@@ -71,7 +83,12 @@ public class GroundReact : MonoBehaviour
         {
             case "DEEPWATER":
                 MoveAndPlay(waterSplash);
-                respawnSwitch = true;
+
+                if (Time.time >= ignoreDeepWaterUntil)
+                {
+                    respawnSwitch = true;
+                }
+
                 skipChangeParles = true;
                 break;
 
@@ -217,6 +234,10 @@ public class GroundReact : MonoBehaviour
         lastSafePosition = player.transform.position;
         lastSafeRotation = player.transform.rotation;
         hasSafePosition = true;
+
+        Debug.Log(
+    $"SAFE SAVE: {region} at {player.transform.position}"
+);
     }
 
     private void RespawnToLastSafePosition()
@@ -227,12 +248,7 @@ public class GroundReact : MonoBehaviour
             return;
 
         if (!hasSafePosition)
-        {
-            if (respawn != null)
-                respawn.RespawnPlayer();
-
             return;
-        }
 
         Rigidbody rb = player.RB;
 
@@ -244,6 +260,13 @@ public class GroundReact : MonoBehaviour
 
         player.transform.position = lastSafePosition + Vector3.up * respawnHeightOffset;
         player.transform.rotation = lastSafeRotation;
+
+        ignoreDeepWaterUntil = Time.time + respawnImmunityTime;
+        currentRegion = string.Empty;
+        player.lastGroundRegion = string.Empty;
+
+        Physics.SyncTransforms();
+
     }
 
     private IEnumerator StopAfterDelay(ParticleSystem ps)

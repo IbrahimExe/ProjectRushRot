@@ -154,6 +154,8 @@ MonoBehaviour:
   randomXMin: 3
   randomXMax: 8
   randomZRange: 3
+  clampToGround: 0
+  minHeightAboveGround: 0
   playerTag: Player
 --- !u!114 &4029407681911897341
 MonoBehaviour:
@@ -180,7 +182,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 158ba0d39411f7c419e1eb3d4aa0f408, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleLauncher
-  projectilePrefabs: []
+  projectilePrefabs:
+  - {fileID: 7786118996475550429, guid: 92f98a9659c03fb40ac81757734608a0, type: 3}
   launchPoint: {fileID: 5459314566891463144}
   detectionRadius: 40
   playerLayer:
