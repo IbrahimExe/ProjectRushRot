@@ -9,10 +9,10 @@ public class ProjectilePoolManager : MonoBehaviour
 
     private Dictionary<Projectile, ProjectilePool> pools;
 
-    //private void Awake()
-    //{
-
-    //}
+    private void Awake()
+    {
+        SystemLoader.CallOnComplete(Initialize);
+    }
 
     public void Initialize()
     {
