@@ -11,14 +11,8 @@ public class EnemyManager : MonoBehaviour
     [Tooltip("How many enemies update their steering per frame")]
     public int enemiesPerFrame = 5;
 
-    private void Awake()
+    void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // Awake
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
     }

@@ -52,14 +52,8 @@ public class TutorialManager : MonoBehaviour
     private bool isTutorialActive = false;
     private Coroutine dismissCoroutine;
 
-    private void Awake()
+    private void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // start 
         // Initialize all tutorial images as hidden
         foreach (var step in tutorialSteps)
         {

@@ -15,11 +15,6 @@ public class CollisionBounce : MonoBehaviour
 
     void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
         player = GetComponent<PlayerControllerBase>();
         wallRun = GetComponent<WallRunAbility>();
     }

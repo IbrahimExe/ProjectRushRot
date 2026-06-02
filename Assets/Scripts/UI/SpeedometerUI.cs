@@ -30,14 +30,8 @@ public class SpeedometerUI : MonoBehaviour
     private Component cachedCustom;
     private float displayedValue = 0f;
 
-    private void Awake()
+    void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // start
         CachePlayer();
     }
 

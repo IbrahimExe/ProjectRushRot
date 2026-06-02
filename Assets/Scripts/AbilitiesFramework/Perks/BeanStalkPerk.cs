@@ -45,13 +45,13 @@ public class BeanStalkPerk : AbilityBase
         if (cooldownTimer > 0f)
             return false;
 
-        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        ObjectPool pool = PoolRegistry.Get("Beanstalk");
 
-        //if (poolManager == null)
-        //{
-        //    Debug.LogError("ObjectPoolManager service not found.");
-        //    return false;
-        //}
+        if (pool == null)
+        {
+            Debug.LogError("Beanstalk pool not found.");
+            return false;
+        }
 
         ClearOldPieces();
 
@@ -108,10 +108,7 @@ public class BeanStalkPerk : AbilityBase
 
             // Keeps the top side upright instead of rolling/twisting
             Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
-            GameObject piece = poolManager.Get("Beanstalk", center, rotation);
-
-            if (piece == null)
-                continue;
+            GameObject piece = pool.Get(center, rotation);
 
             piece.transform.localScale = new Vector3(
                 pieceWidth,
@@ -172,10 +169,10 @@ public class BeanStalkPerk : AbilityBase
         if (obj == null)
             yield break;
 
-        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        PooledObject pooled = obj.GetComponent<PooledObject>();
 
-        if (poolManager != null)
-            poolManager.Return("Beanstalk", obj);
+        if (pooled != null)
+            pooled.ReturnToPool();
         else
             obj.SetActive(false);
 

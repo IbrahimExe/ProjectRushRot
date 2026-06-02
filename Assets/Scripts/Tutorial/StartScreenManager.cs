@@ -15,14 +15,8 @@ public class StartScreenManager : MonoBehaviour
 
     private bool hasStarted = false;
 
-    private void Awake()
+    void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // start
         startCamera.Priority = 20;
         gameplayCamera.Priority = 10;
         startScreenUI.SetActive(true);

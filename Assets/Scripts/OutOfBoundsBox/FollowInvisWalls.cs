@@ -7,12 +7,7 @@ public class FollowInvisWalls : MonoBehaviour
     [SerializeField] private Transform playerPos;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    private void Awake()
-    {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
+    void Start()
     {
         if (playerPos == null)
         {
