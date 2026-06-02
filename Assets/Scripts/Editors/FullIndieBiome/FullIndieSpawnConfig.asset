@@ -116,3 +116,12 @@ MonoBehaviour:
     HeightMax: 1
     MaxSlope: 0
     BlockedBy: 
+  - PrefabDefID: VINETRAP2
+    PlacementMode: 0
+    DensityMultiplier: 0.02
+    EnableSimulation: 0
+    MinSpacing: 10
+    HeightMin: 0.4
+    HeightMax: 0.6
+    MaxSlope: 0
+    BlockedBy: 

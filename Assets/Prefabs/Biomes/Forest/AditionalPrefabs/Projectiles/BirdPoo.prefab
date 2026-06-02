@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91b100f4e7340914fac5e82859a1406e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  gravityScale: 5
+  gravityScale: 7
 --- !u!114 &1961651555123757697
 MonoBehaviour:
   m_ObjectHideFlags: 0

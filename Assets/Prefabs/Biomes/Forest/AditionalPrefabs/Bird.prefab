@@ -169,7 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fd4cb69252f8774696370aa2ac3fd63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DropLaunch
-  dropForce: 2
+  dropForce: 4
 --- !u!114 &3745213092398087099
 MonoBehaviour:
   m_ObjectHideFlags: 0

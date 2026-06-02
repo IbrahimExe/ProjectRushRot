@@ -97,3 +97,9 @@ MonoBehaviour:
     Variants:
     - {fileID: 108902130409156166, guid: c3699ada2ffdbbc469a1501c2537831e, type: 3}
     Footprint: 1
+  - Name: VINETRAP2
+    ID: VINETRAP2
+    Category: 0
+    Variants:
+    - {fileID: 7009052279643311491, guid: e468f0f263a95fe4c957ac27a0df8bc7, type: 3}
+    Footprint: 1
