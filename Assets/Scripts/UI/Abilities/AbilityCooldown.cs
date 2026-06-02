@@ -15,14 +15,8 @@ public class AbilityCooldown : MonoBehaviour
     private bool onCooldown;
     private bool wasDashing;
 
-    private void Awake()
+    void Start()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // start
         cooldownDuration = playerController.dash.dashCooldown;
         cooldownOverlay.fillAmount = 0f;
     }

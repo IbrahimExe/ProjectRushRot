@@ -59,15 +59,8 @@ public class LevelUpCardSelector : MonoBehaviour
 
     // ── Init ───────────────────────────────────────────────────────────
 
-    //private void Awake() => CachePanelHome();
-    //private void OnValidate() => CachePanelHome();
-
-    private void Awake()
-    {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize() => CachePanelHome();
+    private void Awake() => CachePanelHome();
+    private void OnValidate() => CachePanelHome();
 
     private void CachePanelHome()
     {

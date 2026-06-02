@@ -98,14 +98,8 @@ public class SplineNodeManager : MonoBehaviour
     // Unity lifecycle
     // -------------------------------------------------------------------------
 
-    private void Awake()
+    void Awake()
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
-
-    private void Initialize()
-    {
-        // awake
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
 

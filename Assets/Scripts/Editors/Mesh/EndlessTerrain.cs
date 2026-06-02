@@ -40,12 +40,8 @@ namespace LevelGenerator
 
         void Start()
         {
-            SystemLoader.CallOnComplete(Initialize);
-        }
 
-        void Initialize()
-        {
-            mapGenerator = FindFirstObjectByType<MapGenerator>();
+            mapGenerator = FindObjectOfType<MapGenerator>();
             maxViewDist = detailLevels[detailLevels.Length - 1].distanceFraction;
             _scale = Common.UniformScale;
 
