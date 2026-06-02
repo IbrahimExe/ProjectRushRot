@@ -45,16 +45,25 @@ public class ObstacleLauncher : MonoBehaviour
 
     private void TryLaunch(Vector3 targetPosition)
     {
-        if (projectilePrefabs.Count == 0) return;
+        if (projectilePrefabs.Count == 0)
+        { 
+            Debug.LogWarning($"[ObstacleLauncher] No projectile prefabs assigned to {gameObject.name}");
+            return; 
+        }
 
         Projectile prefab = projectilePrefabs[Random.Range(0, projectilePrefabs.Count)];
         Projectile projectile = ProjectilePoolManager.Instance.Get(prefab);
-        if (projectile == null) return;
+        if (projectile == null)
+        {
+            Debug.LogError($"[ObstacleLauncher] Failed to get projectile from pool for prefab {prefab.name}");
+            return;
+        }
 
         projectile.transform.position = launchPoint.position;
         projectile.transform.rotation = launchPoint.rotation;
 
         launchBehavior.Launch(projectile.Rb, launchPoint.position, targetPosition);
+        Debug.Log($"[ObstacleLauncher] Launched {projectile.name} towards {targetPosition} from {gameObject.name}");
         projectile.OnLaunched();
 
         lastLaunchTime = Time.time;

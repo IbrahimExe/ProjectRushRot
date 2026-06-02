@@ -75,7 +75,7 @@ GameObject:
   - component: {fileID: 3113527676553130971}
   - component: {fileID: 6526873373997902055}
   - component: {fileID: 4029407681911897341}
-  - component: {fileID: 7286491953971725063}
+  - component: {fileID: 3745213092398087099}
   m_Layer: 0
   m_Name: Bird
   m_TagString: Untagged
@@ -170,7 +170,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DropLaunch
   dropForce: 2
---- !u!114 &7286491953971725063
+--- !u!114 &3745213092398087099
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -185,12 +185,12 @@ MonoBehaviour:
   projectilePrefabs:
   - {fileID: 7786118996475550429, guid: 92f98a9659c03fb40ac81757734608a0, type: 3}
   launchPoint: {fileID: 5459314566891463144}
-  detectionRadius: 40
+  detectionRadius: 60
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
   playerInRange: 0
-  cooldown: 1.5
+  cooldown: 2
 --- !u!1001 &8459684282052561776
 PrefabInstance:
   m_ObjectHideFlags: 0

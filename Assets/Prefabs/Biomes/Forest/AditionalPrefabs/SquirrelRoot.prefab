@@ -45,8 +45,8 @@ GameObject:
   - component: {fileID: 2919183218664542246}
   - component: {fileID: 6827009962354206863}
   - component: {fileID: 8408787835288908908}
-  - component: {fileID: 2836688588980493770}
   - component: {fileID: 6944360715941113140}
+  - component: {fileID: 8250513338082327064}
   m_Layer: 7
   m_Name: Squirrel
   m_TagString: Untagged
@@ -192,7 +192,21 @@ MonoBehaviour:
   arcHeightRatio: 0.3
   minArcHeight: 1
   maxArcHeight: 5
---- !u!114 &2836688588980493770
+--- !u!114 &6944360715941113140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5140710637632324602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4390b446fd6776341b432490da545c30, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleRotator
+  obstacleLauncher: {fileID: 0}
+  rotationSpeed: 150
+--- !u!114 &8250513338082327064
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -207,26 +221,12 @@ MonoBehaviour:
   projectilePrefabs:
   - {fileID: 8427297465576109279, guid: 459281ac57f6f71429efd0bdbaf0132d, type: 3}
   launchPoint: {fileID: 2870971106475394433}
-  detectionRadius: 35
+  detectionRadius: 60
   playerLayer:
     serializedVersion: 2
     m_Bits: 256
   playerInRange: 0
   cooldown: 1.5
---- !u!114 &6944360715941113140
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5140710637632324602}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4390b446fd6776341b432490da545c30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ObstacleRotator
-  obstacleLauncher: {fileID: 2836688588980493770}
-  rotationSpeed: 150
 --- !u!1 &7159070397187133128
 GameObject:
   m_ObjectHideFlags: 0
