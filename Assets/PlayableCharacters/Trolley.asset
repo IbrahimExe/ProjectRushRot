@@ -17,13 +17,13 @@ MonoBehaviour:
   modelScale: {x: 1, y: 1, z: 1}
   modelRotation: {x: 0, y: -90, z: 0}
   maxMoveSpeed: 75
-  acceleration: 45
+  acceleration: 35
   deceleration: 25
   mass: 1
   rotationSpeed: 110
   baseGrip: 10
   turnGrip: 2.5
-  jumpForce: 40
+  jumpForce: 35
   wallRunCooldown: 0
   wallRunDuration: 2
   wallRunSpeedMultiplier: 1.1

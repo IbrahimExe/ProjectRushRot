@@ -366,7 +366,7 @@ public class PlayerControllerBase : MonoBehaviour
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
             if (!string.IsNullOrEmpty(region) && region != lastGroundRegion)
             {
-               // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
+                Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
                 lastGroundRegion = region;
             }
 

@@ -93,10 +93,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 4174756036991080352}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4ef2b6a95ae60047b5388405ce6aec9, type: 3}
+  m_Script: {fileID: 11500000, guid: 91b100f4e7340914fac5e82859a1406e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  gravityScale: 4
+  gravityScale: 3
 --- !u!114 &76605870375569271
 MonoBehaviour:
   m_ObjectHideFlags: 0

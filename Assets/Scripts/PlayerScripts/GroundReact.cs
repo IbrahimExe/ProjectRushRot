@@ -41,8 +41,9 @@ public class GroundReact : MonoBehaviour
     private Quaternion lastSafeRotation;
     private bool hasSafePosition;
 
-    void Start() {
-        
+    void Start()
+    {
+
     }
 
     void Update()
@@ -75,32 +76,32 @@ public class GroundReact : MonoBehaviour
                 break;
 
             case "GRASS":
-               // Debug.Log("Player is now on Grass. Playing grass particle.");
-                 newParticle = grassTrail;
+                // Debug.Log("Player is now on Grass. Playing grass particle.");
+                newParticle = grassTrail;
                 break;
 
-                case "SAND":
+            case "SAND":
                 //Debug.Log("Player is now on Sand. Playing sand particle.");
                 newParticle = sandTrail;
                 break;
 
-                case "WATER":
-               // Debug.Log("Player is now on Water. Playing water particle.");
+            case "WATER":
+                // Debug.Log("Player is now on Water. Playing water particle.");
                 newParticle = waterTrail;
                 break;
 
             case "STONE":
-               // Debug.Log("Player is now on Stone. Playing stone particle.");
+                // Debug.Log("Player is now on Stone. Playing stone particle.");
                 newParticle = stoneTrail;
                 break;
 
-                case "FOREST":
+            case "FOREST":
                 //Debug.Log("Player is now in a Forest. Playing forest particle.");
                 newParticle = forestTrail;
                 break;
 
             default:
-               // Debug.Log("Player is now on an unknown surface. Remember to tag your regions");
+                // Debug.Log("Player is now on an unknown surface. Remember to tag your regions");
                 break;
         }
 
@@ -184,20 +185,20 @@ public class GroundReact : MonoBehaviour
     }
 
     private bool IsMushroomProtected()
-{
-    PlayerAbilityRunner runner = GetComponentInParent<PlayerAbilityRunner>();
-
-    if (runner == null || runner.Perks == null)
-        return false;
-
-    foreach (RuntimePerk runtime in runner.Perks.ActivePerks)
     {
-        if (runtime.ability is MushroomPerk mushroom)
-            return mushroom.IsProtecting;
-    }
+        PlayerAbilityRunner runner = GetComponentInParent<PlayerAbilityRunner>();
 
-    return false;
-}
+        if (runner == null || runner.Perks == null)
+            return false;
+
+        foreach (RuntimePerk runtime in runner.Perks.ActivePerks)
+        {
+            if (runtime.ability is MushroomPerk mushroom)
+                return mushroom.IsProtecting;
+        }
+
+        return false;
+    }
 
     private void TrySaveSafePosition(string region)
     {
