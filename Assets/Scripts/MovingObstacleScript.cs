@@ -185,7 +185,7 @@ public class MovingObstacleScript : MonoBehaviour
             Instantiate(destructionEffectPrefab, transform.position, transform.rotation);
         }
 
-        // Self-destruct the obstacle
-        Destroy(gameObject);
+        // Deactivate the obstacle instead of destroying it
+        gameObject.SetActive(false);
     }
 }
