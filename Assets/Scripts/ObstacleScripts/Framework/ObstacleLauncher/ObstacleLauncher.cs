@@ -12,7 +12,14 @@ public class ObstacleLauncher : MonoBehaviour
     [SerializeField] private float detectionRadius = 8f;
     [SerializeField] private LayerMask playerLayer;
 
+    public bool playerInRange;
+    public Transform PlayerTransform { get; private set; }
+
+    [Header("Timing")]
+    [SerializeField] private float cooldown = 2f;
+
     private LaunchBehavior launchBehavior;
+    private float lastLaunchTime = float.NegativeInfinity;
 
     private void Awake()
     {
@@ -21,9 +28,19 @@ public class ObstacleLauncher : MonoBehaviour
 
     private void Update()
     {
+        if (Time.time - lastLaunchTime < cooldown) return;
+
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius, playerLayer);
         if (hits.Length > 0)
+        {
             TryLaunch(hits[0].transform.position);
+            playerInRange = true;
+            PlayerTransform = hits[0].transform;
+        }
+        else if (playerInRange)
+        {
+            playerInRange = false;
+        }
     }
 
     private void TryLaunch(Vector3 targetPosition)
@@ -39,6 +56,8 @@ public class ObstacleLauncher : MonoBehaviour
 
         launchBehavior.Launch(projectile.Rb, launchPoint.position, targetPosition);
         projectile.OnLaunched();
+
+        lastLaunchTime = Time.time;
     }
 
     private void OnDrawGizmosSelected()

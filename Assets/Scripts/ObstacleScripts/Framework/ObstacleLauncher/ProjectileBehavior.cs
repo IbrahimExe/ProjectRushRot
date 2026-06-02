@@ -2,19 +2,20 @@ using UnityEngine;
 
 public abstract class ProjectileBehavior : MonoBehaviour
 {
-    protected Projectile projectile;
+    [SerializeField] private float lifetime = 0f; // set 0 for infinite lifetime
 
-    private void Awake()
+    private float spawnTime;
+
+    public virtual void OnLaunched()
     {
-        projectile = GetComponent<Projectile>();
+        spawnTime = Time.time;
     }
 
-    // Called the moment the projectile is launched
-    public virtual void OnLaunched() { }
+    public virtual void OnTick()
+    {
+        if (lifetime > 0 && Time.time - spawnTime >= lifetime)
+            GetComponent<Projectile>().ReturnToPool();
+    }
 
-    // Called every frame while the projectile is active
-    public virtual void OnTick() { }
-
-    // Called on collision — return true if the projectile should be returned to pool
     public abstract bool OnHit(Collision collision);
 }

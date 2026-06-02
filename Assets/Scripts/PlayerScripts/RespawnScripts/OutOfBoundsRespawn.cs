@@ -1,6 +1,6 @@
-using UnityEngine;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class OutOfBoundsRespawn : MonoBehaviour
 {
@@ -108,7 +108,6 @@ public class OutOfBoundsRespawn : MonoBehaviour
         lastRespawnTime = Time.time;
         StartCoroutine(RespawnRoutine());
     }
-
 
     IEnumerator RespawnRoutine()
     {

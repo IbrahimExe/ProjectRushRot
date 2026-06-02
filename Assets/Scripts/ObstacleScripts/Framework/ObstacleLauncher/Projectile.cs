@@ -2,8 +2,11 @@ using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
+    [SerializeField] private float gravityScale = 1f;
+
     public Projectile SourcePrefab { get; private set; }
     public Rigidbody Rb { get; private set; }
+    public float GravityScale => gravityScale;
 
     private ProjectileBehavior behavior;
 
@@ -11,6 +14,8 @@ public class Projectile : MonoBehaviour
     {
         Rb = GetComponent<Rigidbody>();
         behavior = GetComponent<ProjectileBehavior>();
+
+        Rb.useGravity = false;
     }
 
     public void Init(Projectile sourcePrefab)
@@ -26,6 +31,12 @@ public class Projectile : MonoBehaviour
     private void Update()
     {
         behavior?.OnTick();
+    }
+
+    private void FixedUpdate()
+    {
+        // Apply custom gravity
+        Rb.AddForce(Physics.gravity * gravityScale, ForceMode.Acceleration);
     }
 
     private void OnCollisionEnter(Collision collision)

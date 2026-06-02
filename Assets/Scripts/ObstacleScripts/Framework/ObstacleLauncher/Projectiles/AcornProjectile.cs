@@ -11,9 +11,13 @@ public class AcornProjectile : ProjectileBehavior
         Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius);
         foreach (var hit in hits)
         {
-            Rigidbody rb = hit.GetComponent<Rigidbody>();
-            if (rb != null)
-                rb.AddExplosionForce(explosionForce, transform.position, explosionRadius);
+            if (hit.gameObject.CompareTag("Player"))
+            {
+                Rigidbody rb = hit.GetComponent<Rigidbody>();
+                if (rb != null)
+                    rb.AddExplosionForce(explosionForce, transform.position, explosionRadius);
+            }
+            
         }
 
         if (explosionVFX != null)
