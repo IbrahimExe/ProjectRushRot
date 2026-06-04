@@ -18,18 +18,18 @@ MonoBehaviour:
     top of
   icon: {fileID: 21300000, guid: c0210998fa6ab734794b087b9405ce16, type: 3}
   maxLevel: 3
-  bridgeSegmentPrefab: {fileID: 7825579389614122000, guid: 2c7106a4bcebe544381a2291d126ce7f, type: 3}
   basePieces: 32
   piecesPerLevel: 4
-  pieceLengthScale: 0.45
-  vineWidthMultiplier: 3
-  segmentLifetime: 10
-  startBehindPlayer: 1.5
-  startBelowPlayer: 2.5
-  totalForwardDistance: 76
-  totalRise: 26
-  curveSideOffset: 1.5
+  pieceWidth: 6
+  pieceThickness: 0.75
+  pieceLength: 2.5
+  totalRise: 16
   curveHeightBoost: 2
+  segmentLifetime: 10
+  startBehindPlayer: 2.5
+  startBelowPlayer: 3.5
+  totalForwardDistance: 76
+  curveSideOffset: 1.5
   baseCooldown: 8
   cooldownReductionPerLevel: 0.5
   minimumCooldown: 3

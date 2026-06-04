@@ -1,0 +1,213 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b40dcf9b7d5c0947808d66574df9b83, type: 3}
+  m_Name: FairCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::LevelGenerator.Data.PrefabCatalog
+  noiseChannel: {fileID: 11400000, guid: 184e585ae95d91648b733cbd6227cf98, type: 2}
+  Definitions:
+  - ID: WALL_R
+    Name: WallRight
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
+    Layer: 0
+    SurfaceType: 4
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: WALL_L
+    Name: WallLeft
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 71e25f818c187974bb2f9c1c5a805617, type: 3}
+    Layer: 0
+    SurfaceType: 3
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: SAFEPATH
+    Name: safepath
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 0c7b1e57a866f6e4c8b22a0619ad2697, type: 3}
+    Layer: 0
+    SurfaceType: 2
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: GRASS_SUR
+    Name: Grass
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 371ee7d53146172469f5f9a0269961b8, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 2
+    isNoiseCandidate: 1
+  - ID: TENT_SUR
+    Name: TentGrass
+    Prefabs:
+    - {fileID: 2631921935959975402, guid: 320c42fc3d0fe534dbfc77949b2f9611, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 1
+    isNoiseCandidate: 1
+  - ID: PEOPLE_SUR
+    Name: People
+    Prefabs:
+    - {fileID: 2629836852225095429, guid: 65798c975bd7e4a4e829949043a0aec6, type: 3}
+    Layer: 0
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 3
+    isNoiseCandidate: 1
+  - ID: BALLPIT_SUR
+    Name: Ball Pit
+    Prefabs:
+    - {fileID: 6253659941484392735, guid: 7a3fecf5ce68d71498bcec303009509e, type: 3}
+    Layer: 0
+    SurfaceType: 1
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 0
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 4
+    isNoiseCandidate: 1
+  - ID: CAROUSEL_OC
+    Name: Carousel
+    Prefabs:
+    - {fileID: 4807891204191743765, guid: 1ad4d39563106ea44ba89298111d0025, type: 3}
+    - {fileID: 590699151113014234, guid: 363e1ef61569e804390003f30925713b, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 30
+    Cost: 5
+    MinRowGap: 13
+    SizeZ: 13
+    AllowedSurfaceIDs:
+    - TENT_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: PEOPLE_OC
+    Name: People
+    Prefabs:
+    - {fileID: 539994085667621224, guid: 6e0d2d04a9c17a140b13a31baa514431, type: 3}
+    - {fileID: 5761199161377964958, guid: 1d833f6e22b0d0947a6e00c66b4170a9, type: 3}
+    - {fileID: 6164530991874043845, guid: 2cc3b411b0d7fef48993642f3c398397, type: 3}
+    - {fileID: 8220712369187974472, guid: 045466d10a3267a4aa3896d65be1ac74, type: 3}
+    - {fileID: 5859576421344732822, guid: 9cd9f2dde605cb84f88743bbc5ab477e, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 40
+    Cost: 4
+    MinRowGap: 0
+    SizeZ: 2
+    AllowedSurfaceIDs:
+    - PEOPLE_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: TENT_OC
+    Name: Tent
+    Prefabs:
+    - {fileID: 803979903721909169, guid: d649e63df8ea9f44db3b238c8ca7521f, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 30
+    Cost: 3
+    MinRowGap: 10
+    SizeZ: 10
+    AllowedSurfaceIDs:
+    - TENT_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  - ID: TRAMPOLINE_OC
+    Name: Trampoline
+    Prefabs:
+    - {fileID: 5728003825034307891, guid: a3e52c2d435670d4896c881d483a9e8d, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 3
+    Cost: 6
+    MinRowGap: 8
+    SizeZ: 8
+    AllowedSurfaceIDs:
+    - PEOPLE_SUR
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  debugSafePath: {fileID: 2631921935959975402, guid: a0cc1d87c0198b24ca1d4a8cbafa91ea, type: 3}
+  debugSurfaceDef:
+    ID: 
+    Name: 
+    Prefabs: []
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 10
+    Cost: 1
+    MinRowGap: 2
+    SizeZ: 1
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 1
+  debugOccupant: {fileID: 3684276890926039627, guid: 8c65f6a2e28806e4998c92ecef2358b7, type: 3}
+  leftWallPrefabs:
+  - ID: WallLeft
+    Name: WallBuilding
+    Prefabs:
+    - {fileID: 7487959285008718639, guid: 2325f13e45895634f940d6d0895905ab, type: 3}
+    - {fileID: 7607492880546952915, guid: c78d8e9a1e1ee6f4291d1a7cd2346468, type: 3}
+    Layer: 1
+    SurfaceType: 0
+    OccupantWeight: 0
+    Cost: 0
+    MinRowGap: 4
+    SizeZ: 0
+    AllowedSurfaceIDs: []
+    Tags: []
+    noiseTier: 0
+    isNoiseCandidate: 0
+  mirrorRightFromLeft: 1
+  rightWallPrefabs: []

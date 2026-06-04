@@ -70,6 +70,12 @@ public class JumpPad : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+
+        // check if its the player
+         if (!other.gameObject.CompareTag("Player"))
+        {
+            return;
+        }
         // Layer filter
         if ((affectedLayers.value & (1 << other.gameObject.layer)) == 0) return;
 

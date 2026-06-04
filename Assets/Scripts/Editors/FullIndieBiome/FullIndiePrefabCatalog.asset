@@ -49,21 +49,57 @@ MonoBehaviour:
     Variants:
     - {fileID: 7366290418948599023, guid: 1a2ba29e32c8c614d9f0f280e89d9058, type: 3}
     Footprint: 3
-  - Name: Zombie
-    ID: ZOMBIE
+  - Name: Spawner
+    ID: SPAWNER
     Category: 0
     Variants:
-    - {fileID: 6138303866977512807, guid: a8efc7edb4c07e24f81ca9210baca4bb, type: 3}
+    - {fileID: 8923245167267913275, guid: e821f7503fd08b54c87fe13e288d7cc3, type: 3}
     Footprint: 1
   - Name: Bear
     ID: BEAR
     Category: 0
     Variants:
-    - {fileID: 4117830706354083783, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+    - {fileID: 7909263937607849396, guid: 9bcc040e3a28ab24e84fa66017f17d14, type: 3}
     Footprint: 1
   - Name: Fish
     ID: FISH
     Category: 0
     Variants:
     - {fileID: 8092977340246846854, guid: 89270b25ddfb53c44a5631a7c3c5426e, type: 3}
+    Footprint: 1
+  - Name: TREE2
+    ID: TREE2
+    Category: 0
+    Variants:
+    - {fileID: 3132356496452668757, guid: 5e624f7a1b1b6674280622a49f3b5390, type: 3}
+    Footprint: 1
+  - Name: ROCK2
+    ID: ROCK2
+    Category: 0
+    Variants:
+    - {fileID: 2052224328857356354, guid: 21091730ddc153c4d83e7f3189033484, type: 3}
+    Footprint: 1
+  - Name: ROCK3
+    ID: ROCK3
+    Category: 0
+    Variants:
+    - {fileID: 6382724045599630178, guid: 202032cc34d2ead4ea116af620025396, type: 3}
+    Footprint: 1
+  - Name: SQUIRREL
+    ID: SQUIRREL
+    Category: 0
+    Variants:
+    - {fileID: 7159070397187133128, guid: b8ccb2a8f9baea04fb1698229d338320, type: 3}
+    Footprint: 1
+  - Name: BIRD
+    ID: BIRD
+    Category: 0
+    Variants:
+    - {fileID: 108902130409156166, guid: c3699ada2ffdbbc469a1501c2537831e, type: 3}
+    Footprint: 1
+  - Name: VINETRAP2
+    ID: VINETRAP2
+    Category: 0
+    Variants:
+    - {fileID: 7009052279643311491, guid: e468f0f263a95fe4c957ac27a0df8bc7, type: 3}
     Footprint: 1
