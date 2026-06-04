@@ -16,8 +16,6 @@ MonoBehaviour:
   displayName: Shampoo
   description: 
   icon: {fileID: 0}
-  maxLevel: 9
-  baseReduction: 0.2
-  reductionPerLevel: 0.1
-  maxReduction: 0.5
-  cooldownReductionPerLevelAfterCap: 0.1
+  maxLevel: 3
+  baseRecoveryMultiplier: 0.85
+  recoveryReductionPerLevel: 0.1
