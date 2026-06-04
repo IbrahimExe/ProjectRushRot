@@ -24,14 +24,4 @@ public class ExtraJumpPerk : AbilityBase
             new StatModifier("extraJumpRechargeCooldown", cooldown, StatModifier.ModType.Flat)
         };
     }
-
-    public override float GetCooldownPercent()
-    {
-        return 1f;
-    }
-
-    public override bool IsReady()
-    {
-        return true;
-    }
 }
