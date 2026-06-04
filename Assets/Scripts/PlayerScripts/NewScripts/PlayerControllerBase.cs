@@ -1,4 +1,4 @@
- using LevelGenerator;
+using LevelGenerator;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -355,7 +355,7 @@ public class PlayerControllerBase : MonoBehaviour
             return false;
 
         float rayLen = 1.0f;
-       // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
+        // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
 
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
         {
@@ -366,7 +366,7 @@ public class PlayerControllerBase : MonoBehaviour
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
             if (!string.IsNullOrEmpty(region) && region != lastGroundRegion)
             {
-                Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
+                // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
                 lastGroundRegion = region;
             }
 

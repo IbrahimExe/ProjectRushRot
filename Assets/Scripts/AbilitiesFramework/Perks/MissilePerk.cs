@@ -14,7 +14,8 @@ public class MissilePerk : AbilityBase
     public float visualOrbitRadius = 1.5f;
     public float visualHeight = 1.2f;
     public float visualSpinSpeed = 90f;
-
+    public float baseAOERadius = 6f;
+    public float aoeRadiusPerLevel = 1.5f;
     private int currentMissiles;
     private float rechargeTimer;
     private readonly List<GameObject> visuals = new();
@@ -85,7 +86,29 @@ public class MissilePerk : AbilityBase
         if (bestTarget == null)
             return false;
 
-        ctx.TryDestroyWithAbility(bestTarget, abilityId);
+        Vector3 impactPoint = bestTarget.bounds.center;
+
+        float aoeRadius = baseAOERadius + aoeRadiusPerLevel * (level - 1);
+
+        Collider[] aoeHits = Physics.OverlapSphere(
+            impactPoint,
+            aoeRadius,
+            ctx.abilityMask
+        );
+
+        int destroyedCount = 0;
+
+        foreach (Collider hit in aoeHits)
+        {
+            if (hit == null)
+                continue;
+
+            if (ctx.TryDestroyWithAbility(hit, abilityId))
+                destroyedCount++;
+        }
+
+        if (destroyedCount <= 0)
+            return false;
 
         currentMissiles--;
 
@@ -107,9 +130,6 @@ public class MissilePerk : AbilityBase
 
     private void UpdateVisuals(PlayerAbilityContext ctx, int level)
     {
-        if (missileVisualPrefab == null)
-            return;
-
         int maxAvailable = GetMaxMissiles(level);
         EnsureVisualCount(maxAvailable);
 
@@ -142,18 +162,33 @@ public class MissilePerk : AbilityBase
 
     private void EnsureVisualCount(int amount)
     {
+        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+
+        //if (poolManager == null)
+        //{
+        //    Debug.LogError("ObjectPoolManager service not found.");
+        //    return;
+        //}
+
         while (visuals.Count < amount)
         {
-            ObjectPool pool = PoolRegistry.Get("MissileVisual");
+            GameObject visual = poolManager.Get("MissileVisual", Vector3.zero, Quaternion.identity);
 
-            if (pool == null)
-            {
-                Debug.LogError("MissileVisual pool not found.");
+            if (visual == null)
                 return;
-            }
 
-            GameObject visual = pool.Get(Vector3.zero, Quaternion.identity);
             visual.SetActive(false);
+
+            Collider col = visual.GetComponent<Collider>();
+            if (col != null)
+                col.enabled = false;
+
+            Rigidbody rb = visual.GetComponent<Rigidbody>();
+            if (rb != null)
+                rb.isKinematic = true;
+
+            visual.layer = LayerMask.NameToLayer("Ignore Raycast");
+
             visuals.Add(visual);
         }
     }

@@ -82,7 +82,7 @@ public class UpgradeStats : MonoBehaviour
     {
         player.addWallJumpUpImpulse(upFlat);
         player.addWallJumpAwayImpulse(awayFlat);
-       // Debug.Log($"Upgraded Wall Jump — Up +{upFlat}, Away +{awayFlat}");
+        // Debug.Log($"Upgraded Wall Jump — Up +{upFlat}, Away +{awayFlat}");
     }
 
     public void UpgradeWallJump(float flat) => UpgradeWallJump(flat, flat);
@@ -97,6 +97,6 @@ public class UpgradeStats : MonoBehaviour
     {
         player.addDashKillWindow(windowFlat);
         player.addDashKillCount(killCapFlat);
-       // Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
+        // Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
     }
 }
