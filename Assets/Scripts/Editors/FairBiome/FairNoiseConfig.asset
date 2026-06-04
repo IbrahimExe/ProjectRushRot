@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65946636ce0fde14a9ccbb930d16039c, type: 3}
+  m_Name: FairNoiseConfig
+  m_EditorClassIdentifier: Assembly-CSharp::NoiseConfig
+  noiseType: 0
+  ridged:
+    octaves: 5
+    lacunarity: 2
+    gain: 0.5
+    squaredRidges: 1
+    ridgeInfluence: 0.7
+  sparseDot:
+    density: 0.3
+    maxDotSize: 0.4
+  spaceMode: 0
+  tilingFrequency: 3
+  position:
+    value: {x: 3, y: 3, z: 0}
+  rotation:
+    value: {x: 0, y: 0, z: 0}
+  scale:
+    value: {x: 1, y: 1, z: 1}
+  warp:
+    enabled: 0
+    level: 0
+    strength: 0
+    offsetQ0: {x: 0, y: 0}
+    offsetQ1: {x: 0, y: 0}
+    offsetR0: {x: 0, y: 0}
+    offsetR1: {x: 0, y: 0}
+  wood:
+    enabled: 0
+    frequency: 0
+    multiplier: 0
+    blendWeight: 0
+  quantization:
+    enabled: 0
+    totalChannels: 0
+  marble:
+    enabled: 0
+    phase: 0
+    frequency: 0
+    frequencyMult: 0
+    amplitudeMult: 0
+    numLayers: 0
+    blendWeight: 0
+  turbulence:
+    enabled: 0
+    frequency: 0
+    frequencyMult: 0
+    amplitudeMult: 0
+    numLayers: 0
+    maxNoiseVal: 0
+    blendWeight: 0
+  invert:
+    enabled: 0
+    blendWeight: 0
