@@ -273,7 +273,7 @@ namespace LevelGenerator
 
             public void Dispose()
             {
-                if (_spawner != null) _spawner.Despawn();
+                if (_spawner != null) { _spawner.InvalidatePlacement(); _spawner.Despawn(); }
                 if (_texture != null) Object.Destroy(_texture);
                 if (lODMeshes != null)
                     foreach (var lod in lODMeshes)

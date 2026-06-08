@@ -1,6 +1,7 @@
 using LevelGenerator;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public enum SpawnState
 {
@@ -29,7 +30,10 @@ public class ChunkSpawner : MonoBehaviour
     int          _seed;
     Transform _spawnRoot;
     ObjectPoolManager _poolManager;
-    
+
+    public static bool UseThreadedPlacement = false;
+    int _placementGeneration = 0;
+
 
     // Heightmap and normals from MapData
     float[,]  _heightMap;
@@ -41,6 +45,11 @@ public class ChunkSpawner : MonoBehaviour
 
     List<SpawnedInstance> _instances = new List<SpawnedInstance>();
     bool _placed = false;
+
+    // Called by TerrainChunk.Dispose when the chunk is recycled. Invalidates any
+    // in-flight threaded placement so its callback drops the result instead of
+    // writing into a chunk that now belongs to a different coord.
+    public void InvalidatePlacement() => _placementGeneration++;
 
     // Called by TerrainChunk after MapData and mesh are ready
     public void Initialise(
@@ -54,9 +63,9 @@ public class ChunkSpawner : MonoBehaviour
         _chunkCenter     = chunkCenter;
         _chunkWorldSize  = chunkWorldSize;
         _heightMultiplier = heightMultiplier;
-        _heightCurve     = heightCurve;
+        _heightCurve = new AnimationCurve(heightCurve.keys);
         _mapSize         = mapData.heightMap.GetLength(0);
-        _normals         = bakedNormals;
+        _normals = bakedNormals != null ? (Vector3[])bakedNormals.Clone() : null;
         _spawnRoot = spawnRoot;
         _poolManager = ServiceLocator.Get<ObjectPoolManager>();
         //Debug.Log($"[ChunkSpawner] PoolManager: {(_poolManager != null ? "found" : "NULL")}");
@@ -69,27 +78,63 @@ public class ChunkSpawner : MonoBehaviour
         // Deterministic seed from chunk position
         _seed = Mathf.RoundToInt(chunkCenter.x * 1000f) ^ Mathf.RoundToInt(chunkCenter.y * 1000f);
 
-        GeneratePlacements();
-        _placed = true;
+        Dictionary<string, PrefabDef> snapshot = BuildDefSnapshot();
+
+        // Each (re)initialise starts a new placement generation. A worker callback
+        // that lands with an older generation is stale and gets dropped.
+        _placementGeneration++;
+        int generation = _placementGeneration;
+
+        if (UseThreadedPlacement)
+        {
+            _placed = false;
+            PlacementDispatcher dispatcher = PlacementDispatcher.Instance; // main-thread capture
+            RequestPlacements(snapshot, dispatcher, generation);
+        }
+        else
+        {
+            _instances = GeneratePlacements(snapshot);
+            _placed = true;
+        }
     }
 
-    void GeneratePlacements()
-    {
 
-        if (_spawnConfig == null || _catalog == null) { 
+    // Main-thread only. Resolves the PrefabDefs the active rules reference into a flat
+    // ID->def snapshot the placement computation can read without touching the catalog.
+    Dictionary<string, PrefabDef> BuildDefSnapshot()
+    {
+        var snapshot = new Dictionary<string, PrefabDef>();
+        if (_spawnConfig == null || _catalog == null) return snapshot;
+
+        foreach (var rule in _spawnConfig.Rules)
+        {
+            if (snapshot.ContainsKey(rule.PrefabDefID)) continue;
+            var def = _catalog.GetByID(rule.PrefabDefID);
+            if (def != null) snapshot[rule.PrefabDefID] = def;
+        }
+        return snapshot;
+    }
+
+
+    List<SpawnedInstance> GeneratePlacements(Dictionary<string, PrefabDef> defSnapshot)
+    {
+        var placements = new List<SpawnedInstance>();
+
+        if (_spawnConfig == null || defSnapshot == null)
+        {
             Debug.LogWarning($"[ChunkSpawner] Missing spawn config or prefab catalog for chunk {_chunkCenter}, skipping placement.");
-            return;
+            return placements;
         }
 
         foreach (var rule in _spawnConfig.Rules)
         {
-            var def = _catalog.GetByID(rule.PrefabDefID);
+            defSnapshot.TryGetValue(rule.PrefabDefID, out var def);
             //Debug.LogWarning($"[ChunkSpawner] Looking up '{rule.PrefabDefID}' in catalog '{_catalog?.name}', def found: {def != null}");
             if (def == null) continue;
 
             float effectiveDensity = _spawnConfig.Density * rule.DensityMultiplier;
-            float area             = _chunkWorldSize * _chunkWorldSize;
-            int   targetCount      = Mathf.Max(1, Mathf.RoundToInt(effectiveDensity * area / 100f));
+            float area = _chunkWorldSize * _chunkWorldSize;
+            int targetCount = Mathf.Max(1, Mathf.RoundToInt(effectiveDensity * area / 100f));
 
             List<Vector3> candidates = rule.PlacementMode == PlacementMode.PoissonDisk
                 ? GeneratePoissonPoints(rule, targetCount)
@@ -98,31 +143,56 @@ public class ChunkSpawner : MonoBehaviour
             foreach (var candidate in candidates)
             {
                 float rawNoise = SampleRawNoise(candidate.x, candidate.z);
-                if (!PassesHeightCheck(rawNoise, rule))   continue;
-                if (!PassesSlopeCheck(candidate, rule))    continue;
-                if (!PassesOverlapCheck(candidate, rule, def)) continue;
+                if (!PassesHeightCheck(rawNoise, rule)) continue;
+                if (!PassesSlopeCheck(candidate, rule)) continue;
+                if (!PassesOverlapCheck(candidate, rule, def, placements)) continue;
 
                 var instance = new SpawnedInstance
                 {
                     WorldPosition = candidate,
-                    Rotation      = RandomYRotation(candidate),
-                    PrefabDefID   = rule.PrefabDefID,
-                    Category      = def.Category,
-                    Footprint     = def.Footprint,
-                    State         = SpawnState.None
+                    Rotation = RandomYRotation(candidate),
+                    PrefabDefID = rule.PrefabDefID,
+                    Category = def.Category,
+                    Footprint = def.Footprint,
+                    State = SpawnState.None
                 };
 
-                _instances.Add(instance);
+                placements.Add(instance);
                 //Debug.Log($"[ChunkSpawner] Rule '{rule.PrefabDefID}' — candidates: {candidates.Count}, placed: {_instances.Count}");
             }
         }
-        
+
         //Debug.Log($"[ChunkSpawner] Chunk {_chunkCenter} placed {_instances.Count} instances across {_spawnConfig.Rules.Count} rules.");
+        return placements;
+    }
+
+    // Mirrors MapGenerator.RequestMapData: start a worker that computes placement
+    // data off the main thread, then hands the result back through the dispatcher.
+    void RequestPlacements(Dictionary<string, PrefabDef> defSnapshot, PlacementDispatcher dispatcher, int generation)
+    {
+        ThreadStart threadStart = delegate { PlacementThread(defSnapshot, dispatcher, generation); };
+        new Thread(threadStart).Start();
+    }
+
+    void PlacementThread(Dictionary<string, PrefabDef> defSnapshot, PlacementDispatcher dispatcher, int generation)
+    {
+        List<SpawnedInstance> placements = GeneratePlacements(defSnapshot);
+
+        dispatcher.Enqueue(() =>
+        {
+            // Main thread. If the chunk was despawned or re-initialised while the
+            // worker ran, the generation no longer matches — drop the result.
+            if (generation != _placementGeneration) return;
+            _instances = placements;
+            _placed = true;
+        });
     }
 
     // Called every time TerrainChunk.UpdateTerrainChunk runs
     public void UpdateLODTier(float viewerDst)
     {
+        if (!_placed) return;
+
         Vector2 viewerPos = EndlessTerrain.viewerPosition;
 
         foreach (var inst in _instances)
@@ -211,6 +281,7 @@ public class ChunkSpawner : MonoBehaviour
     // Called by TerrainChunk.SetVisible(false)
     public void Despawn()
     {
+
         foreach (var inst in _instances)
         {
             DestroyInstance(inst);
@@ -327,11 +398,11 @@ public class ChunkSpawner : MonoBehaviour
         return slope <= rule.MaxSlope;
     }
 
-    bool PassesOverlapCheck(Vector3 pt, SpawnRule rule, PrefabDef def)
+    bool PassesOverlapCheck(Vector3 pt, SpawnRule rule, PrefabDef def, List<SpawnedInstance> placed)
     {
         if (rule.BlockedBy == null || rule.BlockedBy.Count == 0) return true;
 
-        foreach (var inst in _instances)
+        foreach (var inst in placed)
         {
             if (!rule.BlockedBy.Contains(inst.Category)) continue;
             float minDist = def.Footprint + inst.Footprint;
