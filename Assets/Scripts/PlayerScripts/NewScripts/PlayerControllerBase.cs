@@ -73,6 +73,14 @@ public class PlayerControllerBase : MonoBehaviour
 
     private float lastWallJumpTime = -999f;
 
+    [Header("Debuff Runtime")]
+    public float debuffMoveMultiplier = 1f;
+    public float debuffJumpMultiplier = 1f;
+
+    [Header("Debuff Resistance")]
+    public float debuffAmountMultiplier = 1f;
+    public float debuffDurationMultiplier = 1f;
+
     [Header("Abilities (assign these components)")]
     public DashAbility dash;
     public WallRunAbility wallRun;
@@ -176,6 +184,9 @@ public class PlayerControllerBase : MonoBehaviour
 
         jumpForce = baseJumpForce;
         bonusAirJumps = 0;
+
+        debuffAmountMultiplier = 1f;
+        debuffDurationMultiplier = 1f;
     }
 
     public void NotifyWallJump()
@@ -260,10 +271,10 @@ public class PlayerControllerBase : MonoBehaviour
         Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up).normalized;
         Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
 
-        float maxForward = maxMoveSpeed * MaxSpeedMultiplier;
+        float maxForward = maxMoveSpeed * MaxSpeedMultiplier * debuffMoveMultiplier;
 
         if (v > 0f)
-            RB.AddForce(forward * acceleration * v, ForceMode.Acceleration);
+            RB.AddForce(forward * acceleration * debuffMoveMultiplier * v, ForceMode.Acceleration);
         else if (v < 0f)
             RB.AddForce(-forward * backwardAcceleration * -v, ForceMode.Acceleration);
 
@@ -287,7 +298,7 @@ public class PlayerControllerBase : MonoBehaviour
         if (IsGrounded)
         {
             Vector3 sideways = Vector3.Project(planarVel, transform.right);
-            float speedFactor = planarVel.magnitude / maxMoveSpeed;
+            float speedFactor = planarVel.magnitude / Mathf.Max(0.01f, maxMoveSpeed * debuffMoveMultiplier);
             float turnAmount = Mathf.Abs(h) * speedFactor;
             float targetGrip = Mathf.Lerp(baseGrip, turnGrip, turnAmount);
 
@@ -320,7 +331,7 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void DoNormalJump()
     {
-        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps = 1;
     }
 
@@ -334,7 +345,7 @@ public class PlayerControllerBase : MonoBehaviour
     public void DoAirJump()
     {
         RB.linearVelocity = new Vector3(RB.linearVelocity.x, 0f, RB.linearVelocity.z);
-        RB.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps++;
     }
 
@@ -344,7 +355,7 @@ public class PlayerControllerBase : MonoBehaviour
             return false;
 
         float rayLen = 1.0f;
-       // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
+        // Debug.DrawRay(feetTransform.position, Vector3.down * rayLen, Color.red);
 
         if (Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, rayLen, groundMask))
         {
@@ -355,7 +366,7 @@ public class PlayerControllerBase : MonoBehaviour
             string region = MapGenerator.GetRegionAtWorldPosition(hit.point);
             if (!string.IsNullOrEmpty(region) && region != lastGroundRegion)
             {
-               // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
+                // Debug.Log($"[CheckGrounded] Region changed: {lastGroundRegion} -> {region}");
                 lastGroundRegion = region;
             }
 
