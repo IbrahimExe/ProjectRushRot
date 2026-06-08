@@ -3,33 +3,39 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Perks/Mushroom")]
 public class MushroomPerk : AbilityBase
 {
-    public float upwardImpulse = 45f;
-    public float forwardImpulse = 80f;
-    public float protectionDuration = 1.25f;
-
     public int baseCharges = 1;
-    public int chargesPerLevel = 1;
     public int maxCharges = 3;
+    public float speedReduction = 0.15f;
+    public float slowDuration = 2f;
+    public float holeDetectionRadius = 2.5f;
+    public string holeTag = "Hole";
 
     private int charges;
-    private float protectionTimer;
-
-    public bool IsProtecting => protectionTimer > 0f;
+    private float slowTimer;
+    private bool slowApplied;
 
     public override void OnApply(PlayerAbilityContext ctx, int level)
     {
-        charges = GetCharges(level);
+        charges = Mathf.Min(baseCharges + level - 1, maxCharges);
     }
 
     public override void OnUpgrade(PlayerAbilityContext ctx, int oldLevel, int newLevel)
     {
-        charges = GetCharges(newLevel);
+        charges = Mathf.Min(baseCharges + newLevel - 1, maxCharges);
     }
 
     public override void Tick(PlayerAbilityContext ctx, int level, float deltaTime)
     {
-        if (protectionTimer > 0f)
-            protectionTimer -= deltaTime;
+        if (!slowApplied)
+            return;
+
+        slowTimer -= deltaTime;
+
+        if (slowTimer <= 0f)
+        {
+            ctx.player.SetBaseStats();
+            slowApplied = false;
+        }
     }
 
     public override void FixedTick(PlayerAbilityContext ctx, int level, float fixedDeltaTime)
@@ -37,34 +43,29 @@ public class MushroomPerk : AbilityBase
         if (charges <= 0)
             return;
 
-        string region = ctx.player.lastGroundRegion;
-
-        if (region != "SAND" && region != "WATER" && region != "DEEPWATER")
-            return;
-
-        ctx.rb.linearVelocity = new Vector3(
-            ctx.rb.linearVelocity.x,
-            0f,
-            ctx.rb.linearVelocity.z
+        Collider[] hits = Physics.OverlapSphere(
+            ctx.playerTransform.position,
+            holeDetectionRadius,
+            ctx.abilityMask
         );
 
-        Vector3 launch =
-            Vector3.up * upwardImpulse +
-            ctx.playerTransform.forward * forwardImpulse;
+        foreach (Collider hit in hits)
+        {
+            if (!hit.CompareTag(holeTag))
+                continue;
 
-        ctx.rb.AddForce(launch, ForceMode.Impulse);
+            Vector3 safePosition = ctx.playerTransform.position - ctx.playerTransform.forward * 4f;
+            safePosition.y += 1f;
 
-        protectionTimer = protectionDuration;
-        charges--;
-    }
+            ctx.playerTransform.position = safePosition;
+            ctx.rb.linearVelocity = Vector3.zero;
 
-    private int GetCharges(int level)
-    {
-        return Mathf.Min(baseCharges + chargesPerLevel * (level - 1), maxCharges);
-    }
+            ctx.player.addMaxSpeed(-ctx.player.baseMaxMoveSpeed * speedReduction);
+            slowApplied = true;
+            slowTimer = slowDuration;
 
-    public override StatModifier[] GetStatModifiers(int level)
-    {
-        return System.Array.Empty<StatModifier>();
+            charges--;
+            return;
+        }
     }
 }

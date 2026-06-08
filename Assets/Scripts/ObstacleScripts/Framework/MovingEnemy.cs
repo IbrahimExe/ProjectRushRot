@@ -26,7 +26,6 @@ public class MovingEnemy : MonoBehaviour
 
     // Chase
     [Header("Chase")]
-    public float stopDistance = 1.5f;
     public float losePlayerRange = 20f;    
     public float losePlayerDelay = 3f;     
 
@@ -40,10 +39,6 @@ public class MovingEnemy : MonoBehaviour
     public int rayCount = 5;
     public float raySpreadAngle = 60f;
     public LayerMask obstacleLayer;
-
-    [Header("Separation")]
-    public float separationRadius = 2f;
-    public float separationStrength = 3f;
 
     // Ground Following
     [Header("Ground Following")]
@@ -166,17 +161,6 @@ public class MovingEnemy : MonoBehaviour
 
         float distToPlayer = Vector3.Distance(transform.position, _player.position);
 
-        if (distToPlayer <= stopDistance)
-        {
-            // Stop moving but keep facing the player
-            Vector3 toPlayer = (_player.position - transform.position).normalized;
-            toPlayer.y = 0f;
-            Move(Vector3.zero, 0f);
-            Quaternion targetRot = Quaternion.LookRotation(toPlayer);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
-            return;
-        }
-
         if (distToPlayer > losePlayerRange)
         {
             _losePlayerTimer += Time.deltaTime;
@@ -228,20 +212,6 @@ public class MovingEnemy : MonoBehaviour
             }
 
             Debug.DrawRay(transform.position, rayDir * detectionRange, Color.red);
-        }
-
-        // separation from the player if it overlaps with then
-        if (_player != null)
-        {
-            Vector3 toPlayer = _player.position - transform.position;
-            toPlayer.y = 0f;
-            float dist = toPlayer.magnitude;
-
-            if (dist < separationRadius && dist > 0.01f)
-            {
-                float strength = 1f - (dist / separationRadius); // stronger when closer
-                avoidance += toPlayer.normalized * strength * separationStrength;
-            }
         }
 
         Vector3 final = (toTarget + avoidance * avoidanceStrength).normalized;

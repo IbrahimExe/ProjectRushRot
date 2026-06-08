@@ -20,7 +20,6 @@ MonoBehaviour:
   - PrefabDefID: ROCK
     PlacementMode: 0
     DensityMultiplier: 0.01
-    EnableSimulation: 0
     MinSpacing: 0
     HeightMin: 0.27
     HeightMax: 0.59
@@ -29,7 +28,6 @@ MonoBehaviour:
   - PrefabDefID: TREE
     PlacementMode: 0
     DensityMultiplier: 0.03
-    EnableSimulation: 0
     MinSpacing: 0
     HeightMin: 0.3
     HeightMax: 1
@@ -38,7 +36,6 @@ MonoBehaviour:
   - PrefabDefID: JUMPPAD
     PlacementMode: 0
     DensityMultiplier: 0.01
-    EnableSimulation: 0
     MinSpacing: 200
     HeightMin: 0.41
     HeightMax: 0.6
@@ -47,7 +44,6 @@ MonoBehaviour:
   - PrefabDefID: ANIMAL
     PlacementMode: 0
     DensityMultiplier: 0.02
-    EnableSimulation: 0
     MinSpacing: 0
     HeightMin: 0.3
     HeightMax: 1
@@ -55,9 +51,8 @@ MonoBehaviour:
     BlockedBy: 
   - PrefabDefID: FISH
     PlacementMode: 0
-    DensityMultiplier: 0.05
-    EnableSimulation: 0
-    MinSpacing: 5
+    DensityMultiplier: 0.2
+    MinSpacing: 3
     HeightMin: 0
     HeightMax: 0.25
     MaxSlope: 0
@@ -65,63 +60,8 @@ MonoBehaviour:
   - PrefabDefID: BEAR
     PlacementMode: 0
     DensityMultiplier: 0.1
-    EnableSimulation: 0
     MinSpacing: 30
     HeightMin: 0.55
     HeightMax: 1
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: TREE2
-    PlacementMode: 0
-    DensityMultiplier: 0.02
-    EnableSimulation: 0
-    MinSpacing: 30
-    HeightMin: 0.4
-    HeightMax: 1
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: ROCK2
-    PlacementMode: 0
-    DensityMultiplier: 0.01
-    EnableSimulation: 0
-    MinSpacing: 10
-    HeightMin: 0.27
-    HeightMax: 0.59
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: ROCK3
-    PlacementMode: 0
-    DensityMultiplier: 0.01
-    EnableSimulation: 0
-    MinSpacing: 10
-    HeightMin: 0.27
-    HeightMax: 0.59
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: SQUIRREL
-    PlacementMode: 0
-    DensityMultiplier: 0.03
-    EnableSimulation: 0
-    MinSpacing: 20
-    HeightMin: 0.7
-    HeightMax: 1
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: BIRD
-    PlacementMode: 0
-    DensityMultiplier: 0.02
-    EnableSimulation: 0
-    MinSpacing: 20
-    HeightMin: 0.35
-    HeightMax: 1
-    MaxSlope: 0
-    BlockedBy: 
-  - PrefabDefID: VINETRAP2
-    PlacementMode: 0
-    DensityMultiplier: 0.02
-    EnableSimulation: 0
-    MinSpacing: 10
-    HeightMin: 0.4
-    HeightMax: 0.6
     MaxSlope: 0
     BlockedBy: 

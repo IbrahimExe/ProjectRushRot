@@ -23,39 +23,10 @@ public class GroundReact : MonoBehaviour
     public ParticleSystem[] stoneTrail;
     public ParticleSystem[] forestTrail;
 
-    [Header("Terrain Debuffs")]
-    public float sandSlowAmount = 0.55f;
-    public float sandJumpAmount = 0.65f;
-    public float sandDebuffDuration = 1.5f;
 
-    public float waterSlowAmount = 0.75f;
-    public float waterDebuffDuration = 1.25f;
 
-    public float deepWaterSlowAmount = 0.45f;
-    public float deepWaterDebuffDuration = 2f;
-
-    [Header("Safe Respawn")]
-    [SerializeField] private float respawnHeightOffset = 1.5f;
-
-    private Vector3 lastSafePosition;
-    private Quaternion lastSafeRotation;
-    private bool hasSafePosition;
-
-    [Header("Respawn Protection")]
-    [SerializeField] private float respawnImmunityTime = 0.5f;
-
-    private float ignoreDeepWaterUntil = -999f;
-
-    private void Start()
-    {
-        PlayerControllerBase player = GetComponentInParent<PlayerControllerBase>();
-
-        if (player != null)
-        {
-            lastSafePosition = player.transform.position;
-            lastSafeRotation = player.transform.rotation;
-            hasSafePosition = true;
-        }
+    void Start() {
+        
     }
 
     void Update()
@@ -75,50 +46,41 @@ public class GroundReact : MonoBehaviour
         bool skipChangeParles = false;
         ParticleSystem[] newParticle = null;
 
-        ApplyRegionDebuff(region);
-
-        TrySaveSafePosition(region);
-
         switch (region)
         {
             case "DEEPWATER":
                 MoveAndPlay(waterSplash);
-
-                if (Time.time >= ignoreDeepWaterUntil)
-                {
-                    respawnSwitch = true;
-                }
-
+                respawnSwitch = true;
                 skipChangeParles = true;
                 break;
 
             case "GRASS":
-                // Debug.Log("Player is now on Grass. Playing grass particle.");
-                newParticle = grassTrail;
+               // Debug.Log("Player is now on Grass. Playing grass particle.");
+                 newParticle = grassTrail;
                 break;
 
-            case "SAND":
+                case "SAND":
                 //Debug.Log("Player is now on Sand. Playing sand particle.");
                 newParticle = sandTrail;
                 break;
 
-            case "WATER":
-                // Debug.Log("Player is now on Water. Playing water particle.");
+                case "WATER":
+               // Debug.Log("Player is now on Water. Playing water particle.");
                 newParticle = waterTrail;
                 break;
 
             case "STONE":
-                // Debug.Log("Player is now on Stone. Playing stone particle.");
+               // Debug.Log("Player is now on Stone. Playing stone particle.");
                 newParticle = stoneTrail;
                 break;
 
-            case "FOREST":
+                case "FOREST":
                 //Debug.Log("Player is now in a Forest. Playing forest particle.");
                 newParticle = forestTrail;
                 break;
 
             default:
-                // Debug.Log("Player is now on an unknown surface. Remember to tag your regions");
+               // Debug.Log("Player is now on an unknown surface. Remember to tag your regions");
                 break;
         }
 
@@ -128,9 +90,9 @@ public class GroundReact : MonoBehaviour
             activeParticle = newParticle;
         }
 
-        if (respawnSwitch)
+        if (respawn != null && respawnSwitch)
         {
-            RespawnToLastSafePosition();
+            respawn.RespawnPlayer();
         }
     }
 
@@ -175,98 +137,6 @@ public class GroundReact : MonoBehaviour
             ps.transform.position = transform.position;
             ps.Play();
         }
-    }
-
-    private void ApplyRegionDebuff(string region)
-    {
-        PlayerDebuffReceiver debuffReceiver = GetComponentInParent<PlayerDebuffReceiver>();
-
-        if (debuffReceiver == null)
-            return;
-
-        if (IsMushroomProtected())
-            return;
-
-        switch (region)
-        {
-            case "SAND":
-                debuffReceiver.ApplyDebuff(DebuffType.Slow, sandSlowAmount, sandDebuffDuration);
-                debuffReceiver.ApplyDebuff(DebuffType.ReducedJump, sandJumpAmount, sandDebuffDuration);
-                break;
-
-            case "WATER":
-                debuffReceiver.ApplyDebuff(DebuffType.Slow, waterSlowAmount, waterDebuffDuration);
-                break;
-        }
-        Debug.Log("Terrain Debuff: " + region);
-    }
-
-    private bool IsMushroomProtected()
-    {
-        PlayerAbilityRunner runner = GetComponentInParent<PlayerAbilityRunner>();
-
-        if (runner == null || runner.Perks == null)
-            return false;
-
-        foreach (RuntimePerk runtime in runner.Perks.ActivePerks)
-        {
-            if (runtime.ability is MushroomPerk mushroom)
-                return mushroom.IsProtecting;
-        }
-
-        return false;
-    }
-
-    private void TrySaveSafePosition(string region)
-    {
-        if (
-            region != "GRASS" &&
-            region != "FOREST" &&
-            region != "STONE"
-        )
-            return;
-
-        PlayerControllerBase player = GetComponentInParent<PlayerControllerBase>();
-
-        if (player == null)
-            return;
-
-        lastSafePosition = player.transform.position;
-        lastSafeRotation = player.transform.rotation;
-        hasSafePosition = true;
-
-        Debug.Log(
-    $"SAFE SAVE: {region} at {player.transform.position}"
-);
-    }
-
-    private void RespawnToLastSafePosition()
-    {
-        PlayerControllerBase player = GetComponentInParent<PlayerControllerBase>();
-
-        if (player == null)
-            return;
-
-        if (!hasSafePosition)
-            return;
-
-        Rigidbody rb = player.RB;
-
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-
-        player.transform.position = lastSafePosition + Vector3.up * respawnHeightOffset;
-        player.transform.rotation = lastSafeRotation;
-
-        ignoreDeepWaterUntil = Time.time + respawnImmunityTime;
-        currentRegion = string.Empty;
-        player.lastGroundRegion = string.Empty;
-
-        Physics.SyncTransforms();
-
     }
 
     private IEnumerator StopAfterDelay(ParticleSystem ps)
