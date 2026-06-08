@@ -58,6 +58,7 @@ public class ChunkSpawner : MonoBehaviour
         Vector2 chunkCenter, float chunkWorldSize,
         float heightMultiplier, AnimationCurve heightCurve, Transform spawnRoot)
     {
+
         _spawnConfig     = spawnConfig;
         _catalog         = catalog;
         _chunkCenter     = chunkCenter;
@@ -93,7 +94,11 @@ public class ChunkSpawner : MonoBehaviour
         }
         else
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             _instances = GeneratePlacements(snapshot);
+            sw.Stop();
+            PlacementMetrics.MainThreadMsThisFrame += sw.Elapsed.TotalMilliseconds;
+            PlacementMetrics.ChunksSync++;
             _placed = true;
         }
     }
@@ -176,7 +181,10 @@ public class ChunkSpawner : MonoBehaviour
 
     void PlacementThread(Dictionary<string, PrefabDef> defSnapshot, PlacementDispatcher dispatcher, int generation)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         List<SpawnedInstance> placements = GeneratePlacements(defSnapshot);
+        sw.Stop();
+        double workerMs = sw.Elapsed.TotalMilliseconds;
 
         dispatcher.Enqueue(() =>
         {
@@ -185,6 +193,8 @@ public class ChunkSpawner : MonoBehaviour
             if (generation != _placementGeneration) return;
             _instances = placements;
             _placed = true;
+            PlacementMetrics.LastWorkerMs = workerMs;
+            PlacementMetrics.ChunksThreaded++;
         });
     }
 
