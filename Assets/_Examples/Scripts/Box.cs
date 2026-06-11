@@ -1,4 +1,9 @@
-public class Box : CombatEntity
+
+namespace Examples
 {
+    public class Box : CombatEntity
+    {
+
+    }
 
 }

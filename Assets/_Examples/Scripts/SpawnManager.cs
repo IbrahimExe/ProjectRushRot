@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace Examples
 {
-
-
     public class SpawnManager : MonoBehaviour
     {
         [SerializeField] private List<BaseObjectSpawner> _spawners;

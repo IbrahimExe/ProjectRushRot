@@ -5,7 +5,6 @@ using UnityEngine;
 namespace Examples
 {
 
-
     public class ObjectPoolManager : MonoBehaviour
     {
         [Serializable]

@@ -1,28 +1,32 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class CombatEntity : GameEntity, IDamageable
+namespace Examples
 {
-    [SerializeField] private float _maxHealth = 100f;
 
-    private float _health;
-
-    private void Awake()
+    [RequireComponent(typeof(Rigidbody))]
+    public class CombatEntity : GameEntity, IDamageable
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
+        [SerializeField] private float _maxHealth = 100f;
 
-    private void Initialize()
-    {
-        _health = _maxHealth;
-    }
+        private float _health;
 
-    public void TakeDamage(float damage)
-    {
-        _health -= damage;
-        if (_health < 0)
+        private void Awake()
         {
-            Destroy(gameObject);
+            SystemLoader.CallOnComplete(Initialize);
+        }
+
+        private void Initialize()
+        {
+            _health = _maxHealth;
+        }
+
+        public void TakeDamage(float damage)
+        {
+            _health -= damage;
+            if (_health < 0)
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

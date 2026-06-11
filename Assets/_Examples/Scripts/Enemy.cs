@@ -1,4 +1,8 @@
-public class Enemy : CombatEntity
+namespace Examples
 {
+    public class Enemy : CombatEntity
+    {
+
+    }
 
 }

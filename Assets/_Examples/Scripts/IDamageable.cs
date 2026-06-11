@@ -1,5 +1,7 @@
-
-public interface IDamageable
+namespace Examples
 {
-    void TakeDamage(float damage);
+    public interface IDamageable
+    {
+        void TakeDamage(float damage);
+    }
 }

@@ -1,6 +1,9 @@
 using UnityEngine;
 
-public class Wall : GameEntity
+namespace Examples
 {
+    public class Wall : GameEntity
+    {
 
+    }
 }

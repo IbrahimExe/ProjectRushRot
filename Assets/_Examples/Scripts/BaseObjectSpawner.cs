@@ -1,7 +1,12 @@
 using UnityEngine;
 
-public abstract class BaseObjectSpawner : MonoBehaviour 
+namespace Examples
 {
-    public abstract void Initialize();
-    public abstract void StartSpawning();
+
+    public abstract class BaseObjectSpawner : MonoBehaviour
+    {
+        public abstract void Initialize();
+        public abstract void StartSpawning();
+    }
+
 }

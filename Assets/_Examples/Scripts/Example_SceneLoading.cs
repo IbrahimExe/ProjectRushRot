@@ -9,44 +9,47 @@
 using System;
 using UnityEngine;
 
-public class Example_SceneLoading : MonoBehaviour
+namespace Examples
 {
-    // References to any GameObject or Monobehaviour in the scene should be placed here through SerializedField private variables
-    // DO NOT make these variables public by default. Maintain SOLID programming principles.
-    [SerializeField] private GameManager _gameManager;
-    [SerializeField] private LevelUpCardSelector _cardSelector;
-    [SerializeField] private UpgradeStats _upgradeStats;
-    [SerializeField] private CameraTargetFollow _cameraTargetFollow;
-    [SerializeField] private AltExpManager _altExpManager;
-    [SerializeField] private GameObject _playerGO;
-
-
-    // If you need to get a reference to any of the private variables serialized above you can provide a public property here
-    public GameObject Player => _playerGO;
-
-    // Member variables of the class should go here, including any refernces to global systems/managers that you need.
-
-
-    // Use 'Start' here to register a callback with the AppLoader to be called when the process of loading Global systems is complete.
-    private void Start()
+    public class Example_SceneLoading : MonoBehaviour
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
+        // References to any GameObject or Monobehaviour in the scene should be placed here through SerializedField private variables
+        // DO NOT make these variables public by default. Maintain SOLID programming principles.
+        [SerializeField] private GameManager _gameManager;
+        [SerializeField] private LevelUpCardSelector _cardSelector;
+        [SerializeField] private UpgradeStats _upgradeStats;
+        [SerializeField] private CameraTargetFollow _cameraTargetFollow;
+        [SerializeField] private AltExpManager _altExpManager;
+        [SerializeField] private GameObject _playerGO;
 
-    // Initialize will be called when the AppLoader is finished loading global systems and registering them with the ServiceLocator
-    // This allows access to any of the global systems through the ServiceLocator.Get<> method.
-    private void Initialize()
-    {
-        // Fetch references to any globals you need
 
-        // Initialize scene elements
-        _gameManager.Initialize();
-        _cardSelector.Initialize();
-        _upgradeStats.Initialize();
-        _cameraTargetFollow.Initialize(_playerGO);
-        _altExpManager.Initialize();
+        // If you need to get a reference to any of the private variables serialized above you can provide a public property here
+        public GameObject Player => _playerGO;
 
-        // Start any processes that update every frame such as gameplay.
-        _gameManager.StartGame();
+        // Member variables of the class should go here, including any refernces to global systems/managers that you need.
+
+
+        // Use 'Start' here to register a callback with the AppLoader to be called when the process of loading Global systems is complete.
+        private void Start()
+        {
+            SystemLoader.CallOnComplete(Initialize);
+        }
+
+        // Initialize will be called when the AppLoader is finished loading global systems and registering them with the ServiceLocator
+        // This allows access to any of the global systems through the ServiceLocator.Get<> method.
+        private void Initialize()
+        {
+            // Fetch references to any globals you need
+
+            // Initialize scene elements
+            _gameManager.Initialize();
+            _cardSelector.Initialize();
+            _upgradeStats.Initialize();
+            _cameraTargetFollow.Initialize(_playerGO);
+            _altExpManager.Initialize();
+
+            // Start any processes that update every frame such as gameplay.
+            _gameManager.StartGame();
+        }
     }
 }

@@ -1,23 +1,26 @@
 using UnityEngine;
 
-public class Example_ObjectPooling : MonoBehaviour
+namespace Examples
 {
-    [SerializeField] private ObjectPoolManager _poolManager;
-    [SerializeField] private SpawnManager _spawnManager;
-
-    private void Start()
+    public class Example_ObjectPooling : MonoBehaviour
     {
-        SystemLoader.CallOnComplete(Initialize);
-    }
+        [SerializeField] private ObjectPoolManager _poolManager;
+        [SerializeField] private SpawnManager _spawnManager;
 
-    private void Initialize()
-    {
-        _poolManager.Initialize();
-        ServiceLocator.Register<ObjectPoolManager>(_poolManager);
+        private void Start()
+        {
+            SystemLoader.CallOnComplete(Initialize);
+        }
 
-        _spawnManager.Initialize();
-        ServiceLocator.Register<SpawnManager>(_spawnManager);
+        private void Initialize()
+        {
+            _poolManager.Initialize();
+            ServiceLocator.Register<ObjectPoolManager>(_poolManager);
 
-        _spawnManager.StartSpawners();
+            _spawnManager.Initialize();
+            ServiceLocator.Register<SpawnManager>(_spawnManager);
+
+            _spawnManager.StartSpawners();
+        }
     }
 }
