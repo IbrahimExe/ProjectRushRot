@@ -1,26 +1,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpawnManager : MonoBehaviour
+namespace Examples
 {
-    [SerializeField] private List<BaseObjectSpawner> _spawners;
 
-    public void Initialize()
+
+    public class SpawnManager : MonoBehaviour
     {
-        Debug.Log("Initializing Spawn Manager...");
-        foreach (var spawner in _spawners)
+        [SerializeField] private List<BaseObjectSpawner> _spawners;
+
+        public void Initialize()
         {
-            spawner.Initialize();
+            Debug.Log("Initializing Spawn Manager...");
+            foreach (var spawner in _spawners)
+            {
+                spawner.Initialize();
+            }
+            Debug.Log("Spawn Manager initialization complete.");
         }
-        Debug.Log("Spawn Manager initialization complete.");
-    }
 
-    public void StartSpawners()
-    {
-        Debug.Log("Starting all spawners...");
-        foreach (var spawner in _spawners)
+        public void StartSpawners()
         {
-            spawner.StartSpawning();
+            Debug.Log("Starting all spawners...");
+            foreach (var spawner in _spawners)
+            {
+                spawner.StartSpawning();
+            }
         }
     }
 }
