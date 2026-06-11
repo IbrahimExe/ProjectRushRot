@@ -65,6 +65,7 @@ GameObject:
   - component: {fileID: 1863785388243541582}
   - component: {fileID: 6791844425725912170}
   - component: {fileID: 707046692329073497}
+  - component: {fileID: -1950175630046553182}
   m_Layer: 0
   m_Name: Animal
   m_TagString: Enemy
@@ -149,7 +150,21 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
-  destroyVFX: {fileID: 0}
+  useDestroyVFX: 1
+  vfxLifetime: 1.5
+  returnToPoolInsteadOfDestroy: 1
+--- !u!114 &-1950175630046553182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3207817493276649302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d4267afc5dce049a76a4eb9c67d4df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PooledObject
 --- !u!1 &7059129825452611462
 GameObject:
   m_ObjectHideFlags: 0

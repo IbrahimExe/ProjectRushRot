@@ -18,22 +18,43 @@ public class UpgradeStats : MonoBehaviour
     public void UpgradeMaxSpeedPercent(float percent)
     {
         float amount = player.baseMaxMoveSpeed * percent;
-        player.addMaxSpeed(amount);
-        Debug.Log($"Upgraded Max Speed by {amount}");
+
+        player.baseMaxMoveSpeed += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     public void UpgradeAccelerationPercent(float percent)
     {
         float amount = player.baseAcceleration * percent;
-        player.addAcceleration(amount);
-        Debug.Log($"Upgraded Acceleration by {amount}");
+
+        player.baseAcceleration += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     public void UpgradeJumpForcePercent(float percent)
     {
         float amount = player.baseJumpForce * percent;
-        player.addJumpForce(amount);
-        Debug.Log($"Upgraded Jump Force by {amount}");
+
+        player.baseJumpForce += amount;
+
+        PlayerAbilityRunner runner = player.GetComponent<PlayerAbilityRunner>();
+
+        if (runner != null)
+            runner.RecalculateStats();
+        else
+            player.SetBaseStats();
     }
 
     // ─────────────────────────────────────────────
@@ -42,12 +63,12 @@ public class UpgradeStats : MonoBehaviour
 
     /// effectValue  = flat seconds added to wallRunDuration.
     /// effectValue2 = flat amount added to wallRunSpeedMultiplier.
- 
+
     public void UpgradeWallRun(float durationFlat, float speedMultiplierFlat)
     {
         player.addWallRunDuration(durationFlat);
         player.addWallRunSpeed(speedMultiplierFlat);
-        Debug.Log($"Upgraded Wall Run — Duration +{durationFlat}s, SpeedMultiplier +{speedMultiplierFlat}");
+        //Debug.Log($"Upgraded Wall Run — Duration +{durationFlat}s, SpeedMultiplier +{speedMultiplierFlat}");
     }
 
     public void UpgradeWallRun(float flat) => UpgradeWallRun(flat, flat);
@@ -62,7 +83,7 @@ public class UpgradeStats : MonoBehaviour
     {
         player.addWallJumpUpImpulse(upFlat);
         player.addWallJumpAwayImpulse(awayFlat);
-        Debug.Log($"Upgraded Wall Jump — Up +{upFlat}, Away +{awayFlat}");
+        // Debug.Log($"Upgraded Wall Jump — Up +{upFlat}, Away +{awayFlat}");
     }
 
     public void UpgradeWallJump(float flat) => UpgradeWallJump(flat, flat);
@@ -77,7 +98,7 @@ public class UpgradeStats : MonoBehaviour
     {
         player.addDashKillWindow(windowFlat);
         player.addDashKillCount(killCapFlat);
-        Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
+        // Debug.Log($"Upgraded Dash Kill — Window +{windowFlat}s, KillCap +{killCapFlat}");
     }
 
     internal void Initialize()

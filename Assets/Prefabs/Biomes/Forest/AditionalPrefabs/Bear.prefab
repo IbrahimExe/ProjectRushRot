@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1507926696020317794}
   - component: {fileID: 3181499076207763430}
   - component: {fileID: 1602274331314793161}
+  - component: {fileID: -715763973502098380}
   m_Layer: 7
   m_Name: Bear
   m_TagString: Enemy
@@ -90,6 +91,7 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
+  MapGenerator: {fileID: 0}
 --- !u!114 &1602274331314793161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -106,7 +108,21 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
-  destroyVFX: {fileID: 0}
+  useDestroyVFX: 1
+  vfxLifetime: 1.5
+  returnToPoolInsteadOfDestroy: 1
+--- !u!114 &-715763973502098380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4117830706354083783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2d4267afc5dce049a76a4eb9c67d4df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PooledObject
 --- !u!1001 &8217809170746592594
 PrefabInstance:
   m_ObjectHideFlags: 0

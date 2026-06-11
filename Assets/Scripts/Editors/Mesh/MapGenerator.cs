@@ -228,42 +228,54 @@ namespace LevelGenerator
         public static string GetRegionAtWorldPosition(Vector3 worldPosition)
         {
             if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)
+            {
+                //Debug.Log("[Region] early exit: mapInstance or TerrainConfig null");
                 return string.Empty;
+            }
 
             float uniformScale = mapInstance.Common.UniformScale;
             int chunkSize = Mathf.RoundToInt((mapChunkSize - 1) * mapInstance.meshScale);
-
             Vector2 pos2D = new Vector2(worldPosition.x / uniformScale, worldPosition.z / uniformScale);
-
             Vector2 chunkCoord = new Vector2(
                 Mathf.RoundToInt(pos2D.x / chunkSize),
                 Mathf.RoundToInt(pos2D.y / chunkSize));
-
             Vector2 chunkCenter = chunkCoord * chunkSize;
 
-            //Debug.Log($"[Region] worldPos:{worldPosition} pos2D:{pos2D} chunkSize:{chunkSize} chunkCoord:{chunkCoord} chunkCenter:{chunkCenter}");
+           // Debug.Log($"[Region] worldPos:{worldPosition} chunkSize:{chunkSize} chunkCoord:{chunkCoord}");
 
             MapData? mapData = EndlessTerrain.GetCachedMapData(chunkCoord);
-            //Debug.Log($"[Region] mapData found: {mapData.HasValue}");
-            if (mapData == null) return string.Empty;
+           // Debug.Log($"[Region] mapData found: {mapData.HasValue}");
+            if (mapData == null)
+            {
+               // Debug.Log("[Region] early exit: mapData null");
+                return string.Empty;
+            }
 
             float u = (pos2D.x - chunkCenter.x) / chunkSize + 0.5f;
-            float v = 0.5f - (pos2D.y - chunkCenter.y) / chunkSize; // inverted
+            float v = 0.5f - (pos2D.y - chunkCenter.y) / chunkSize;
             int x = Mathf.Clamp(Mathf.RoundToInt(u * (mapChunkSize - 1)), 0, mapChunkSize - 1);
             int z = Mathf.Clamp(Mathf.RoundToInt(v * (mapChunkSize - 1)), 0, mapChunkSize - 1);
-
             float noiseValue = mapData.Value.heightMap[x, z];
 
-            //Debug.Log($"[Region] u:{u:F3} v:{v:F3} x:{x} z:{z} noise:{noiseValue:F3}");
+            //Debug.Log($"[Region] u:{u:F3} v:{v:F3} x:{x} z:{z} noise:{noiseValue:F3} regions:{mapInstance.Common.TerrainConfig.Regions.Count}");
 
             var regions = mapInstance.Common.TerrainConfig.Regions;
             for (int i = 0; i < regions.Count; i++)
+            {
+               // Debug.Log($"[Region] checking region[{i}] '{regions[i].Name}' height:{regions[i].Height} vs noise:{noiseValue}");
                 if (noiseValue <= regions[i].Height)
                     return regions[i].Name;
+            }
 
+            //Debug.Log("[Region] no region matched — noise above all region heights");
             return string.Empty;
         }
 
+        public static void GetSlope() {
+        
+        //tbd
+        
+        }
         public static float GetHeightAtWorldPosition(Vector3 worldPosition)
         {
             if (mapInstance == null || mapInstance.Common?.TerrainConfig == null)

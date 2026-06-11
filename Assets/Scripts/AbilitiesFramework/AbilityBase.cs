@@ -21,6 +21,16 @@ public abstract class AbilityBase : ScriptableObject
         return false;
     }
 
+    public virtual float GetCooldownPercent()
+    {
+        return 1f;
+    }
+
+    public virtual bool IsReady()
+    {
+        return true;
+    }
+
     public virtual StatModifier[] GetStatModifiers(int level)
     {
         return System.Array.Empty<StatModifier>();
