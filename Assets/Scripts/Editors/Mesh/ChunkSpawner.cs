@@ -1,6 +1,7 @@
 using LevelGenerator;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public enum SpawnState
 {
@@ -12,35 +13,43 @@ public enum SpawnState
 
 public class SpawnedInstance
 {
-    public Vector3      WorldPosition;
-    public Quaternion   Rotation;
-    public string       PrefabDefID;
+    public Vector3 WorldPosition;
+    public Quaternion Rotation;
+    public string PrefabDefID;
     public PrefabCategory Category;
-    public float        Footprint;
-    public SpawnState   State;
-    public GameObject   ActiveObject;
+    public float Footprint;
+    public SpawnState State;
+    public GameObject ActiveObject;
 }
 
 public class ChunkSpawner : MonoBehaviour
 {
-    SpawnConfig  _spawnConfig;
+    SpawnConfig _spawnConfig;
     PrefabCatalog _catalog;
-    Vector2      _chunkCenter;
-    int          _seed;
+    Vector2 _chunkCenter;
+    int _seed;
     Transform _spawnRoot;
     ObjectPoolManager _poolManager;
-    
+
+    public static bool UseThreadedPlacement = false;
+    int _placementGeneration = 0;
+
 
     // Heightmap and normals from MapData
-    float[,]  _heightMap;
+    float[,] _heightMap;
     Vector3[] _normals;
-    int       _mapSize;
-    float     _chunkWorldSize;
-    float     _heightMultiplier;
+    int _mapSize;
+    float _chunkWorldSize;
+    float _heightMultiplier;
     AnimationCurve _heightCurve;
 
     List<SpawnedInstance> _instances = new List<SpawnedInstance>();
     bool _placed = false;
+
+    // Called by TerrainChunk.Dispose when the chunk is recycled. Invalidates any
+    // in-flight threaded placement so its callback drops the result instead of
+    // writing into a chunk that now belongs to a different coord.
+    public void InvalidatePlacement() => _placementGeneration++;
 
     // Called by TerrainChunk after MapData and mesh are ready
     public void Initialise(
@@ -49,14 +58,15 @@ public class ChunkSpawner : MonoBehaviour
         Vector2 chunkCenter, float chunkWorldSize,
         float heightMultiplier, AnimationCurve heightCurve, Transform spawnRoot)
     {
-        _spawnConfig     = spawnConfig;
-        _catalog         = catalog;
-        _chunkCenter     = chunkCenter;
-        _chunkWorldSize  = chunkWorldSize;
+
+        _spawnConfig = spawnConfig;
+        _catalog = catalog;
+        _chunkCenter = chunkCenter;
+        _chunkWorldSize = chunkWorldSize;
         _heightMultiplier = heightMultiplier;
-        _heightCurve     = heightCurve;
-        _mapSize         = mapData.heightMap.GetLength(0);
-        _normals         = bakedNormals;
+        _heightCurve = new AnimationCurve(heightCurve.keys);
+        _mapSize = mapData.heightMap.GetLength(0);
+        _normals = bakedNormals != null ? (Vector3[])bakedNormals.Clone() : null;
         _spawnRoot = spawnRoot;
         _poolManager = ServiceLocator.Get<ObjectPoolManager>();
         //Debug.Log($"[ChunkSpawner] PoolManager: {(_poolManager != null ? "found" : "NULL")}");
@@ -69,27 +79,67 @@ public class ChunkSpawner : MonoBehaviour
         // Deterministic seed from chunk position
         _seed = Mathf.RoundToInt(chunkCenter.x * 1000f) ^ Mathf.RoundToInt(chunkCenter.y * 1000f);
 
-        GeneratePlacements();
-        _placed = true;
+        Dictionary<string, PrefabDef> snapshot = BuildDefSnapshot();
+
+        // Each (re)initialise starts a new placement generation. A worker callback
+        // that lands with an older generation is stale and gets dropped.
+        _placementGeneration++;
+        int generation = _placementGeneration;
+
+        if (UseThreadedPlacement)
+        {
+            _placed = false;
+            PlacementDispatcher dispatcher = PlacementDispatcher.Instance; // main-thread capture
+            RequestPlacements(snapshot, dispatcher, generation);
+        }
+        else
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            _instances = GeneratePlacements(snapshot);
+            sw.Stop();
+            PlacementMetrics.MainThreadMsThisFrame += sw.Elapsed.TotalMilliseconds;
+            PlacementMetrics.ChunksSync++;
+            _placed = true;
+        }
     }
 
-    void GeneratePlacements()
-    {
 
-        if (_spawnConfig == null || _catalog == null) { 
+    // Main-thread only. Resolves the PrefabDefs the active rules reference into a flat
+    // ID->def snapshot the placement computation can read without touching the catalog.
+    Dictionary<string, PrefabDef> BuildDefSnapshot()
+    {
+        var snapshot = new Dictionary<string, PrefabDef>();
+        if (_spawnConfig == null || _catalog == null) return snapshot;
+
+        foreach (var rule in _spawnConfig.Rules)
+        {
+            if (snapshot.ContainsKey(rule.PrefabDefID)) continue;
+            var def = _catalog.GetByID(rule.PrefabDefID);
+            if (def != null) snapshot[rule.PrefabDefID] = def;
+        }
+        return snapshot;
+    }
+
+
+    List<SpawnedInstance> GeneratePlacements(Dictionary<string, PrefabDef> defSnapshot)
+    {
+        var placements = new List<SpawnedInstance>();
+
+        if (_spawnConfig == null || defSnapshot == null)
+        {
             Debug.LogWarning($"[ChunkSpawner] Missing spawn config or prefab catalog for chunk {_chunkCenter}, skipping placement.");
-            return;
+            return placements;
         }
 
         foreach (var rule in _spawnConfig.Rules)
         {
-            var def = _catalog.GetByID(rule.PrefabDefID);
+            defSnapshot.TryGetValue(rule.PrefabDefID, out var def);
             //Debug.LogWarning($"[ChunkSpawner] Looking up '{rule.PrefabDefID}' in catalog '{_catalog?.name}', def found: {def != null}");
             if (def == null) continue;
 
             float effectiveDensity = _spawnConfig.Density * rule.DensityMultiplier;
-            float area             = _chunkWorldSize * _chunkWorldSize;
-            int   targetCount      = Mathf.Max(1, Mathf.RoundToInt(effectiveDensity * area / 100f));
+            float area = _chunkWorldSize * _chunkWorldSize;
+            int targetCount = Mathf.Max(1, Mathf.RoundToInt(effectiveDensity * area / 100f));
 
             List<Vector3> candidates = rule.PlacementMode == PlacementMode.PoissonDisk
                 ? GeneratePoissonPoints(rule, targetCount)
@@ -98,31 +148,61 @@ public class ChunkSpawner : MonoBehaviour
             foreach (var candidate in candidates)
             {
                 float rawNoise = SampleRawNoise(candidate.x, candidate.z);
-                if (!PassesHeightCheck(rawNoise, rule))   continue;
-                if (!PassesSlopeCheck(candidate, rule))    continue;
-                if (!PassesOverlapCheck(candidate, rule, def)) continue;
+                if (!PassesHeightCheck(rawNoise, rule)) continue;
+                if (!PassesSlopeCheck(candidate, rule)) continue;
+                if (!PassesOverlapCheck(candidate, rule, def, placements)) continue;
 
                 var instance = new SpawnedInstance
                 {
                     WorldPosition = candidate,
-                    Rotation      = RandomYRotation(candidate),
-                    PrefabDefID   = rule.PrefabDefID,
-                    Category      = def.Category,
-                    Footprint     = def.Footprint,
-                    State         = SpawnState.None
+                    Rotation = RandomYRotation(candidate),
+                    PrefabDefID = rule.PrefabDefID,
+                    Category = def.Category,
+                    Footprint = def.Footprint,
+                    State = SpawnState.None
                 };
 
-                _instances.Add(instance);
+                placements.Add(instance);
                 //Debug.Log($"[ChunkSpawner] Rule '{rule.PrefabDefID}' — candidates: {candidates.Count}, placed: {_instances.Count}");
             }
         }
-        
+
         //Debug.Log($"[ChunkSpawner] Chunk {_chunkCenter} placed {_instances.Count} instances across {_spawnConfig.Rules.Count} rules.");
+        return placements;
+    }
+
+    // Mirrors MapGenerator.RequestMapData: start a worker that computes placement
+    // data off the main thread, then hands the result back through the dispatcher.
+    void RequestPlacements(Dictionary<string, PrefabDef> defSnapshot, PlacementDispatcher dispatcher, int generation)
+    {
+        ThreadStart threadStart = delegate { PlacementThread(defSnapshot, dispatcher, generation); };
+        new Thread(threadStart).Start();
+    }
+
+    void PlacementThread(Dictionary<string, PrefabDef> defSnapshot, PlacementDispatcher dispatcher, int generation)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        List<SpawnedInstance> placements = GeneratePlacements(defSnapshot);
+        sw.Stop();
+        double workerMs = sw.Elapsed.TotalMilliseconds;
+
+        dispatcher.Enqueue(() =>
+        {
+            // Main thread. If the chunk was despawned or re-initialised while the
+            // worker ran, the generation no longer matches — drop the result.
+            if (generation != _placementGeneration) return;
+            _instances = placements;
+            _placed = true;
+            PlacementMetrics.LastWorkerMs = workerMs;
+            PlacementMetrics.ChunksThreaded++;
+        });
     }
 
     // Called every time TerrainChunk.UpdateTerrainChunk runs
     public void UpdateLODTier(float viewerDst)
     {
+        if (!_placed) return;
+
         Vector2 viewerPos = EndlessTerrain.viewerPosition;
 
         foreach (var inst in _instances)
@@ -130,7 +210,7 @@ public class ChunkSpawner : MonoBehaviour
             float dst = Vector2.Distance(
                 viewerPos,
                 new Vector2(inst.WorldPosition.x, inst.WorldPosition.z));
-            
+
             // dst is in unscaled units. Multiply by scale to get real world distance!
             float worldDst = dst * transform.localScale.x;
 
@@ -181,7 +261,7 @@ public class ChunkSpawner : MonoBehaviour
 
                 if (_poolManager != null && _poolManager.TryFetch(inst.PrefabDefID, out GameObject pooled))
                 {
-                   // Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
+                    // Debug.Log($"[ChunkSpawner] Pool hit: {inst.PrefabDefID}");
                     pooled.transform.SetPositionAndRotation(inst.WorldPosition, inst.Rotation);
                     pooled.SetActive(true);
                     inst.ActiveObject = pooled;
@@ -201,16 +281,17 @@ public class ChunkSpawner : MonoBehaviour
         inst.State = target;
     }
     SpawnRule GetRuleForDef(string prefabDefID)
-{
-    if (_spawnConfig == null) return null;
-    foreach (var rule in _spawnConfig.Rules)
-        if (rule.PrefabDefID == prefabDefID) return rule;
-    return null;
-}
+    {
+        if (_spawnConfig == null) return null;
+        foreach (var rule in _spawnConfig.Rules)
+            if (rule.PrefabDefID == prefabDefID) return rule;
+        return null;
+    }
 
     // Called by TerrainChunk.SetVisible(false)
     public void Despawn()
     {
+
         foreach (var inst in _instances)
         {
             DestroyInstance(inst);
@@ -233,17 +314,17 @@ public class ChunkSpawner : MonoBehaviour
     //Placement helpers
     List<Vector3> GeneratePoissonPoints(SpawnRule rule, int targetCount)
     {
-        var rng       = new System.Random(_seed ^ rule.PrefabDefID.GetHashCode());
-        var result    = new List<Vector3>();
-        int attempts  = targetCount * 30;
-        float half    = _chunkWorldSize * 0.5f;
+        var rng = new System.Random(_seed ^ rule.PrefabDefID.GetHashCode());
+        var result = new List<Vector3>();
+        int attempts = targetCount * 30;
+        float half = _chunkWorldSize * 0.5f;
 
         for (int i = 0; i < attempts && result.Count < targetCount; i++)
         {
             float wx = _chunkCenter.x + (float)(rng.NextDouble() * _chunkWorldSize - half);
             float wz = _chunkCenter.y + (float)(rng.NextDouble() * _chunkWorldSize - half);
             float wy = SampleWorldHeight(wx, wz);
-            var   pt = new Vector3(wx, wy, wz);
+            var pt = new Vector3(wx, wy, wz);
 
             bool tooClose = false;
             foreach (var existing in result)
@@ -262,11 +343,11 @@ public class ChunkSpawner : MonoBehaviour
 
     List<Vector3> GenerateGridPoints(SpawnRule rule, int targetCount)
     {
-        var   rng    = new System.Random(_seed ^ rule.PrefabDefID.GetHashCode());
-        var   result = new List<Vector3>();
-        int   side   = Mathf.CeilToInt(Mathf.Sqrt(targetCount));
-        float step   = _chunkWorldSize / side;
-        float half   = _chunkWorldSize * 0.5f;
+        var rng = new System.Random(_seed ^ rule.PrefabDefID.GetHashCode());
+        var result = new List<Vector3>();
+        int side = Mathf.CeilToInt(Mathf.Sqrt(targetCount));
+        float step = _chunkWorldSize / side;
+        float half = _chunkWorldSize * 0.5f;
         float jitter = step * 0.4f;
 
         for (int row = 0; row < side; row++)
@@ -289,10 +370,10 @@ public class ChunkSpawner : MonoBehaviour
     {
         float meshScale = _chunkWorldSize / Mathf.Max(1f, _mapSize - 3f);
         float halfMap = _mapSize * 0.5f;
-        
+
         int x = Mathf.Clamp(Mathf.RoundToInt((wx - _chunkCenter.x) / meshScale + halfMap), 0, _mapSize - 1);
         int z = Mathf.Clamp(Mathf.RoundToInt(halfMap - (wz - _chunkCenter.y) / meshScale), 0, _mapSize - 1);
-        
+
         return _heightMap[x, z];
     }
 
@@ -304,10 +385,10 @@ public class ChunkSpawner : MonoBehaviour
     Vector3 SampleNormal(float wx, float wz)
     {
         if (_normals == null) return Vector3.up;
-        
+
         float meshScale = _chunkWorldSize / Mathf.Max(1f, _mapSize - 3f);
         float halfMap = _mapSize * 0.5f;
-        
+
         int x = Mathf.Clamp(Mathf.RoundToInt((wx - _chunkCenter.x) / meshScale + halfMap), 0, _mapSize - 1);
         int z = Mathf.Clamp(Mathf.RoundToInt(halfMap - (wz - _chunkCenter.y) / meshScale), 0, _mapSize - 1);
         int i = z * _mapSize + x;
@@ -327,11 +408,11 @@ public class ChunkSpawner : MonoBehaviour
         return slope <= rule.MaxSlope;
     }
 
-    bool PassesOverlapCheck(Vector3 pt, SpawnRule rule, PrefabDef def)
+    bool PassesOverlapCheck(Vector3 pt, SpawnRule rule, PrefabDef def, List<SpawnedInstance> placed)
     {
         if (rule.BlockedBy == null || rule.BlockedBy.Count == 0) return true;
 
-        foreach (var inst in _instances)
+        foreach (var inst in placed)
         {
             if (!rule.BlockedBy.Contains(inst.Category)) continue;
             float minDist = def.Footprint + inst.Footprint;
@@ -345,7 +426,7 @@ public class ChunkSpawner : MonoBehaviour
 
     Quaternion RandomYRotation(Vector3 pt)
     {
-        var rng   = new System.Random((int)(pt.x * 1000) ^ (int)(pt.z * 1000) ^ _seed);
+        var rng = new System.Random((int)(pt.x * 1000) ^ (int)(pt.z * 1000) ^ _seed);
         float deg = (float)(rng.NextDouble() * 360f);
         return Quaternion.Euler(0, deg, 0);
     }

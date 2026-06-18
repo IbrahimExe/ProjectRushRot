@@ -5,7 +5,7 @@ namespace LevelGenerator
 {
     public class EndlessTerrain : MonoBehaviour
     {
-        
+
         public LODInfo[] detailLevels;
         [Header("View")]
         public static float maxViewDist;
@@ -18,8 +18,8 @@ namespace LevelGenerator
         [Header("Chunk")]
         [Range(2, 240)]
         public int vertexResolution = 120;
-         float chunkWorldSize;
-         float _scale;
+        float chunkWorldSize;
+        float _scale;
 
         public static Vector2 viewerPosition;
         Vector2 viewerPositionOld;
@@ -60,14 +60,17 @@ namespace LevelGenerator
             if (Viewer != null)
             {
                 viewerPosition = new Vector2(Viewer.position.x, Viewer.position.z) / _scale;
-            }else{
-                    viewerPosition = Vector2.zero;
+            }
+            else
+            {
+                viewerPosition = Vector2.zero;
             }
 
-            if ((viewerPositionOld - viewerPosition ).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate)
-                { 
+            if ((viewerPositionOld - viewerPosition).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate)
+            {
                 viewerPositionOld = viewerPosition;
-                UpdateVisibleChunks(); }
+                UpdateVisibleChunks();
+            }
         }
         public static MapData? GetCachedMapData(Vector2 chunkCoord)
         {
@@ -176,7 +179,7 @@ namespace LevelGenerator
                 _meshCollider = _meshObject.GetComponent<MeshCollider>();
                 _spawner = _meshObject.GetComponent<ChunkSpawner>();
 
-                _meshObject.layer = 3; 
+                _meshObject.layer = 3;
 
                 // Request map data from the singleton using this chunk's world centre
                 mapGenerator.RequestMapData(_position, OnMapDataReceived);
@@ -213,7 +216,7 @@ namespace LevelGenerator
                          (MapGenerator.mapChunkSize - 1) * mapGenerator.meshScale,
                          mapGenerator.meshHeightMultiplier,
                          new AnimationCurve(mapGenerator.meshHeightCurve.keys),
-                         mapGenerator.transform); 
+                         mapGenerator.transform);
                 }
 
                 UpdateTerrainChunk();
@@ -246,10 +249,11 @@ namespace LevelGenerator
                             previousLODindex = lodIndex;
                             _meshFilter.mesh = lodMesh.Mesh;
                         }
-                        else if 
-                            (!lodMesh.HasRequestedMesh) { 
+                        else if
+                            (!lodMesh.HasRequestedMesh)
+                        {
                             lodMesh.RequestMesh(_mapData);
-                        }   
+                        }
                     }
                     if (lodIndex == 0)
                     {
@@ -273,7 +277,7 @@ namespace LevelGenerator
 
             public void Dispose()
             {
-                if (_spawner != null) _spawner.Despawn();
+                if (_spawner != null) { _spawner.InvalidatePlacement(); _spawner.Despawn(); }
                 if (_texture != null) Object.Destroy(_texture);
                 if (lODMeshes != null)
                     foreach (var lod in lODMeshes)
