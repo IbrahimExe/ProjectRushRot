@@ -37,6 +37,11 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+       SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         if (pauseMenuUI) pauseMenuUI.SetActive(false);
         if (countdownUI) countdownUI.SetActive(false);
         _poolManager.Initialize();

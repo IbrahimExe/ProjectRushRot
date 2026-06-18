@@ -23,6 +23,11 @@ public class PerkCooldownUI : MonoBehaviour
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         startScale = transform.localScale;
         startRotation = transform.localRotation;
 

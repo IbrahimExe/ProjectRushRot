@@ -13,6 +13,11 @@ public class EnemyManager : MonoBehaviour
 
     void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
     }

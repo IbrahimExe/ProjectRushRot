@@ -12,6 +12,11 @@ public class LevelTimer : MonoBehaviour
 
     void Start()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         timerText = GetComponent<TextMeshProUGUI>();
         startTime = Time.time;
     }

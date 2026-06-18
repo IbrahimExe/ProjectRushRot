@@ -17,6 +17,11 @@ public class CameraTargetFollow : MonoBehaviour
 
     private void Start()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         if (playerTransform == null)
         {
             Debug.LogError("CameraTargetFollow: Player Transform reference is not set.");

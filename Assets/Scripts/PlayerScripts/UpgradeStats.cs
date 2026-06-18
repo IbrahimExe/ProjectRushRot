@@ -6,6 +6,11 @@ public class UpgradeStats : MonoBehaviour
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    void Initialize()
+    {
         if (player == null)
             player = GetComponent<PlayerControllerBase>();
     }
