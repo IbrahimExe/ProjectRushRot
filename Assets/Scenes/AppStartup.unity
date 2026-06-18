@@ -392,9 +392,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4707201947985919697, guid: 073402e7cac565549a0a5629d002597a, type: 3}
+      propertyPath: m_toggleModeKeyCode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4707201947985919697, guid: 073402e7cac565549a0a5629d002597a, type: 3}
+      propertyPath: m_toggleActiveKeyCode
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 4830814774591060882, guid: 073402e7cac565549a0a5629d002597a, type: 3}
       propertyPath: m_Name
       value: AppLoader
+      objectReference: {fileID: 0}
+    - target: {fileID: 5495159925926230421, guid: 073402e7cac565549a0a5629d002597a, type: 3}
+      propertyPath: _debugBuild
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8185275694749046628, guid: 073402e7cac565549a0a5629d002597a, type: 3}
       propertyPath: m_LocalPosition.x
