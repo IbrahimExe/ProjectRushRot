@@ -9,11 +9,14 @@ public class AppStart : MonoBehaviour
     [Tooltip("Build index of the next scene to load")]
     [SerializeField] private int _sceneToLoad;
     [SerializeField] private float _minDisplayTimeSeconds;
+    public int TargetFrameRate = 60;
 
     private void Start()
     {
         Debug.Log("AppStart -> Start");
         SystemLoader.CallOnComplete(Initialize);
+        QualitySettings.vSyncCount = 0; // Disable VSync
+        Application.targetFrameRate = TargetFrameRate;
     }
 
     /// <summary>
