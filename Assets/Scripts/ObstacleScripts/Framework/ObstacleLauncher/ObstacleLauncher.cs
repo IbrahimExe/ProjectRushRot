@@ -47,7 +47,7 @@ public class ObstacleLauncher : MonoBehaviour
     {
         if (projectilePrefabs.Count == 0)
         { 
-            Debug.LogWarning($"[ObstacleLauncher] No projectile prefabs assigned to {gameObject.name}");
+            //Debug.LogWarning($"[ObstacleLauncher] No projectile prefabs assigned to {gameObject.name}");
             return; 
         }
 
@@ -55,7 +55,7 @@ public class ObstacleLauncher : MonoBehaviour
         Projectile projectile = ProjectilePoolManager.Instance.Get(prefab);
         if (projectile == null)
         {
-            Debug.LogError($"[ObstacleLauncher] Failed to get projectile from pool for prefab {prefab.name}");
+            //Debug.LogError($"[ObstacleLauncher] Failed to get projectile from pool for prefab {prefab.name}");
             return;
         }
 
@@ -63,7 +63,7 @@ public class ObstacleLauncher : MonoBehaviour
         projectile.transform.rotation = launchPoint.rotation;
 
         launchBehavior.Launch(projectile.Rb, launchPoint.position, targetPosition);
-        Debug.Log($"[ObstacleLauncher] Launched {projectile.name} towards {targetPosition} from {gameObject.name}");
+        //Debug.Log($"[ObstacleLauncher] Launched {projectile.name} towards {targetPosition} from {gameObject.name}");
         projectile.OnLaunched();
 
         lastLaunchTime = Time.time;

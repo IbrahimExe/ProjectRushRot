@@ -534,6 +534,10 @@ public class PlayerControllerBase : MonoBehaviour
 
     // ─────────────────────────────────────────────
 
+    // Getters
+
+    public float GetMaxMoveSpeed() => maxMoveSpeed;
+
     public void Respawn()
     {
         RB.linearVelocity = Vector3.zero;

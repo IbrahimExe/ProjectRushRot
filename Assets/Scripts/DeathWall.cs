@@ -3,6 +3,8 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class DeathWall : MonoBehaviour
 {
+    private PlayerControllerBase player;
+
     [Header("Movement")]
     public Vector3 MoveDirection = Vector3.forward;
     public float BaseSpeed = 5f;
@@ -34,6 +36,13 @@ public class DeathWall : MonoBehaviour
     {
         currentSpeed = BaseSpeed;
 
+        if (player == null)
+        {
+            player = FindFirstObjectByType<PlayerControllerBase>();
+            if (player == null)
+                Debug.LogWarning("DeathWall: No PlayerControllerBase found in the scene!", this);
+        }
+
         if (playerRb != null)
             playerTransform = playerRb.transform;
         else
@@ -46,6 +55,9 @@ public class DeathWall : MonoBehaviour
     void Update()
     {
         if (playerTransform == null) return;
+
+        // Update Max Speed based on player's max move speed
+        UpdateMaxSpeed();
 
         // Ramp speed up over time
         currentSpeed = Mathf.Min(currentSpeed + SpeedIncrease * Time.deltaTime, MaxSpeed);
@@ -80,6 +92,16 @@ public class DeathWall : MonoBehaviour
         if (playerRb == null) return 0f;
         // Only the component of velocity along the wall's move direction
         return Vector3.Dot(playerRb.linearVelocity, MoveDirection.normalized);
+    }
+
+    private void UpdateMaxSpeed()
+    {
+        // Increase Max Speed based on the player's max speed but being a bit slower than the player
+        if (player == null) return;
+        float newMaxSpeed = Mathf.Max(player.GetMaxMoveSpeed() - 10f, BaseSpeed);
+
+
+        MaxSpeed = newMaxSpeed - 10f;
     }
 
     private void KillPlayer(GameObject obj)
