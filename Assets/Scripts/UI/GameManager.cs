@@ -149,6 +149,7 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
+        GameState.ResetGame();
 
         if (pauseAudio)
             AudioListener.pause = false;

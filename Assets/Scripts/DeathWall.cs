@@ -54,6 +54,7 @@ public class DeathWall : MonoBehaviour
 
     void Update()
     {
+        if (!GameState.IsStarted) return;
         if (playerTransform == null) return;
 
         // Update Max Speed based on player's max move speed
