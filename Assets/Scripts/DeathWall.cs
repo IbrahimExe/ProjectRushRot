@@ -3,6 +3,8 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class DeathWall : MonoBehaviour
 {
+    private PlayerControllerBase player;
+
     [Header("Movement")]
     public Vector3 MoveDirection = Vector3.forward;
     public float BaseSpeed = 5f;
@@ -17,9 +19,8 @@ public class DeathWall : MonoBehaviour
     [Tooltip("Drag your Player GameObject here.")]
     public Rigidbody playerRb;
 
-    [Header("UI")]
-    [Tooltip("Optional: assign your Death (Game Over) panel here.")]
-    public GameObject deathScreen;
+    [Header("References")]
+    [SerializeField] private GameManager gameManager;
 
     private Transform playerTransform;
     private bool hasKilled = false;
@@ -34,18 +35,34 @@ public class DeathWall : MonoBehaviour
     {
         currentSpeed = BaseSpeed;
 
+        if (player == null)
+        {
+            player = FindFirstObjectByType<PlayerControllerBase>();
+            if (player == null)
+                Debug.LogWarning("DeathWall: No PlayerControllerBase found in the scene!", this);
+        }
+
         if (playerRb != null)
             playerTransform = playerRb.transform;
         else
             Debug.LogWarning("DeathWall: No player Rigidbody assigned!", this);
 
-        if (deathScreen != null)
-            deathScreen.SetActive(false);
+        if (gameManager == null)
+        {
+            gameManager = FindFirstObjectByType<GameManager>();
+
+            if (gameManager == null)
+                Debug.LogError("DeathWall: No GameManager found.");
+        }
     }
 
     void Update()
     {
+        if (!GameState.IsStarted) return;
         if (playerTransform == null) return;
+
+        // Update Max Speed based on player's max move speed
+        UpdateMaxSpeed();
 
         // Ramp speed up over time
         currentSpeed = Mathf.Min(currentSpeed + SpeedIncrease * Time.deltaTime, MaxSpeed);
@@ -82,20 +99,27 @@ public class DeathWall : MonoBehaviour
         return Vector3.Dot(playerRb.linearVelocity, MoveDirection.normalized);
     }
 
+    private void UpdateMaxSpeed()
+    {
+        // Increase Max Speed based on the player's max speed but being a bit slower than the player
+        if (player == null) return;
+        float newMaxSpeed = Mathf.Max(player.GetMaxMoveSpeed() - 10f, BaseSpeed);
+
+
+        MaxSpeed = newMaxSpeed - 10f;
+    }
+
     private void KillPlayer(GameObject obj)
     {
         if (hasKilled) return;
         if (!obj.CompareTag("Player")) return;
         hasKilled = true;
 
-        if (deathScreen != null)
-            deathScreen.SetActive(true);
+        if (gameManager != null)
+        {
+            gameManager.ShowLoseScreen();
+        }
 
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-        Time.timeScale = 0f;
-
-        //Destroy(obj);
         Debug.Log("DeathWall: Player killed.");
     }
 
