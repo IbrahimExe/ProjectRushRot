@@ -29,6 +29,9 @@ public class GameManager : MonoBehaviour
     public bool pauseAudio = true;
     public string mainMenuSceneName = "00_MainMenu";
 
+    [Header("Score System")]
+    [SerializeField] private ScoreManager scoreManager;
+
     private bool isPaused = false;
     private bool isCountingDown = false;
 
@@ -42,10 +45,27 @@ public class GameManager : MonoBehaviour
 
     void Initialize()
     {
-        if (pauseMenuUI) pauseMenuUI.SetActive(false);
-        if (countdownUI) countdownUI.SetActive(false);
-        _poolManager.Initialize();
-        ServiceLocator.Register<ObjectPoolManager>(_poolManager);
+        if (pauseMenuUI)
+            pauseMenuUI.SetActive(false);
+
+        if (countdownUI)
+            countdownUI.SetActive(false);
+
+        if (winScreen)
+            winScreen.SetActive(false);
+
+        if (loseScreen)
+            loseScreen.SetActive(false);
+
+        if (_poolManager != null)
+        {
+            _poolManager.Initialize();
+            ServiceLocator.Register<ObjectPoolManager>(_poolManager);
+        }
+        else
+        {
+            Debug.LogError("GameManager: ObjectPoolManager reference is missing.");
+        }
     }
 
     void Update()
@@ -141,6 +161,39 @@ public class GameManager : MonoBehaviour
 
         isPaused = false;
         isCountingDown = false;
+    }
+
+    public void ShowLoseScreen()
+    {
+        if (loseScreen != null && loseScreen.activeSelf)
+            return;
+
+        if (scoreManager != null)
+            scoreManager.PrepareRun();
+
+        foreach (var comp in disableOnPause)
+        {
+            if (comp != null)
+                comp.enabled = false;
+        }
+
+        if (pauseMenuUI)
+            pauseMenuUI.SetActive(false);
+
+        if (countdownUI)
+            countdownUI.SetActive(false);
+
+        if (loseScreen)
+            loseScreen.SetActive(true);
+
+        Time.timeScale = 0f;
+
+        if (pauseAudio)
+            AudioListener.pause = true;
+
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        Debug.Log(scoreManager);
     }
 
     // Button Hooks
