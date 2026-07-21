@@ -1,57 +1,113 @@
 using UnityEngine;
-using TMPro; // Required for TextMeshPro UI
+using TMPro;
 
 public class LevelTimer : MonoBehaviour
 {
     private TextMeshProUGUI timerText;
-    private float startTime;
-    private bool isRunning = true;
 
-    // NEW — stores the final formatted time
+    private float startTime;
+    private float finalElapsedTime;
+
+    private bool isRunning;
+
     private string finalFormattedTime = "00:00.00";
 
-    void Start()
+    private void Start()
     {
         SystemLoader.CallOnComplete(Initialize);
     }
 
-    void Initialize()
+    private void Initialize()
     {
         timerText = GetComponent<TextMeshProUGUI>();
-        startTime = Time.time;
+
+        ResetAndStart();
     }
 
-    void Update()
+    private void Update()
     {
-        if (isRunning)
-        {
-            float t = Time.time - startTime;
+        if (!isRunning || timerText == null)
+            return;
 
-            string minutes = ((int)t / 60).ToString("00");
-            string seconds = (t % 60).ToString("00");
-            string milliseconds = ((int)(t * 100) % 100).ToString("00");
+        float elapsedTime = Time.time - startTime;
+        UpdateTimerDisplay(elapsedTime);
+    }
 
-            timerText.text = $"{minutes}:{seconds}.{milliseconds}";
-        }
+    private void UpdateTimerDisplay(float elapsedTime)
+    {
+        int totalHundredths =
+            Mathf.FloorToInt(elapsedTime * 100f);
+
+        int minutes = totalHundredths / 6000;
+        int seconds = (totalHundredths / 100) % 60;
+        int hundredths = totalHundredths % 100;
+
+        timerText.SetText(
+            "{0:00}:{1:00}.{2:00}",
+            minutes,
+            seconds,
+            hundredths
+        );
     }
 
     public void StopTimer()
     {
-        isRunning = false;
+        if (!isRunning)
+            return;
 
-        // NEW — capture final displayed text
+        finalElapsedTime = Time.time - startTime;
+
+        UpdateTimerDisplay(finalElapsedTime);
+
+        isRunning = false;
         finalFormattedTime = timerText.text;
     }
 
     public void ResetAndStart()
     {
         startTime = Time.time;
+        finalElapsedTime = 0f;
+
+        finalFormattedTime = "00:00.00";
         isRunning = true;
+
+        UpdateTimerDisplay(0f);
     }
 
-    // NEW — provides final time to FinishLine
+    public float GetElapsedTime()
+    {
+        if (isRunning)
+        {
+            return Time.time - startTime;
+        }
+
+        return finalElapsedTime;
+    }
+
     public string GetFormattedTime()
     {
+        if (isRunning)
+        {
+            return FormatTime(Time.time - startTime);
+        }
+
         return finalFormattedTime;
+    }
+
+    private string FormatTime(float elapsedTime)
+    {
+        int totalHundredths =
+            Mathf.FloorToInt(elapsedTime * 100f);
+
+        int minutes = totalHundredths / 6000;
+        int seconds = (totalHundredths / 100) % 60;
+        int hundredths = totalHundredths % 100;
+
+        return $"{minutes:00}:{seconds:00}.{hundredths:00}";
+    }
+
+    public bool IsRunning()
+    {
+        return isRunning;
     }
 }

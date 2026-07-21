@@ -19,9 +19,8 @@ public class DeathWall : MonoBehaviour
     [Tooltip("Drag your Player GameObject here.")]
     public Rigidbody playerRb;
 
-    [Header("UI")]
-    [Tooltip("Optional: assign your Death (Game Over) panel here.")]
-    public GameObject deathScreen;
+    [Header("References")]
+    [SerializeField] private GameManager gameManager;
 
     private Transform playerTransform;
     private bool hasKilled = false;
@@ -48,8 +47,13 @@ public class DeathWall : MonoBehaviour
         else
             Debug.LogWarning("DeathWall: No player Rigidbody assigned!", this);
 
-        if (deathScreen != null)
-            deathScreen.SetActive(false);
+        if (gameManager == null)
+        {
+            gameManager = FindFirstObjectByType<GameManager>();
+
+            if (gameManager == null)
+                Debug.LogError("DeathWall: No GameManager found.");
+        }
     }
 
     void Update()
@@ -111,14 +115,11 @@ public class DeathWall : MonoBehaviour
         if (!obj.CompareTag("Player")) return;
         hasKilled = true;
 
-        if (deathScreen != null)
-            deathScreen.SetActive(true);
+        if (gameManager != null)
+        {
+            gameManager.ShowLoseScreen();
+        }
 
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-        Time.timeScale = 0f;
-
-        //Destroy(obj);
         Debug.Log("DeathWall: Player killed.");
     }
 
