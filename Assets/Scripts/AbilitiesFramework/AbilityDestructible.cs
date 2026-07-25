@@ -42,7 +42,9 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
         }
         else
         {
-            Destroy(gameObject);
+            //Destroy(gameObject);
+
+            gameObject.SetActive(false);
         }
     }
 }

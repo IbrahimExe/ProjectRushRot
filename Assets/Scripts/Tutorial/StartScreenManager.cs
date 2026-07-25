@@ -15,8 +15,21 @@ public class StartScreenManager : MonoBehaviour
     [SerializeField] private float timeForTransitionToStart = 2.0f;
     [SerializeField] private float blendDuration = 3.0f;
 
+    [Header("Post Intro Activation UI")]
+    [SerializeField] private GameObject xpBar;
+    [SerializeField] private GameObject timerPanel;
+    [SerializeField] private GameObject timerText;
+    [SerializeField] private GameObject distanceText;
+    [SerializeField] private GameObject speedometer;
+    [SerializeField] private GameObject dashUI;
+
+    [SerializeField] private GameObject StartPanel;
+    [SerializeField] private float StartPanelTime = 1.0f;
+
     [SerializeField] private bool tutorialMode = true;
     private CinemachineBrain cinemachineBrain;
+
+    
 
     private bool hasStarted = false;
 
@@ -29,6 +42,13 @@ public class StartScreenManager : MonoBehaviour
         {
             startScreenUI.SetActive(true);
         }
+
+        timerPanel.SetActive(true);
+        timerPanel.SetActive(false);
+        distanceText.SetActive(false);
+        distanceText.SetActive(false);
+        speedometer.SetActive(false);
+        dashUI.SetActive(false);
     }
 
     void Update()
@@ -94,8 +114,6 @@ public class StartScreenManager : MonoBehaviour
     private IEnumerator WaitForCameraBlendCompletion()
     {
         // Wait for the exact blend duration. 
-        // Relying on cinemachineBrain.IsBlending can be unreliable on scene restarts 
-        // because the Brain might not have processed the camera change yet in its update cycle.
         yield return new WaitForSeconds(blendDuration);
 
         UnlockPlayer();
@@ -103,6 +121,38 @@ public class StartScreenManager : MonoBehaviour
 
     void UnlockPlayer()
     {
+        if (!tutorialMode)
+        {
+            StartCoroutine(ShowStartPanelAndContinue());
+        }
+        else
+        {
+            ActivateGameplayUI();
+        }
+    }
+    private IEnumerator ShowStartPanelAndContinue()
+    {
+        StartPanel.SetActive(true);
+
+        yield return new WaitForSeconds(StartPanelTime);
+
+        StartPanel.SetActive(false);
+        ActivateGameplayUI();
+    }
+
+    private void ActivateGameplayUI()
+    {
+        if (!tutorialMode)
+        {
+            distanceText.SetActive(true);
+            timerPanel.SetActive(true);
+            timerText.SetActive(true);
+        }
+        xpBar.SetActive(true);
+        speedometer.SetActive(true);
+        dashUI.SetActive(true);
+
         GameState.StartGame();
     }
+
 }
