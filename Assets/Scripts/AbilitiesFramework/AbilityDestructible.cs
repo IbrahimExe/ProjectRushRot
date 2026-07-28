@@ -15,6 +15,11 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
     private PooledObject pooledObject;
 
+    [Header("CamShake Param")]
+    [SerializeField] private CameraShake camShake;
+    [SerializeField] private float camShakeDurationSEC = 0.5f;
+    [SerializeField] private float camShakeMagnitude = 1f;
+
     private void Awake()
     {
         pooledObject = GetComponent<PooledObject>();
@@ -46,5 +51,12 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
             gameObject.SetActive(false);
         }
+
+
+        //CamShake
+        camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+        //Particles
+
+        //Audio
     }
 }
