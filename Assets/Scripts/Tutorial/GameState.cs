@@ -8,4 +8,9 @@ public static class GameState
     {
         IsStarted = true;
     }
+
+    public static void ResetGame()
+    {
+        IsStarted = false;
+    }
 }

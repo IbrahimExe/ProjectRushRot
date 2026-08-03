@@ -49,6 +49,7 @@ public class GameManager : MonoBehaviour
 
     void Initialize()
     {
+        GameState.StartGame();
         if (pauseMenuUI)
             pauseMenuUI.SetActive(false);
 
@@ -215,6 +216,7 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
+        GameState.ResetGame();
 
         if (pauseAudio)
             AudioListener.pause = false;

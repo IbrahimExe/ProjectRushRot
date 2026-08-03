@@ -122,7 +122,7 @@ public class CharacterSelector : MonoBehaviour
         {
             rotationSpeed = baseRotationSpeed;
             playerInside = null;
-            Debug.Log("Player left character selector");
+            //Debug.Log("Player left character selector");
         }
     }
 }
