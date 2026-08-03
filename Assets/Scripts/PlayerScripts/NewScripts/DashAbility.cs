@@ -386,23 +386,55 @@ public class DashAbility : MonoBehaviour
 
     private void TryKillEnemy(GameObject otherGO)
     {
-        if (!CanDashKill()) return;
-        if (!otherGO.CompareTag("Enemy")) return;
+        if (!CanDashKill())
+            return;
 
-        // Apply a speed penalty when the kill happens in the late hit-window
-        bool isLateDashHit = IsWithinHitWindow;
-        if (isLateDashHit && lateDashSpeedPenaltyFraction > 0f)
+        if (otherGO == null)
+            return;
+
+        // Prefer the common destruction system.
+        IAbilityDestructible destructible =
+            otherGO.GetComponentInParent<IAbilityDestructible>();
+
+        if (destructible != null)
         {
-            RB.linearVelocity *= (1f - lateDashSpeedPenaltyFraction);
-        }
+            if (!destructible.CanBeDestroyedBy("Dash"))
+                return;
 
-        Destroy(otherGO);
+            bool isLateDashHit = IsWithinHitWindow;
+
+            if (isLateDashHit && lateDashSpeedPenaltyFraction > 0f)
+            {
+                RB.linearVelocity *=
+                    (1f - lateDashSpeedPenaltyFraction);
+            }
+
+            destructible.DestroyByAbility("Dash", gameObject);
+        }
+        else
+        {
+            // Backwards compatibility for enemies that don't
+            // have AbilityDestructible yet.
+            if (!otherGO.CompareTag("Enemy"))
+                return;
+
+            bool isLateDashHit = IsWithinHitWindow;
+
+            if (isLateDashHit && lateDashSpeedPenaltyFraction > 0f)
+            {
+                RB.linearVelocity *=
+                    (1f - lateDashSpeedPenaltyFraction);
+            }
+
+            Destroy(otherGO);
+
+            ScoreManager.Instance?.RegisterDestroyedTarget();
+        }
 
         if (dashKillCount < dashKillCap)
             dashKillCount++;
 
         lastDashKillTime = Time.time;
-
         PushDashKillMultiplierToXP();
     }
 
@@ -418,4 +450,5 @@ public class DashAbility : MonoBehaviour
         TryKillEnemy(collision.gameObject);
         
     }
+
 }
