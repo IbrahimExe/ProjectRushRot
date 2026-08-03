@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     public GameObject countdownUI;      // Panel for countdown
     public TMP_Text countdownText;      // TextMeshPro countdown display
 
+    [Header("Level-up selection")]
+    [SerializeField] private LevelUpCardSelector levelUpCardSelector;
+
     [Header("Win / Lose screens (assign so pause is disabled while they are active)")]
     public GameObject winScreen;
     public GameObject loseScreen;
@@ -37,6 +40,7 @@ public class GameManager : MonoBehaviour
 
     //health
     [SerializeField] private float hp = 3f;
+
 
     void Start()
     {
@@ -95,6 +99,9 @@ public class GameManager : MonoBehaviour
         foreach (var comp in disableOnPause)
             if (comp != null) comp.enabled = false;
 
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPaused(true);
+
         Time.timeScale = 0f;
 
         if (pauseAudio)
@@ -147,6 +154,9 @@ public class GameManager : MonoBehaviour
         // Resume gameplay
         Time.timeScale = 1f;
 
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPaused(false);
+
         if (pauseAudio)
             AudioListener.pause = false;
 
@@ -168,6 +178,9 @@ public class GameManager : MonoBehaviour
     {
         if (loseScreen != null && loseScreen.activeSelf)
             return;
+
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPlayerDead(true);
 
         if (scoreManager != null)
             scoreManager.PrepareRun();

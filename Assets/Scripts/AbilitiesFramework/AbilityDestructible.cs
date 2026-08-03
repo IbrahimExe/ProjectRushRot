@@ -6,6 +6,7 @@ public interface IAbilityDestructible
     void DestroyByAbility(string abilityId, GameObject source);
 }
 
+[DisallowMultipleComponent]
 public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 {
     [SerializeField] private string[] destroyableByAbilities;
@@ -15,18 +16,35 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
     private PooledObject pooledObject;
 
-    [Header("CamShake Param")]
-    [SerializeField] private CameraShake camShake;
-    [SerializeField] private float camShakeDurationSEC = 0.5f;
-    [SerializeField] private float camShakeMagnitude = 1f;
+[Header("CamShake Param")]
+[SerializeField] private CameraShake camShake;
+[SerializeField] private float camShakeDurationSEC = 0.5f;
+[SerializeField] private float camShakeMagnitude = 1f;
+
+private bool hasBeenDestroyed;
 
     private void Awake()
     {
         pooledObject = GetComponent<PooledObject>();
     }
 
+    private void OnEnable()
+    {
+        
+        hasBeenDestroyed = false;
+    }
+
     public bool CanBeDestroyedBy(string abilityId)
     {
+        if (hasBeenDestroyed)
+            return false;
+
+        if (string.IsNullOrEmpty(abilityId))
+            return false;
+
+        if (destroyableByAbilities == null)
+            return false;
+
         foreach (string id in destroyableByAbilities)
         {
             if (id == abilityId)
@@ -40,6 +58,20 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
     {
         if (!CanBeDestroyedBy(abilityId))
             return;
+
+       
+        hasBeenDestroyed = true;
+
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.RegisterDestroyedTarget();
+        }
+        else
+        {
+            Debug.LogWarning(
+                $"AbilityDestructible on {name} could not find ScoreManager."
+            );
+        }
 
         if (returnToPoolInsteadOfDestroy && pooledObject != null)
         {
