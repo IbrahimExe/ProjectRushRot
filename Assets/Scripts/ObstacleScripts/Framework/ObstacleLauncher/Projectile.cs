@@ -9,7 +9,6 @@ public class Projectile : MonoBehaviour
     public float GravityScale => gravityScale;
 
     private ProjectileBehavior behavior;
-    private bool _isReturned;
 
     private void Awake()
     {
@@ -26,7 +25,6 @@ public class Projectile : MonoBehaviour
 
     public void OnLaunched()
     {
-        _isReturned = false;
         behavior?.OnLaunched();
     }
 
@@ -49,8 +47,6 @@ public class Projectile : MonoBehaviour
 
     public void ReturnToPool()
     {
-        if (_isReturned) return;
-        _isReturned = true;
         ProjectilePoolManager.Instance.Release(SourcePrefab, this);
     }
 }

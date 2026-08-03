@@ -131,7 +131,8 @@ public class DashAbility : MonoBehaviour
         bool hasAirSideDash = motor.characterData != null && motor.characterData.canAirSideDash;
 
         // Block all dashes when grounded check fails, UNLESS the character has canAirSideDash
-        //if (!motor.IsGrounded && !hasAirSideDash) return;
+        // (in which case only side dashes are allowed in the air)
+        if (!motor.IsGrounded && !hasAirSideDash) return;
 
         if (wallRun != null && wallRun.IsWallRunning) return;
         if (Time.time < nextDashAllowedTime) return;
@@ -157,64 +158,58 @@ public class DashAbility : MonoBehaviour
 
         if (currentDashType == DashType.None) return;
 
-        if (!motor.IsGrounded && !hasAirSideDash && (currentDashType == DashType.Left || currentDashType == DashType.Right))
+        // If airborne with canAirSideDash, ONLY allow side dashes
+        if (!motor.IsGrounded && hasAirSideDash)
         {
-            // If the player is in the air and does not have canAirSideDash, block side dashes
+            if (currentDashType != DashType.Left && currentDashType != DashType.Right)
+                return;
+        }
+
+        // Lateral (side) dash: instantaneous velocity set + optional hop
+        if (currentDashType == DashType.Left || currentDashType == DashType.Right)
+        {
+            Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
+            Vector3 rightFlat = Vector3.ProjectOnPlane(transform.right, up).normalized;
+            float sideSign = currentDashType == DashType.Right ? 1f : -1f;
+
+            sideDashDirectionWorld = rightFlat * sideSign;
+
+            float lateralSpeed = (sideDashDuration > 0f) ? sideDashDistance / sideDashDuration : 0f;
+
+            Vector3 vel = RB.linearVelocity;
+            Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
+            Vector3 lateralCurrent = Vector3.Project(planarVel, sideDashDirectionWorld);
+
+            vel -= lateralCurrent;
+            vel += sideDashDirectionWorld * lateralSpeed;
+
+            // Only apply the upward hop when grounded; skip it for air side dashes
+            // so we don't mess up the player's existing air trajectory
+            if (motor.IsGrounded)
+            {
+                float upSpeed = GetJumpSpeedForHeight(sideDashUpOffset);
+                Vector3 verticalVel = Vector3.Project(vel, up);
+                vel -= verticalVel;
+                vel += up * upSpeed;
+            }
+
+            RB.linearVelocity = vel;
+
+            isSideDashing = true;
+            sideDashElapsed = 0f;
+
+            hitWindowEndTime = dashEndTime + hitWindowAfterDash;
+
+            nextDashAllowedTime = Time.time + dashCooldown;
+
+            StartDashFlipRoll(currentDashType);
+
+            isDashing = false;
+            dashJustStarted = false;
             return;
         }
 
-        // only side dash if grounded or if the character has canAirSideDash
-        if (motor.IsGrounded || hasAirSideDash)
-        {
-            // Lateral (side) dash: instantaneous velocity set + optional hop
-            if (currentDashType == DashType.Left || currentDashType == DashType.Right)
-            {
-                Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
-                Vector3 rightFlat = Vector3.ProjectOnPlane(transform.right, up).normalized;
-                float sideSign = currentDashType == DashType.Right ? 1f : -1f;
-
-                sideDashDirectionWorld = rightFlat * sideSign;
-
-                float lateralSpeed = (sideDashDuration > 0f) ? sideDashDistance / sideDashDuration : 0f;
-
-                Vector3 vel = RB.linearVelocity;
-                Vector3 planarVel = Vector3.ProjectOnPlane(vel, up);
-                Vector3 lateralCurrent = Vector3.Project(planarVel, sideDashDirectionWorld);
-
-                vel -= lateralCurrent;
-                vel += sideDashDirectionWorld * lateralSpeed;
-
-                // Only apply the upward hop when grounded; skip it for air side dashes
-                // so we don't mess up the player's existing air trajectory
-                if (motor.IsGrounded)
-                {
-                    float upSpeed = GetJumpSpeedForHeight(sideDashUpOffset);
-                    Vector3 verticalVel = Vector3.Project(vel, up);
-                    vel -= verticalVel;
-                    vel += up * upSpeed;
-                }
-
-                RB.linearVelocity = vel;
-
-                isSideDashing = true;
-                sideDashElapsed = 0f;
-
-                hitWindowEndTime = dashEndTime + hitWindowAfterDash;
-
-                nextDashAllowedTime = Time.time + dashCooldown;
-
-                StartDashFlipRoll(currentDashType);
-
-                isDashing = false;
-                dashJustStarted = false;
-                return;
-            }
-        }
-
-        //Vector3 upDash = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
-
-        // no need to be grounded to dash forward or backward
-        Vector3 upDash = Vector3.up;
+        Vector3 upDash = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
 
         Vector3 worldDir = transform.TransformDirection(inputDir.normalized);
         dashDirection = Vector3.ProjectOnPlane(worldDir, upDash).normalized;
@@ -244,8 +239,7 @@ public class DashAbility : MonoBehaviour
     {
         if (!isDashing) return;
 
-        //Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
-        Vector3 up = Vector3.up;
+        Vector3 up = motor.IsGrounded ? motor.GroundNormal : Vector3.up;
 
         if (dashJustStarted)
         {
@@ -264,21 +258,17 @@ public class DashAbility : MonoBehaviour
             motor.MaxSpeedMultiplier = dashSpeedBoostMultiplier;
 
             Vector3 newVel = newPlanarVel;
-            // only apply the upward hop when grounded; skip it for air dashes so we don't mess up the player's existing air trajectory
-            if (motor.IsGrounded)
-            {
-                float upSpeed = GetJumpSpeedForHeight(dashHopHeight);
-                newVel += up * upSpeed;
+            float upSpeed = GetJumpSpeedForHeight(dashHopHeight);
+            newVel += up * upSpeed;
 
-            }
             RB.linearVelocity = newVel;
         }
         else
         {
             Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, up);
             Vector3 desiredVel = Vector3.ProjectOnPlane(dashDirection, up).normalized * dashSpeed;
+
             Vector3 velDiff = desiredVel - planarVel;
-            
             RB.AddForce(velDiff, ForceMode.Acceleration);
         }
 

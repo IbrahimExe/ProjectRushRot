@@ -13,8 +13,7 @@ GameObject:
   - component: {fileID: 816720375400711637}
   - component: {fileID: 8427297465576109279}
   - component: {fileID: 76605870375569271}
-  - component: {fileID: 4710238266777898506}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Acorn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -114,21 +113,6 @@ MonoBehaviour:
   explosionRadius: 10
   explosionForce: 1000
   explosionVFX: {fileID: 0}
---- !u!114 &4710238266777898506
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4174756036991080352}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
-  destroyableByAbilities:
-  - shield
-  returnToPoolInsteadOfDestroy: 1
 --- !u!1001 &3331511877932928011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -189,29 +173,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8391222552659086748, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
-      propertyPath: m_Layer
-      value: 7
-      objectReference: {fileID: 0}
-    - target: {fileID: -516098083770646512, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
-      propertyPath: m_Layer
-      value: 7
-      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
       propertyPath: m_Name
       value: AcornV1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
-      propertyPath: m_Layer
-      value: 7
-      objectReference: {fileID: 0}
-    - target: {fileID: 919132149155446097, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
       propertyPath: m_IsActive
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8416272007918961125, guid: b3f830c1258c6dd4387428a10d1be582, type: 3}
-      propertyPath: m_Layer
-      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

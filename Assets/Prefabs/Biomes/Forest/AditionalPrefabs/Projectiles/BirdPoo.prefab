@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7336013600989469083}
   - component: {fileID: 4102421695385778409}
   - component: {fileID: 8287229843930549720}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: pooPuddle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -126,8 +126,7 @@ GameObject:
   - component: {fileID: 1961651555123757697}
   - component: {fileID: 3159792352142372401}
   - component: {fileID: 6465949596440885018}
-  - component: {fileID: 471388593947824575}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: BirdPoo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -222,21 +221,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &471388593947824575
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7739569365764078801}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0dc4e8c245dd18940a6d05b58f9e3efb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AbilityDestructible
-  destroyableByAbilities:
-  - shield
-  returnToPoolInsteadOfDestroy: 1
 --- !u!1 &8951054075297917801
 GameObject:
   m_ObjectHideFlags: 0
@@ -249,7 +233,7 @@ GameObject:
   - component: {fileID: 3800853835709273904}
   - component: {fileID: 7208717691451818245}
   - component: {fileID: 5457533689857268713}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: poo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
