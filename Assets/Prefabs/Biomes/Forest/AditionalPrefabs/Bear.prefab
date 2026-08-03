@@ -75,7 +75,6 @@ MonoBehaviour:
   wanderRadius: 6
   waypointReachedDist: 0.5
   wanderPauseDuration: 1.5
-  stopDistance: 1.5
   losePlayerRange: 80
   losePlayerDelay: 3
   detectionRange: 4
@@ -85,8 +84,6 @@ MonoBehaviour:
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 128
-  separationRadius: 2
-  separationStrength: 3
   groundCheckDistance: 5
   groundOffset: 0.5
   groundFollowSpeed: 10
@@ -111,7 +108,8 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
-  - Dash
+  useDestroyVFX: 1
+  vfxLifetime: 1.5
   returnToPoolInsteadOfDestroy: 1
 --- !u!114 &-715763973502098380
 MonoBehaviour:

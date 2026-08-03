@@ -4,7 +4,6 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 
-[DisallowMultipleComponent]
 public class ScoreboardManager : MonoBehaviour
 {
     [Serializable]
@@ -13,7 +12,8 @@ public class ScoreboardManager : MonoBehaviour
         public string playerName;
         public int score;
         public float distance;
-        public int targetsDestroyed;
+        public float time;
+        public float averageSpeed;
         public string date;
     }
 
@@ -34,8 +34,7 @@ public class ScoreboardManager : MonoBehaviour
     [Header("Scoreboard Settings")]
     [SerializeField] private int maximumEntries = 10;
 
-    // New key prevents old time/average-speed entries from being loaded.
-    private const string SaveKey = "LocalScoreboard_DistanceDestroyed_V2";
+    private const string SaveKey = "LocalScoreboard";
 
     private ScoreboardData scoreboardData = new ScoreboardData();
 
@@ -44,7 +43,9 @@ public class ScoreboardManager : MonoBehaviour
         LoadScoreboard();
 
         if (resultsPanel != null)
+        {
             resultsPanel.SetActive(false);
+        }
 
         RefreshScoreboardUI();
     }
@@ -53,17 +54,24 @@ public class ScoreboardManager : MonoBehaviour
         string playerName,
         int score,
         float distance,
-        int targetsDestroyed)
+        float time,
+        float averageSpeed)
     {
+        Debug.Log("AddScore called");
+        Debug.Log($"AddScore called: {playerName}, {score}");
+
         if (string.IsNullOrWhiteSpace(playerName))
+        {
             playerName = "Player";
+        }
 
         ScoreEntry newEntry = new ScoreEntry
         {
             playerName = playerName,
             score = score,
             distance = distance,
-            targetsDestroyed = targetsDestroyed,
+            time = time,
+            averageSpeed = averageSpeed,
             date = DateTime.Now.ToString("yyyy-MM-dd")
         };
 
@@ -80,7 +88,9 @@ public class ScoreboardManager : MonoBehaviour
         RefreshScoreboardUI();
 
         if (resultsPanel != null)
+        {
             resultsPanel.SetActive(true);
+        }
     }
 
     private void ShowCurrentRun(ScoreEntry entry)
@@ -88,43 +98,23 @@ public class ScoreboardManager : MonoBehaviour
         if (currentRunText == null)
             return;
 
-        float distanceMultiplier =
-            scoreManager != null
-                ? scoreManager.DistanceMultiplier
-                : 1f;
-
-        float destructionMultiplier =
-            scoreManager != null
-                ? scoreManager.DestructionMultiplier
-                : 100f;
-
-        float distancePoints =
-            entry.distance * distanceMultiplier;
-
-        float destructionPoints =
-            entry.targetsDestroyed * destructionMultiplier;
+        string formattedTime = FormatTime(entry.time);
 
         currentRunText.text =
             $"RUN COMPLETE\n\n" +
-            $"Score: {entry.score:N0}\n\n" +
+            $"Score: {entry.score:N0}\n" +
             $"Distance: {entry.distance:0.0} m\n" +
-            $"{entry.distance:0.0} × {distanceMultiplier:0.##}" +
-            $" = {distancePoints:N0}\n\n" +
-            $"Destroyed: {entry.targetsDestroyed}\n" +
-            $"{entry.targetsDestroyed} × {destructionMultiplier:0.##}" +
-            $" = {destructionPoints:N0}\n\n" +
-            $"Total: {distancePoints:N0} + " +
-            $"{destructionPoints:N0} = {entry.score:N0}";
+            $"Time: {formattedTime}\n" +
+            $"Average Speed: {entry.averageSpeed:0.0} m/s";
     }
 
     public void SubmitPlayerScore()
     {
+        Debug.Log("SubmitPlayerScore called.");
+
         if (scoreManager == null)
         {
-            Debug.LogError(
-                "ScoreboardManager: ScoreManager reference is missing."
-            );
-
+            Debug.LogError("ScoreboardManager: ScoreManager reference is missing.");
             return;
         }
 
@@ -194,10 +184,15 @@ public class ScoreboardManager : MonoBehaviour
             JsonUtility.FromJson<ScoreboardData>(json);
 
         if (scoreboardData == null)
+        {
             scoreboardData = new ScoreboardData();
+        }
 
         if (scoreboardData.entries == null)
-            scoreboardData.entries = new List<ScoreEntry>();
+        {
+            scoreboardData.entries =
+                new List<ScoreEntry>();
+        }
 
         scoreboardData.entries = scoreboardData.entries
             .OrderByDescending(entry => entry.score)
@@ -205,10 +200,24 @@ public class ScoreboardManager : MonoBehaviour
             .ToList();
     }
 
+    private string FormatTime(float elapsedTime)
+    {
+        int totalHundredths =
+            Mathf.FloorToInt(elapsedTime * 100f);
+
+        int minutes = totalHundredths / 6000;
+        int seconds = (totalHundredths / 100) % 60;
+        int hundredths = totalHundredths % 100;
+
+        return $"{minutes:00}:{seconds:00}.{hundredths:00}";
+    }
+
     public void HideResults()
     {
         if (resultsPanel != null)
+        {
             resultsPanel.SetActive(false);
+        }
     }
 
     [ContextMenu("Clear Scoreboard")]
@@ -222,7 +231,9 @@ public class ScoreboardManager : MonoBehaviour
         RefreshScoreboardUI();
 
         if (currentRunText != null)
+        {
             currentRunText.text = "";
+        }
 
         Debug.Log("Scoreboard cleared.");
     }
