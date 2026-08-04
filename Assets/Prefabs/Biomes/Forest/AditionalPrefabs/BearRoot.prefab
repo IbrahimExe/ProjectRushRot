@@ -40,6 +40,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 699835495974583329}
     m_Modifications:
+    - target: {fileID: 1602274331314793161, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: destroyableByAbilities.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1602274331314793161, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: 'destroyableByAbilities.Array.data[3]'
+      value: Dash
+      objectReference: {fileID: 0}
     - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
       propertyPath: rayCount
       value: 1

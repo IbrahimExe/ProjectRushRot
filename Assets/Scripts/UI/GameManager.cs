@@ -49,7 +49,7 @@ public class GameManager : MonoBehaviour
 
     void Initialize()
     {
-        GameState.StartGame();
+        //GameState.StartGame(); uncomment this line if you are not in the totorial or procedural level scene to be able to move
         if (pauseMenuUI)
             pauseMenuUI.SetActive(false);
 
