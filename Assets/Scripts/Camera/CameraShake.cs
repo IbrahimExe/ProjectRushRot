@@ -11,18 +11,22 @@ public class CameraShake : MonoBehaviour {
 
     private void Awake()
     {
+        //Debug.LogError("CameraShake: Awake running, registering with ServiceLocator.");
+        ServiceLocator.Register<CameraShake>(this);
+
         if (virtualCamera == null)
         {
-            Debug.LogError("CameraShake: virtualCamera reference not assigned in the Inspector.");
+            //Debug.LogError("CameraShake: virtualCamera reference not assigned in the Inspector.");
             return;
         }
 
         // GetCinemachineComponent is non-generic; pass the stage and cast the result.
         noise = virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Noise) as CinemachineBasicMultiChannelPerlin;
+        //Debug.LogError("CameraShake: Awake running, noise component retrieved: " + (noise != null ? "Success" : "Failure"));
 
         if (noise == null)
         {
-            Debug.LogError("CameraShake: virtualCamera has no CinemachineBasicMultiChannelPerlin noise component.");
+            //Debug.LogError("CameraShake: virtualCamera has no CinemachineBasicMultiChannelPerlin noise component.");
             return;
         }
 
@@ -34,7 +38,7 @@ public class CameraShake : MonoBehaviour {
     {
         if (noise == null)
         {
-            Debug.LogError("CameraShake: Shake() called but noise is null — check earlier Awake error.");
+            //Debug.LogError("CameraShake: Shake() called but noise is null — check earlier Awake error.");
             return;
         }
 

@@ -16,7 +16,6 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
     private PooledObject pooledObject;
 
     [Header("CamShake Param")]
-    [SerializeField] private CameraShake camShake;
     [SerializeField] private float camShakeDurationSEC = 0.5f;
     [SerializeField] private float camShakeMagnitude = 1f;
 
@@ -38,6 +37,13 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
     public void DestroyByAbility(string abilityId, GameObject source)
     {
+       // Debug.LogError($"DestroyByAbility called with abilityId={abilityId}");
+
+        if (!CanBeDestroyedBy(abilityId))
+        {
+           // Debug.LogError("CanBeDestroyedBy returned false — exiting early.");
+            return;
+        }
         if (!CanBeDestroyedBy(abilityId))
             return;
 
@@ -54,7 +60,13 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
 
         //CamShake
-        camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+        CameraShake camShake = ServiceLocator.Get<CameraShake>();
+        Debug.LogError($"CameraShake service retrieved: {camShake != null}");
+        if (camShake != null)
+        {
+            camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+            Debug.LogError($"Camera shake triggered with magnitude={camShakeMagnitude} and duration={camShakeDurationSEC}");
+        }
         //Particles
 
         //Audio
