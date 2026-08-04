@@ -147,8 +147,8 @@ public class AltExpManager : MonoBehaviour
             }
         }
 
-        if (debugLog)
-            Debug.Log($"[ExperienceManager] Cached — Rigidbody:{cachedRb != null}, CharacterController:{cachedChar != null}, Custom:{cachedCustomComp != null}");
+       // if (debugLog)
+        //    Debug.Log($"[ExperienceManager] Cached — Rigidbody:{cachedRb != null}, CharacterController:{cachedChar != null}, Custom:{cachedCustomComp != null}");
     }
 
     private void Update()

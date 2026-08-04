@@ -40,6 +40,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 699835495974583329}
     m_Modifications:
+    - target: {fileID: 1602274331314793161, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: camShakeMagnitude
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1602274331314793161, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: destroyableByAbilities.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1602274331314793161, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: 'destroyableByAbilities.Array.data[3]'
+      value: Dash
+      objectReference: {fileID: 0}
     - target: {fileID: 3181499076207763430, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
       propertyPath: rayCount
       value: 1
@@ -111,6 +123,10 @@ PrefabInstance:
     - target: {fileID: 6330265966686180977, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9136374516153413635, guid: 05c33caabad0fbf4ca5ee440b3cc74c7, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

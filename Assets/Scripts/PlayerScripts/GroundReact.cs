@@ -198,7 +198,7 @@ public class GroundReact : MonoBehaviour
                 debuffReceiver.ApplyDebuff(DebuffType.Slow, waterSlowAmount, waterDebuffDuration);
                 break;
         }
-        Debug.Log("Terrain Debuff: " + region);
+        //Debug.Log("Terrain Debuff: " + region);
     }
 
     private bool IsMushroomProtected()
@@ -235,9 +235,9 @@ public class GroundReact : MonoBehaviour
         lastSafeRotation = player.transform.rotation;
         hasSafePosition = true;
 
-        Debug.Log(
-    $"SAFE SAVE: {region} at {player.transform.position}"
-);
+   //     Debug.Log(
+   // $"SAFE SAVE: {region} at {player.transform.position}"
+   //);
     }
 
     private void RespawnToLastSafePosition()

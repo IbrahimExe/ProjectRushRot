@@ -29,7 +29,11 @@ public class PlayerAbilityContext
 
     public bool TryDestroyWithAbility(Collider col, string abilityId)
     {
-        IAbilityDestructible destructible = col.GetComponentInParent<IAbilityDestructible>();
+        if (col == null)
+            return false;
+
+        IAbilityDestructible destructible =
+            col.GetComponentInParent<IAbilityDestructible>();
 
         if (destructible == null)
             return false;
@@ -37,7 +41,14 @@ public class PlayerAbilityContext
         if (!destructible.CanBeDestroyedBy(abilityId))
             return false;
 
-        destructible.DestroyByAbility(abilityId, player.gameObject);
+        destructible.DestroyByAbility(
+            abilityId,
+            player != null ? player.gameObject : null
+        );
+
+        if (RunStatsTracker.Instance != null)
+            RunStatsTracker.Instance.RegisterDestruction();
+
         return true;
     }
 }

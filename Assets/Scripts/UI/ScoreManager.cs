@@ -1,23 +1,66 @@
 using UnityEngine;
 
+[DisallowMultipleComponent]
 public class ScoreManager : MonoBehaviour
 {
+    public static ScoreManager Instance { get; private set; }
+
     [Header("References")]
-    [SerializeField] private LevelTimer levelTimer;
     [SerializeField] private DistanceTracker distanceTracker;
     [SerializeField] private ScoreboardManager scoreboardManager;
 
     [Header("Score Settings")]
-    [SerializeField] private float distanceMultiplier = 100f;
-    [SerializeField] private float speedMultiplier = 500f;
+    [Tooltip("Points awarded for each metre travelled.")]
+    [SerializeField] private float distanceMultiplier = 1f;
+
+    [Tooltip("Points awarded for each enemy or obstacle destroyed.")]
+    [SerializeField] private float destructionMultiplier = 100f;
 
     private bool runPrepared;
     private bool runSubmitted;
 
-    private float finalTime;
     private float finalDistance;
-    private float averageSpeed;
+    private int targetsDestroyed;
     private int finalScore;
+
+    public float FinalDistance => finalDistance;
+    public int TargetsDestroyed => targetsDestroyed;
+    public int FinalScore => finalScore;
+
+    public float DistanceMultiplier => distanceMultiplier;
+    public float DestructionMultiplier => destructionMultiplier;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning(
+                "Multiple ScoreManager instances detected. " +
+                "The newest instance will replace the previous reference."
+            );
+        }
+
+        Instance = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    public void RegisterDestroyedTarget()
+    {
+        // Do not change a completed run after its results have been prepared.
+        if (runPrepared)
+            return;
+
+        targetsDestroyed++;
+
+        Debug.Log(
+            $"Destroyed targets: {targetsDestroyed}"
+        );
+    }
 
     public void PrepareRun()
     {
@@ -26,24 +69,33 @@ public class ScoreManager : MonoBehaviour
 
         runPrepared = true;
 
-        levelTimer.StopTimer();
-        distanceTracker.StopTracking();
+        if (distanceTracker != null)
+        {
+            distanceTracker.StopTracking();
+            finalDistance = distanceTracker.GetDistance();
+        }
+        else
+        {
+            Debug.LogError(
+                "ScoreManager: DistanceTracker reference is missing."
+            );
 
-        finalTime = levelTimer.GetElapsedTime();
-        finalDistance = distanceTracker.GetDistance();
-
-        averageSpeed =
-            finalDistance / Mathf.Max(finalTime, 0.01f);
+            finalDistance = 0f;
+        }
 
         finalScore = Mathf.RoundToInt(
             finalDistance * distanceMultiplier +
-            averageSpeed * speedMultiplier
+            targetsDestroyed * destructionMultiplier
+        );
+
+        Debug.Log(
+            $"Run prepared — Distance: {finalDistance:0.0} m, " +
+            $"Destroyed: {targetsDestroyed}, Score: {finalScore}"
         );
     }
 
     public void SubmitPreparedRun(string playerName)
     {
-        Debug.Log($"Submitting score for {playerName}");
         if (runSubmitted)
             return;
 
@@ -53,14 +105,22 @@ public class ScoreManager : MonoBehaviour
         if (string.IsNullOrWhiteSpace(playerName))
             playerName = "Player";
 
+        if (scoreboardManager == null)
+        {
+            Debug.LogError(
+                "ScoreManager: ScoreboardManager reference is missing."
+            );
+
+            return;
+        }
+
         runSubmitted = true;
 
         scoreboardManager.AddScore(
             playerName.Trim(),
             finalScore,
             finalDistance,
-            finalTime,
-            averageSpeed
+            targetsDestroyed
         );
     }
 
@@ -69,9 +129,8 @@ public class ScoreManager : MonoBehaviour
         runPrepared = false;
         runSubmitted = false;
 
-        finalTime = 0f;
         finalDistance = 0f;
-        averageSpeed = 0f;
+        targetsDestroyed = 0;
         finalScore = 0;
     }
 }

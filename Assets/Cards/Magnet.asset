@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f0b20e8d20fe0649bb21d285c306d4d, type: 3}
   m_Name: Magnet
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
-  cardImage: {fileID: 0}
+  cardImage: {fileID: 21300000, guid: a3736bd440f5cd94e86aba953257453c, type: 3}
   cardText: Collectible Magnet
   cardEffect: 18
   effectValue: 0

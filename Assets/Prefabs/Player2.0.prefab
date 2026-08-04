@@ -43,9 +43,11 @@ GameObject:
   - component: {fileID: 2946657206990674743}
   - component: {fileID: 7327210272813586765}
   - component: {fileID: 4911145815367671913}
-  - component: {fileID: 282803726558574268}
+  - component: {fileID: 3143862680260065762}
   - component: {fileID: 281143799440115732}
+  - component: {fileID: 282803726558574268}
   - component: {fileID: 6250246595231587975}
+  - component: {fileID: 1029178402293945843}
   m_Layer: 0
   m_Name: PlayerCamera
   m_TagString: Player
@@ -203,23 +205,23 @@ MonoBehaviour:
     Time: 0
     Smoothing: 0
     IgnoreY: 0
---- !u!114 &282803726558574268
+--- !u!114 &3143862680260065762
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4636364567374257377}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a076c17fe76165e4f8ed21498b877bf9, type: 3}
+  m_Script: {fileID: 11500000, guid: 68bb026fafb42b14791938953eaace77, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineFreeLookModifier
-  Easing: 0
-  Modifiers: []
-  references:
-    version: 2
-    RefIds: []
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBasicMultiChannelPerlin
+  NoiseProfile: {fileID: 11400000, guid: e9ce97b7a206dc64d90931ea044e0c72, type: 2}
+  PivotOffset: {x: 0, y: 0, z: 0}
+  AmplitudeGain: 1
+  FrequencyGain: 1
+  m_NoiseOffsets: {x: 0, y: 0, z: 0}
 --- !u!114 &281143799440115732
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,6 +280,23 @@ MonoBehaviour:
         DecelTime: 0
   PlayerIndex: -1
   AutoEnableInputs: 1
+--- !u!114 &282803726558574268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4636364567374257377}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a076c17fe76165e4f8ed21498b877bf9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineFreeLookModifier
+  Easing: 0
+  Modifiers: []
+  references:
+    version: 2
+    RefIds: []
 --- !u!114 &6250246595231587975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -317,6 +336,19 @@ MonoBehaviour:
     NearLimit: 5
     FarLimit: 22
     MaxQualityBoost: 2
+--- !u!114 &1029178402293945843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4636364567374257377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66af7ea02c874804fae388b4024f75fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
+  virtualCamera: {fileID: 2946657206990674743}
 --- !u!1 &4940313654620728586
 GameObject:
   m_ObjectHideFlags: 0
@@ -459,9 +491,14 @@ MonoBehaviour:
   enableAirMovementTilt: 1
   airTiltAngle: 10
   airTiltSpeed: 2
+  debuffMoveMultiplier: 1
+  debuffJumpMultiplier: 1
+  debuffAmountMultiplier: 1
+  debuffDurationMultiplier: 1
   dash: {fileID: 7188365373034891474}
   wallRun: {fileID: 8129584585677567498}
   wallJump: {fileID: 5394457895109117774}
+  lastGroundRegion: 
   baseDashKillWindow: 0.25
   baseJumpAwayImpulse: 50
   baseJumpUpImpulse: 25

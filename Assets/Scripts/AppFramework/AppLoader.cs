@@ -47,7 +47,7 @@ public class AppLoader : SystemLoader
     /// </summary>
     private void ClearStatics()
     {
-        Debug.Log($"{nameof(ClearStatics)}");
+        //Debug.Log($"{nameof(ClearStatics)}");
         ServiceLocator.Clear();
     }
 
@@ -56,7 +56,7 @@ public class AppLoader : SystemLoader
     /// </summary>
     private void RegisterSystems()
     {
-        Debug.Log($"{nameof(RegisterSystems)}");
+        //Debug.Log($"{nameof(RegisterSystems)}");
 
         PerkManager pm = new PerkManager();
         ServiceLocator.Register<PerkManager>(pm);
@@ -71,6 +71,17 @@ public class AppLoader : SystemLoader
         else
         {
             Debug.LogError("ObjectPoolManager not found in scene.");
+        }
+
+        CameraShake camShake = FindMonoSystem<CameraShake>();
+
+        if (camShake != null)
+        {
+            ServiceLocator.Register<CameraShake>(camShake);
+        }
+        else
+        {
+            Debug.LogError("CameraShake not found in scene.");
         }
 
         //ProjectilePoolManager projectilePoolManager = FindMonoSystem<ProjectilePoolManager>();
