@@ -11,8 +11,6 @@ public class CameraShake : MonoBehaviour {
 
     private void Awake()
     {
-        //Debug.LogError("CameraShake: Awake running, registering with ServiceLocator.");
-        ServiceLocator.Register<CameraShake>(this);
 
         if (virtualCamera == null)
         {

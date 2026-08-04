@@ -73,6 +73,17 @@ public class AppLoader : SystemLoader
             Debug.LogError("ObjectPoolManager not found in scene.");
         }
 
+        CameraShake camShake = FindMonoSystem<CameraShake>();
+
+        if (camShake != null)
+        {
+            ServiceLocator.Register<CameraShake>(camShake);
+        }
+        else
+        {
+            Debug.LogError("CameraShake not found in scene.");
+        }
+
         //ProjectilePoolManager projectilePoolManager = FindMonoSystem<ProjectilePoolManager>();
         //if (projectilePoolManager != null)
         //{
