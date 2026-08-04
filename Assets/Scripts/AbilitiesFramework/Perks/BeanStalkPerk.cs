@@ -34,10 +34,21 @@ public class BeanStalkPerk : AbilityBase
     private float cooldownTimer;
     private readonly List<GameObject> activePieces = new();
 
-    public override void Tick(PlayerAbilityContext ctx, int level, float deltaTime)
+    public override void Tick(
+       PlayerAbilityContext ctx,
+       int level,
+       float deltaTime)
     {
         if (cooldownTimer > 0f)
-            cooldownTimer -= deltaTime;
+            cooldownTimer = Mathf.Max(0f, cooldownTimer - deltaTime);
+    }
+
+    public override void OnApply(PlayerAbilityContext ctx, int level)
+    {
+        cooldownTimer = 0f;
+        currentCooldown = GetCooldown(level);
+
+        activePieces.Clear();
     }
 
     public override bool TryUse(PlayerAbilityContext ctx, int level)
@@ -45,15 +56,18 @@ public class BeanStalkPerk : AbilityBase
         if (cooldownTimer > 0f)
             return false;
 
-        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        ObjectPoolManager poolManager = GetPoolManager();
 
-        //if (poolManager == null)
-        //{
-        //    Debug.LogError("ObjectPoolManager service not found.");
-        //    return false;
-        //}
+        if (poolManager == null)
+        {
+            Debug.LogError(
+                "BeanStalkPerk: ObjectPoolManager service was not found."
+            );
 
-        ClearOldPieces();
+            return false;
+        }
+
+        // Remaining method stays the same...
 
         int count = Mathf.Max(4, basePieces + piecesPerLevel * (level - 1));
 
@@ -147,32 +161,16 @@ public class BeanStalkPerk : AbilityBase
         return Mathf.Max(minimumCooldown, baseCooldown - cooldownReductionPerLevel * (level - 1));
     }
 
-    private void ClearOldPieces()
-    {
-        for (int i = activePieces.Count - 1; i >= 0; i--)
-        {
-            if (activePieces[i] == null)
-                continue;
-
-            PooledObject pooled = activePieces[i].GetComponent<PooledObject>();
-
-            if (pooled != null)
-                pooled.ReturnToPool();
-            else
-                activePieces[i].SetActive(false);
-        }
-
-        activePieces.Clear();
-    }
-
-    private System.Collections.IEnumerator ReturnAfterDelay(GameObject obj, float delay)
+    private System.Collections.IEnumerator ReturnAfterDelay(
+      GameObject obj,
+      float delay)
     {
         yield return new WaitForSeconds(delay);
 
         if (obj == null)
             yield break;
 
-        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        ObjectPoolManager poolManager = GetPoolManager();
 
         if (poolManager != null)
             poolManager.Return("Beanstalk", obj);

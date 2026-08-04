@@ -22,12 +22,32 @@ public class ObjectPoolManager : MonoBehaviour
     //    SystemLoader.CallOnComplete(Initialize);
     //}
 
+    private void Awake()
+    {
+        // Every newly loaded gameplay scene gets a new pool manager.
+        // Initialize it immediately because AppLoader may already have completed.
+        Initialize();
+
+        // Replace the old/destroyed scene reference in the locator.
+        ServiceLocator.Register<ObjectPoolManager>(this);
+
+        Debug.Log(
+            $"ObjectPoolManager Awake: initialized and registered " +
+            $"instance {GetInstanceID()} in scene {gameObject.scene.name}"
+        );
+    }
+
     public void Initialize()
     {
+        if (_initialized)
+            return;
+
         Debug.Log("Initializing ObjectPoolManager...");
+
         InitializePools();
 
         _initialized = true;
+
         Debug.Log("ObjectPoolManager initialization complete.");
     }
 

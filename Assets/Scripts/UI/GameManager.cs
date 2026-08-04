@@ -65,12 +65,19 @@ public class GameManager : MonoBehaviour
 
         if (_poolManager != null)
         {
-            _poolManager.Initialize();
             ServiceLocator.Register<ObjectPoolManager>(_poolManager);
+            _poolManager.Initialize();
+
+            Debug.Log(
+                $"GameManager registered ObjectPoolManager: " +
+                $"{_poolManager.GetInstanceID()}"
+            );
         }
         else
         {
-            Debug.LogError("GameManager: ObjectPoolManager reference is missing.");
+            Debug.LogError(
+                "GameManager: ObjectPoolManager reference is missing."
+            );
         }
     }
 
@@ -222,14 +229,17 @@ public class GameManager : MonoBehaviour
         if (pauseAudio)
             AudioListener.pause = false;
 
-        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+        PlayerAbilityRunner runner =
+            FindFirstObjectByType<PlayerAbilityRunner>();
+
         if (runner != null)
             runner.ClearAllPerks();
 
-        // Clear terrain state before reload
         EndlessTerrain.CleanupForReload();
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().buildIndex
+        );
     }
 
     public void OnQuitToMenuButton()

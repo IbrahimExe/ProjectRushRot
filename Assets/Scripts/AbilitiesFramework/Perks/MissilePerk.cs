@@ -22,7 +22,10 @@ public class MissilePerk : AbilityBase
 
     public override void OnApply(PlayerAbilityContext ctx, int level)
     {
+        visuals.Clear();
+
         currentMissiles = GetMaxMissiles(level);
+        rechargeTimer = 0f;
     }
 
     public override void Tick(PlayerAbilityContext ctx, int level, float deltaTime)
@@ -162,30 +165,52 @@ public class MissilePerk : AbilityBase
 
     private void EnsureVisualCount(int amount)
     {
-        ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
+        ObjectPoolManager poolManager = GetPoolManager();
 
-        //if (poolManager == null)
-        //{
-        //    Debug.LogError("ObjectPoolManager service not found.");
-        //    return;
-        //}
+        if (poolManager == null)
+        {
+            Debug.LogError(
+                "MissilePerk: ObjectPoolManager service was not found."
+            );
+
+            return;
+        }
+
+        // Remove references destroyed during scene reload.
+        visuals.RemoveAll(visual => visual == null);
 
         while (visuals.Count < amount)
         {
-            GameObject visual = poolManager.Get("MissileVisual", Vector3.zero, Quaternion.identity);
+            GameObject visual = poolManager.Get(
+                "MissileVisual",
+                Vector3.zero,
+                Quaternion.identity
+            );
 
             if (visual == null)
+            {
+                Debug.LogError(
+                    "MissilePerk: Failed to get MissileVisual from pool."
+                );
+
                 return;
+            }
 
             visual.SetActive(false);
 
             Collider col = visual.GetComponent<Collider>();
+
             if (col != null)
                 col.enabled = false;
 
             Rigidbody rb = visual.GetComponent<Rigidbody>();
+
             if (rb != null)
+            {
                 rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
 
             visual.layer = LayerMask.NameToLayer("Ignore Raycast");
 
