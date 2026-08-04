@@ -84,11 +84,14 @@ private bool hasBeenDestroyed;
             gameObject.SetActive(false);
         }
 
-
         //CamShake
-        camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+        if (camShake != null)
+        {
+            camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+        }
         //Particles
 
         //Audio
+
     }
 }

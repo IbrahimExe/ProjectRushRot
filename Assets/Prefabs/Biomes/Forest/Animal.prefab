@@ -152,6 +152,9 @@ MonoBehaviour:
   - ground_pound
   - Dash
   returnToPoolInsteadOfDestroy: 1
+  camShake: {fileID: 0}
+  camShakeDurationSEC: 0.5
+  camShakeMagnitude: 1
 --- !u!114 &-1950175630046553182
 MonoBehaviour:
   m_ObjectHideFlags: 0
