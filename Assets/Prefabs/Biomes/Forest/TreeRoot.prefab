@@ -202,6 +202,9 @@ MonoBehaviour:
   - shield
   - ground_pound
   returnToPoolInsteadOfDestroy: 1
+  camShake: {fileID: 0}
+  camShakeDurationSEC: 0.5
+  camShakeMagnitude: 1
 --- !u!114 &-3065108485767748364
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,7 +226,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8578627909741147788}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: pushPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}

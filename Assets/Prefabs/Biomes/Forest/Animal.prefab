@@ -150,7 +150,8 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
-  - Dash
+  useDestroyVFX: 1
+  vfxLifetime: 1.5
   returnToPoolInsteadOfDestroy: 1
   camShake: {fileID: 0}
   camShakeDurationSEC: 0.5
