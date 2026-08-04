@@ -112,7 +112,7 @@ MonoBehaviour:
   - shield
   - ground_pound
   returnToPoolInsteadOfDestroy: 1
-  camShakeDurationSEC: 10
+  camShakeDurationSEC: 0.3
   camShakeMagnitude: 100
 --- !u!114 &-715763973502098380
 MonoBehaviour:
