@@ -12,6 +12,8 @@ public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance { get; private set; }
 
+    public event System.Action OnInventoryChanged;
+
     private string savePath;
     private InventoryData inventoryData = new InventoryData();
 
@@ -46,6 +48,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         SaveInventory();
+        OnInventoryChanged?.Invoke();
         Debug.Log($"<color=green>[Inventory]</color> Collected: <b>{type}</b>. Total count: {GetItemCount(type)}");
     }
 
@@ -61,13 +64,29 @@ public class InventoryManager : MonoBehaviour
             inventoryData.items.Add(new InventoryEntry { type = type, count = count });
         }
         SaveInventory();
+        OnInventoryChanged?.Invoke();
         Debug.Log($"<color=orange>[Inventory]</color> Set <b>{type}</b> to: {count}");
+    }
+
+    public bool SpendItem(string type, int count)
+    {
+        InventoryEntry entry = inventoryData.items.Find(i => i.type == type);
+        if (entry != null && entry.count >= count)
+        {
+            entry.count -= count;
+            SaveInventory();
+            OnInventoryChanged?.Invoke();
+            Debug.Log($"<color=yellow>[Inventory]</color> Spent {count} of <b>{type}</b>. Remaining: {entry.count}");
+            return true;
+        }
+        return false;
     }
 
     public void ResetInventory()
     {
         inventoryData.items.Clear();
         SaveInventory();
+        OnInventoryChanged?.Invoke();
         Debug.Log("<color=red>[Inventory]</color> Inventory has been reset.");
     }
 

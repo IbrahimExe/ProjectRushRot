@@ -10,6 +10,17 @@ public class PlayerCharacterData : ScriptableObject
     public Vector3 modelScale = Vector3.one;
     public Vector3 modelRotation = Vector3.zero;
 
+    [Header("Skin & Shop Settings")]
+    [Tooltip("Category column: Skateboard, Trolley, or CheeseWheel")]
+    public string characterCategory = "Skateboard";
+    [Tooltip("Unique ID for saving unlock state in PlayerPrefs")]
+    public string skinId = "skateboard_default";
+    public string skinName = "Default Skateboard";
+    public Sprite skinIcon;
+    [Tooltip("Coin cost to unlock this skin")]
+    public int coinCost = 100;
+    public bool isDefaultUnlocked = false;
+
     [Header("Base Stats")]
     public float maxMoveSpeed = 50f;
     public float acceleration = 25f;

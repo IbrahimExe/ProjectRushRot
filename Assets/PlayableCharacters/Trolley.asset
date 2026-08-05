@@ -16,6 +16,13 @@ MonoBehaviour:
   modelOffset: {x: 0, y: -2.17, z: 0}
   modelScale: {x: 1, y: 1, z: 1}
   modelRotation: {x: 0, y: -90, z: 0}
+  characterCategory: Trolley
+  skinId: trolley_default
+  skinName: Default Trolley
+  skinIcon: {fileID: 0}
+  coinCost: 0
+  isDefaultUnlocked: 1
+
   maxMoveSpeed: 80
   acceleration: 35
   deceleration: 25

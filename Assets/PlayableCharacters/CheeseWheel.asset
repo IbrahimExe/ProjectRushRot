@@ -16,6 +16,13 @@ MonoBehaviour:
   modelOffset: {x: 0, y: 1, z: 0}
   modelScale: {x: 100, y: 100, z: 100}
   modelRotation: {x: 0, y: -90, z: -90}
+  characterCategory: CheeseWheel
+  skinId: cheesewheel_default
+  skinName: Default Cheese Wheel
+  skinIcon: {fileID: 0}
+  coinCost: 0
+  isDefaultUnlocked: 1
+
   maxMoveSpeed: 70
   acceleration: 35
   deceleration: 25
