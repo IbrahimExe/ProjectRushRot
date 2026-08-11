@@ -26,6 +26,31 @@ public abstract class AbilityBase : ScriptableObject
         return 1f;
     }
 
+    protected ObjectPoolManager GetPoolManager()
+    {
+        ObjectPoolManager poolManager =
+            ServiceLocator.Get<ObjectPoolManager>();
+
+        if (poolManager != null)
+            return poolManager;
+
+        poolManager =
+            Object.FindFirstObjectByType<ObjectPoolManager>();
+
+        if (poolManager == null)
+            return null;
+
+        poolManager.Initialize();
+        ServiceLocator.Register<ObjectPoolManager>(poolManager);
+
+        Debug.Log(
+            $"{name}: recovered ObjectPoolManager " +
+            $"{poolManager.GetInstanceID()} from the current scene."
+        );
+
+        return poolManager;
+    }
+
     public virtual bool IsReady()
     {
         return true;

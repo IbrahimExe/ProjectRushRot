@@ -15,6 +15,9 @@ public class GameManager : MonoBehaviour
     public GameObject countdownUI;      // Panel for countdown
     public TMP_Text countdownText;      // TextMeshPro countdown display
 
+    [Header("Level-up selection")]
+    [SerializeField] private LevelUpCardSelector levelUpCardSelector;
+
     [Header("Win / Lose screens (assign so pause is disabled while they are active)")]
     public GameObject winScreen;
     public GameObject loseScreen;
@@ -38,6 +41,7 @@ public class GameManager : MonoBehaviour
     //health
     [SerializeField] private float hp = 3f;
 
+
     void Start()
     {
        SystemLoader.CallOnComplete(Initialize);
@@ -45,6 +49,8 @@ public class GameManager : MonoBehaviour
 
     void Initialize()
     {
+        //GameState.StartGame(); uncomment this line if you are not in the totorial or procedural level scene to be able to move
+        GameState.ResetGame();
         if (pauseMenuUI)
             pauseMenuUI.SetActive(false);
 
@@ -59,12 +65,19 @@ public class GameManager : MonoBehaviour
 
         if (_poolManager != null)
         {
-            _poolManager.Initialize();
             ServiceLocator.Register<ObjectPoolManager>(_poolManager);
+            _poolManager.Initialize();
+
+            Debug.Log(
+                $"GameManager registered ObjectPoolManager: " +
+                $"{_poolManager.GetInstanceID()}"
+            );
         }
         else
         {
-            Debug.LogError("GameManager: ObjectPoolManager reference is missing.");
+            Debug.LogError(
+                "GameManager: ObjectPoolManager reference is missing."
+            );
         }
     }
 
@@ -93,6 +106,9 @@ public class GameManager : MonoBehaviour
         // Disable gameplay scripts
         foreach (var comp in disableOnPause)
             if (comp != null) comp.enabled = false;
+
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPaused(true);
 
         Time.timeScale = 0f;
 
@@ -146,6 +162,9 @@ public class GameManager : MonoBehaviour
         // Resume gameplay
         Time.timeScale = 1f;
 
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPaused(false);
+
         if (pauseAudio)
             AudioListener.pause = false;
 
@@ -167,6 +186,9 @@ public class GameManager : MonoBehaviour
     {
         if (loseScreen != null && loseScreen.activeSelf)
             return;
+
+        if (levelUpCardSelector != null)
+            levelUpCardSelector.SetPlayerDead(true);
 
         if (scoreManager != null)
             scoreManager.PrepareRun();
@@ -202,18 +224,22 @@ public class GameManager : MonoBehaviour
     public void OnRestartButton()
     {
         Time.timeScale = 1f;
+        GameState.ResetGame();
 
         if (pauseAudio)
             AudioListener.pause = false;
 
-        PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
+        PlayerAbilityRunner runner =
+            FindFirstObjectByType<PlayerAbilityRunner>();
+
         if (runner != null)
             runner.ClearAllPerks();
 
-        // Clear terrain state before reload
         EndlessTerrain.CleanupForReload();
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().buildIndex
+        );
     }
 
     public void OnQuitToMenuButton()

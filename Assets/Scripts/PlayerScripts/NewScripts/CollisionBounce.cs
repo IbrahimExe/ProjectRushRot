@@ -8,6 +8,8 @@ public class CollisionBounce : MonoBehaviour
     [Range(0f, 1f)]
     public float bouncePercent = 0.4f;   // e.g. 40% of impact speed
     public float minImpactSpeed = 5f;    // ignore tiny bumps
+    public float camShakeMagnitude = 0.5f;
+    public float camShakeDurationSEC = 0.5f;
 
     private PlayerControllerBase player;
     private WallRunAbility wallRun;
@@ -45,5 +47,12 @@ public class CollisionBounce : MonoBehaviour
 
         // Tell BaseMove not to overwrite this velocity for one frame
         player.SuppressVelocityOverride = true;
+
+        CameraShake camShake = ServiceLocator.Get<CameraShake>();
+        if (camShake != null)
+        {
+            camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+            //Debug.LogError("AbilityDestructible: CameraShake found in ServiceLocator.");
+        }
     }
 }

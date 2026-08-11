@@ -15,6 +15,7 @@ public static class ServiceLocator
     /// </summary>
     public static void Clear()
     {
+       // Debug.LogError("ServiceLocator: Clear() called.");
         _serviceMap.Clear();
     }
 
@@ -27,7 +28,7 @@ public static class ServiceLocator
     {
         if (_serviceMap.ContainsKey(typeof(T)))
         {
-            Debug.LogError($"Service of type {service.GetType()} already registered");
+            //Debug.LogError($"Service of type {service.GetType()} already registered");
             return;
         }
 
@@ -42,6 +43,7 @@ public static class ServiceLocator
     {
         if(_serviceMap.ContainsKey(typeof(T)))
         {
+            Debug.LogError($"ServiceLocator: Deregister<{typeof(T)}> called.");
             _serviceMap.Remove(typeof(T));
         }
     }
@@ -71,6 +73,7 @@ public static class ServiceLocator
     {
         if (_serviceMap.ContainsKey(serviceType))
         {
+            Debug.LogError($"ServiceLocator: Deregister({serviceType}) called.");
             _serviceMap.Remove(serviceType);
         }
     }

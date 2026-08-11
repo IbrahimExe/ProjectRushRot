@@ -41,11 +41,14 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Curve")]
     public AnimationCurve easeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
+
     // ── Runtime ────────────────────────────────────────────────────────
 
     private List<RectTransform> spawned = new List<RectTransform>();
     private List<GameObject> spawnedObjects = new List<GameObject>();
     private int selectedIndex = 0;
+    private bool externallyPaused = false;
+    private bool gameEnded = false;
 
     // isOpen : cards on screen, accepting input
     // isBusy : coroutine is running ANY phase — gates TriggerLevelUp queuing
@@ -56,6 +59,45 @@ public class LevelUpCardSelector : MonoBehaviour
 
     private Vector2 panelHome;
     private bool panelHomeCached = false;
+
+    public void SetPaused(bool paused)
+    {
+        externallyPaused = paused;
+
+        bool shouldShow = !paused && !gameEnded;
+
+        foreach (GameObject card in spawnedObjects)
+        {
+            if (card != null)
+                card.SetActive(shouldShow);
+        }
+
+        if (panelBehindCards != null)
+            panelBehindCards.gameObject.SetActive(shouldShow && isBusy);
+    }
+
+    public void SetPlayerDead(bool dead)
+    {
+        gameEnded = dead;
+
+        if (!dead)
+            return;
+
+        queuedLevels = 0;
+        isOpen = false;
+        isBusy = false;
+
+        StopAllCoroutines();
+        DestroyAllCards();
+
+        if (panelBehindCards != null)
+        {
+            panelBehindCards.gameObject.SetActive(false);
+
+            if (panelHomeCached)
+                panelBehindCards.anchoredPosition = panelHome;
+        }
+    }
 
     // ── Init ───────────────────────────────────────────────────────────
 
@@ -75,6 +117,15 @@ public class LevelUpCardSelector : MonoBehaviour
 
     public void TriggerLevelUp()
     {
+        if (gameEnded)
+            return;
+
+        if (externallyPaused)
+        {
+            queuedLevels++;
+            return;
+        }
+
         if (deck == null || deck.Count == 0)
         {
             Debug.LogWarning("[LevelUpCardSelector] Deck is empty.");
@@ -204,42 +255,53 @@ public class LevelUpCardSelector : MonoBehaviour
         selectedIndex = 0;
         UpdateHighlightImmediate();
         isOpen = true;
-
         // ── 4. Input loop ─────────────────────────────────────────────
         while (isOpen)
-        {
-            float scroll = Input.mouseScrollDelta.y;
-            if (scroll > 0.001f)
             {
-                selectedIndex = Mathf.Max(0, selectedIndex - 1);
-                UpdateHighlightImmediate();
-            }
-            else if (scroll < -0.001f)
-            {
-                selectedIndex = Mathf.Min(spawned.Count - 1, selectedIndex + 1);
-                UpdateHighlightImmediate();
-            }
-
-            if (Input.GetMouseButtonDown(0)
-             || Input.GetMouseButtonDown(2)
-             || Input.GetKeyDown(KeyCode.Return)
-             || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (gameEnded)
             {
                 isOpen = false;
                 break;
             }
 
-            for (int i = 0; i < spawned.Count; i++)
+            if (externallyPaused)
             {
-                if (spawned[i] == null) continue;
-                Vector3 t = i == selectedIndex ? Vector3.one * highlightScale : Vector3.one;
-                spawned[i].localScale = Vector3.Lerp(
-                    spawned[i].localScale, t, Time.unscaledDeltaTime * scaleLerpSpeed);
+                yield return null;
+                continue;
             }
 
-            yield return null;
-        }
+            float scroll = Input.mouseScrollDelta.y;
+                if (scroll > 0.001f)
+                {
+                    selectedIndex = Mathf.Max(0, selectedIndex - 1);
+                    UpdateHighlightImmediate();
+                }
+                else if (scroll < -0.001f)
+                {
+                    selectedIndex = Mathf.Min(spawned.Count - 1, selectedIndex + 1);
+                    UpdateHighlightImmediate();
+                }
 
+                if (Input.GetMouseButtonDown(0)
+                 || Input.GetMouseButtonDown(2)
+                 || Input.GetKeyDown(KeyCode.Return)
+                 || Input.GetKeyDown(KeyCode.KeypadEnter))
+                {
+                    isOpen = false;
+                    break;
+                }
+
+                for (int i = 0; i < spawned.Count; i++)
+                {
+                    if (spawned[i] == null) continue;
+                    Vector3 t = i == selectedIndex ? Vector3.one * highlightScale : Vector3.one;
+                    spawned[i].localScale = Vector3.Lerp(
+                        spawned[i].localScale, t, Time.unscaledDeltaTime * scaleLerpSpeed);
+                }
+
+                yield return null;
+            }
+        
         // ── 5. Apply card effect ──────────────────────────────────────
         if (selectedIndex >= 0 && selectedIndex < spawnedObjects.Count)
         {
