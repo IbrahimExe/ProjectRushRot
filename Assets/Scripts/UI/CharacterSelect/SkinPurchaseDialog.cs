@@ -4,159 +4,243 @@ using TMPro;
 using System;
 
 /// <summary>
-/// Singleton confirmation dialog shown when the player clicks a locked, paid skin.
-/// Wire up all references in the Inspector after running:
-///   Tools → Rush Rot → Create Skin Purchase Dialog Panel
+/// Self-bootstrapping purchase confirmation dialog.
+/// Creates its own UI at runtime — no scene setup required.
+/// Just call SkinPurchaseDialog.Show(data, callback) from anywhere.
 /// </summary>
 public class SkinPurchaseDialog : MonoBehaviour
 {
-    public static SkinPurchaseDialog Instance { get; private set; }
+    // ── Singleton ──────────────────────────────────────────────────────────────
+    private static SkinPurchaseDialog _instance;
+    public static SkinPurchaseDialog Instance
+    {
+        get
+        {
+            if (_instance == null)
+                Bootstrap();
+            return _instance;
+        }
+    }
 
-    [Header("Panel Root")]
-    [Tooltip("The root GameObject of the entire dialog — toggled active/inactive.")]
-    [SerializeField] private GameObject dialogPanel;
+    // ── Runtime-built UI references ────────────────────────────────────────────
+    private GameObject  _root;
+    private TMP_Text    _titleText;
+    private TMP_Text    _costText;
+    private TMP_Text    _coinsText;
+    private TMP_Text    _warnText;
+    private Button      _confirmBtn;
+    private Button      _cancelBtn;
 
-    [Header("Text Fields")]
-    [SerializeField] private TMP_Text skinNameText;
-    [SerializeField] private TMP_Text costText;
-    [SerializeField] private TMP_Text currentCoinsText;
-    [SerializeField] private TMP_Text insufficientFundsText;
-
-    [Header("Buttons")]
-    [SerializeField] private Button confirmButton;
-    [SerializeField] private Button cancelButton;
-
-    [Header("Colors")]
-    [SerializeField] private Color affordableColor = new Color(0.2f, 0.9f, 0.4f, 1f);
-    [SerializeField] private Color insufficientColor = new Color(0.95f, 0.25f, 0.25f, 1f);
-
-    // Internal state ──────────────────────────────────────────────────────────
-
-    private PlayerCharacterData pendingSkin;
-    private Action<PlayerCharacterData> onConfirmed;
+    // ── State ──────────────────────────────────────────────────────────────────
+    private PlayerCharacterData              _pendingSkin;
+    private Action<PlayerCharacterData>      _onConfirmed;
 
     // ─────────────────────────────────────────────────────────────────────────
-
-    private void Awake()
+    // Bootstrap: find or create the dialog in the scene
+    // ─────────────────────────────────────────────────────────────────────────
+    private static void Bootstrap()
     {
-        if (Instance != null && Instance != this)
+        // Find existing canvas
+        Canvas canvas = FindFirstObjectByType<Canvas>();
+        if (canvas == null)
         {
-            Destroy(gameObject);
+            Debug.LogError("[SkinPurchaseDialog] No Canvas found in scene!");
             return;
         }
-        Instance = this;
 
-        // Wire buttons
-        if (confirmButton != null) confirmButton.onClick.AddListener(OnConfirm);
-        if (cancelButton != null)  cancelButton.onClick.AddListener(OnCancel);
-
-        // Start hidden
-        Hide();
+        // Create host GameObject
+        GameObject host = new GameObject("SkinPurchaseDialog_Runtime");
+        host.transform.SetParent(canvas.transform, false);
+        _instance = host.AddComponent<SkinPurchaseDialog>();
+        _instance.BuildUI(canvas);
+        _instance.SetVisible(false);
     }
 
-    private void OnDestroy()
+    // ─────────────────────────────────────────────────────────────────────────
+    // Build the entire UI programmatically
+    // ─────────────────────────────────────────────────────────────────────────
+    private void BuildUI(Canvas canvas)
     {
-        if (confirmButton != null) confirmButton.onClick.RemoveListener(OnConfirm);
-        if (cancelButton != null)  cancelButton.onClick.RemoveListener(OnCancel);
+        // Full-screen darkened backdrop
+        _root = new GameObject("DialogRoot", typeof(RectTransform));
+        _root.transform.SetParent(canvas.transform, false);
+
+        RectTransform rootRT = _root.GetComponent<RectTransform>();
+        rootRT.anchorMin = Vector2.zero;
+        rootRT.anchorMax = Vector2.one;
+        rootRT.offsetMin = rootRT.offsetMax = Vector2.zero;
+
+        Image backdrop = _root.AddComponent<Image>();
+        backdrop.color = new Color(0f, 0f, 0f, 0.75f);
+        backdrop.raycastTarget = true;
+
+        // Make sure it sorts on top
+        Canvas rootCanvas = _root.AddComponent<Canvas>();
+        rootCanvas.overrideSorting = true;
+        rootCanvas.sortingOrder = 999;
+        _root.AddComponent<GraphicRaycaster>();
+
+        // Card box
+        GameObject card = CreateRect("Card", _root.transform, new Vector2(500, 360));
+        card.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+        Image cardImg = card.AddComponent<Image>();
+        cardImg.color = new Color(0.1f, 0.1f, 0.15f, 1f);
+
+        // Title bar
+        GameObject titleBar = CreateRect("TitleBar", card.transform, new Vector2(500, 64));
+        RectTransform tbRT = titleBar.GetComponent<RectTransform>();
+        tbRT.anchorMin = new Vector2(0, 1); tbRT.anchorMax = new Vector2(1, 1);
+        tbRT.pivot = new Vector2(0.5f, 1f);
+        tbRT.anchoredPosition = Vector2.zero;
+        tbRT.sizeDelta = new Vector2(0, 64);
+        titleBar.AddComponent<Image>().color = new Color(1f, 0.82f, 0.2f, 1f);
+
+        _titleText = CreateLabel("TitleText", titleBar.transform,
+            new Vector2(0, -32), new Vector2(460, 48), "Buy skin?", 22, new Color(0.1f, 0.1f, 0.1f), true);
+
+        // Body labels
+        _costText = CreateLabel("CostText", card.transform,
+            new Vector2(0, -110), new Vector2(420, 36), "Cost: 0 Coins", 20, Color.white);
+
+        _coinsText = CreateLabel("CoinsText", card.transform,
+            new Vector2(0, -155), new Vector2(420, 36), "You have: 0 Coins", 18, new Color(0.2f, 0.9f, 0.4f));
+
+        _warnText = CreateLabel("WarnText", card.transform,
+            new Vector2(0, -195), new Vector2(420, 36), "Not enough coins!", 17, new Color(0.95f, 0.3f, 0.3f));
+
+        // Buttons
+        _confirmBtn = CreateButton("BuyBtn",  card.transform,
+            new Vector2(-100, -290), new Vector2(180, 54), "BUY", new Color(0.18f, 0.75f, 0.36f));
+        _confirmBtn.onClick.AddListener(OnConfirm);
+
+        _cancelBtn = CreateButton("CancelBtn", card.transform,
+            new Vector2(100, -290), new Vector2(180, 54), "CANCEL", new Color(0.78f, 0.22f, 0.22f));
+        _cancelBtn.onClick.AddListener(OnCancel);
     }
 
-    // ─── Public API ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Show the confirmation dialog for a locked skin.
-    /// </summary>
-    /// <param name="skinData">The skin the player wants to buy.</param>
-    /// <param name="confirmedCallback">
-    ///     Called with the skin data if the player presses Confirm and the
-    ///     purchase succeeds. The caller is responsible for refreshing the UI.
-    /// </param>
+    // ─────────────────────────────────────────────────────────────────────────
+    // Public API
+    // ─────────────────────────────────────────────────────────────────────────
     public void Show(PlayerCharacterData skinData, Action<PlayerCharacterData> confirmedCallback)
     {
         if (skinData == null) return;
-
-        pendingSkin  = skinData;
-        onConfirmed  = confirmedCallback;
-
+        _pendingSkin = skinData;
+        _onConfirmed = confirmedCallback;
         PopulateTexts();
-
-        if (dialogPanel != null) dialogPanel.SetActive(true);
+        SetVisible(true);
     }
 
     public void Hide()
     {
-        pendingSkin = null;
-        onConfirmed = null;
-        if (dialogPanel != null) dialogPanel.SetActive(false);
+        _pendingSkin = null;
+        _onConfirmed = null;
+        SetVisible(false);
     }
 
-    // ─── Internal helpers ─────────────────────────────────────────────────────
+    private void SetVisible(bool visible)
+    {
+        if (_root != null) _root.SetActive(visible);
+    }
 
+    // ─────────────────────────────────────────────────────────────────────────
     private void PopulateTexts()
     {
-        if (pendingSkin == null) return;
+        if (_pendingSkin == null) return;
 
-        int cost        = pendingSkin.coinCost;
-        int playerCoins = InventoryManager.Instance != null
-            ? InventoryManager.Instance.GetItemCount("Gold")
-            : 0;
-        bool canAfford  = playerCoins >= cost;
+        int cost  = _pendingSkin.coinCost;
+        int coins = InventoryManager.Instance != null
+            ? InventoryManager.Instance.GetItemCount("Gold") : 0;
+        bool canAfford = coins >= cost;
 
-        // Skin name
-        if (skinNameText != null)
+        string name = !string.IsNullOrEmpty(_pendingSkin.skinName)
+            ? _pendingSkin.skinName : _pendingSkin.name;
+
+        if (_titleText  != null) _titleText.text  = $"Buy \"{name}\"?";
+        if (_costText   != null) _costText.text   = $"Cost:     {cost:N0} Coins";
+        if (_coinsText  != null)
         {
-            string name = !string.IsNullOrEmpty(pendingSkin.skinName)
-                ? pendingSkin.skinName
-                : pendingSkin.name;
-            skinNameText.text = $"Buy \"{name}\"?";
+            _coinsText.text  = $"You have: {coins:N0} Coins";
+            _coinsText.color = canAfford
+                ? new Color(0.2f, 0.9f, 0.4f)
+                : new Color(0.95f, 0.3f, 0.3f);
         }
-
-        // Cost
-        if (costText != null)
-            costText.text = $"💰  Cost:  {cost:N0}";
-
-        // Player's current wallet
-        if (currentCoinsText != null)
-        {
-            currentCoinsText.text  = $"You have:  {playerCoins:N0} 💰";
-            currentCoinsText.color = canAfford ? affordableColor : insufficientColor;
-        }
-
-        // Insufficient-funds warning
-        if (insufficientFundsText != null)
-            insufficientFundsText.gameObject.SetActive(!canAfford);
-
-        // Confirm button only interactive when affordable
-        if (confirmButton != null)
-            confirmButton.interactable = canAfford;
+        if (_warnText   != null) _warnText.gameObject.SetActive(!canAfford);
+        if (_confirmBtn != null) _confirmBtn.interactable = canAfford;
     }
 
     private void OnConfirm()
     {
-        if (pendingSkin == null) return;
+        if (_pendingSkin == null) return;
 
-        // Attempt to spend coins
         bool spent = InventoryManager.Instance != null &&
-                     InventoryManager.Instance.SpendItem("Gold", pendingSkin.coinCost);
+                     InventoryManager.Instance.SpendItem("Gold", _pendingSkin.coinCost);
 
-        if (!spent)
-        {
-            Debug.LogWarning($"[SkinPurchaseDialog] SpendItem failed for {pendingSkin.skinName}. " +
-                             "Coins may have changed since dialog was opened.");
-            Hide();
-            return;
-        }
+        if (!spent) { Hide(); return; }
 
-        // Persist the unlock
-        SkinUnlockManager.UnlockSkin(pendingSkin);
-
-        // Notify the card that spawned this dialog
-        onConfirmed?.Invoke(pendingSkin);
-
+        SkinUnlockManager.UnlockSkin(_pendingSkin);
+        _onConfirmed?.Invoke(_pendingSkin);
         Hide();
     }
 
-    private void OnCancel()
+    private void OnCancel() => Hide();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UI helpers
+    // ─────────────────────────────────────────────────────────────────────────
+    private static GameObject CreateRect(string name, Transform parent, Vector2 size)
     {
-        Hide();
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = size;
+        rt.anchoredPosition = Vector2.zero;
+        return go;
+    }
+
+    private static TMP_Text CreateLabel(string name, Transform parent,
+        Vector2 pos, Vector2 size, string text, float fontSize, Color color, bool bold = false)
+    {
+        GameObject go = CreateRect(name, parent, size);
+        go.GetComponent<RectTransform>().anchoredPosition = pos;
+        TMP_Text t = go.AddComponent<TextMeshProUGUI>();
+        t.text      = text;
+        t.fontSize  = fontSize;
+        t.color     = color;
+        t.alignment = TextAlignmentOptions.Center;
+        if (bold) t.fontStyle = FontStyles.Bold;
+        return t;
+    }
+
+    private static Button CreateButton(string name, Transform parent,
+        Vector2 pos, Vector2 size, string label, Color bgColor)
+    {
+        GameObject go = CreateRect(name, parent, size);
+        go.GetComponent<RectTransform>().anchoredPosition = pos;
+        Image img = go.AddComponent<Image>();
+        img.color = bgColor;
+        Button btn = go.AddComponent<Button>();
+
+        ColorBlock cb = btn.colors;
+        cb.normalColor      = bgColor;
+        cb.highlightedColor = bgColor * 1.2f;
+        cb.pressedColor     = bgColor * 0.75f;
+        btn.colors = cb;
+
+        // Label
+        GameObject labelGo = new GameObject("Label", typeof(RectTransform));
+        labelGo.transform.SetParent(go.transform, false);
+        RectTransform lrt = labelGo.GetComponent<RectTransform>();
+        lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
+        lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+        TMP_Text t = labelGo.AddComponent<TextMeshProUGUI>();
+        t.text      = label;
+        t.fontSize  = 20;
+        t.color     = Color.white;
+        t.fontStyle = FontStyles.Bold;
+        t.alignment = TextAlignmentOptions.Center;
+        t.raycastTarget = false;
+
+        return btn;
     }
 }

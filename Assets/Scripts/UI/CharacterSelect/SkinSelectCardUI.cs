@@ -57,7 +57,7 @@ public class SkinSelectCardUI : MonoBehaviour
             }
 
             if (costText != null)
-                costText.text = $"💰 {data.coinCost}";
+                costText.text = $"{data.coinCost} Coins";
         }
 
         RefreshState(false);

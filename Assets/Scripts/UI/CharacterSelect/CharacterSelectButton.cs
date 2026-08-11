@@ -16,24 +16,32 @@ public class CharacterSelectButton : MonoBehaviour
         {
             button.onClick.AddListener(SelectCharacter);
         }
+
+        // Auto-subscribe to the manager — no need to manually add this button to the manager's array
+        CharacterSelectManager manager = FindFirstObjectByType<CharacterSelectManager>();
+        if (manager != null)
+        {
+            OnCharacterSelected += manager.HandleCharacterSelected;
+        }
+        else
+        {
+            Debug.LogWarning("[CharacterSelectButton] CharacterSelectManager not found in scene.");
+        }
     }
 
     public void SelectCharacter()
     {
-        if (characterData == null) return;
+        if (characterData == null)
+        {
+            Debug.LogWarning("[CharacterSelectButton] characterData is NULL! Assign a PlayerCharacterData in the Inspector.");
+            return;
+        }
 
         bool isUnlocked = SkinUnlockManager.IsSkinUnlocked(characterData);
 
         if (!isUnlocked)
         {
-            if (SkinPurchaseDialog.Instance != null)
-            {
-                SkinPurchaseDialog.Instance.Show(characterData, OnPurchaseConfirmed);
-            }
-            else
-            {
-                Debug.LogWarning("[CharacterSelectButton] SkinPurchaseDialog not found in scene!");
-            }
+            SkinPurchaseDialog.Instance.Show(characterData, OnPurchaseConfirmed);
         }
         else
         {
@@ -44,8 +52,6 @@ public class CharacterSelectButton : MonoBehaviour
     private void OnPurchaseConfirmed(PlayerCharacterData purchasedSkin)
     {
         if (purchasedSkin != characterData) return;
-        
-        // Once purchased, the player can instantly play by firing the event
         OnCharacterSelected?.Invoke(characterData);
     }
 
@@ -56,4 +62,4 @@ public class CharacterSelectButton : MonoBehaviour
             button.onClick.RemoveListener(SelectCharacter);
         }
     }
-}
+}

@@ -101,15 +101,15 @@ public static class SkinPurchaseDialogBuilder
         // ── Body area ────────────────────────────────────────────────────────
         // Cost row
         TMP_Text costTxt = AddBodyLabel(cardObj.transform, "CostText",
-            "💰  Cost:  300", 20f, textWhite, new Vector2(0f, -90f));
+            "Cost: 300 Coins", 20f, textWhite, new Vector2(0f, -90f));
 
         // Current coins row
         TMP_Text coinsTxt = AddBodyLabel(cardObj.transform, "CurrentCoinsText",
-            "You have:  1 250 💰", 18f, textGreen, new Vector2(0f, -130f));
+            "You have: 1,250 Coins", 18f, textGreen, new Vector2(0f, -130f));
 
         // Insufficient funds warning (hidden by default)
         TMP_Text insuffTxt = AddBodyLabel(cardObj.transform, "InsufficientFundsText",
-            "⚠  Not enough coins!", 17f, textRed, new Vector2(0f, -165f));
+            "Not enough coins!", 17f, textRed, new Vector2(0f, -165f));
         insuffTxt.gameObject.SetActive(false);
 
         // ── Buttons row ──────────────────────────────────────────────────────

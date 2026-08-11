@@ -27,6 +27,7 @@ public class CharacterSelectManager : MonoBehaviour
     [SerializeField] private TMP_Text coinsText;
     [SerializeField] private Button addCoinsDevButton;
     [SerializeField] private Button restartCoinsDevButton;
+    [SerializeField] private Button resetSkinsDevButton;
 
     [Header("Selection & Preview Panel")]
     [SerializeField] private TMP_Text selectedSkinNameText;
@@ -51,7 +52,7 @@ public class CharacterSelectManager : MonoBehaviour
             foreach (CharacterSelectButton btn in characterButtons)
             {
                 if (btn != null)
-                    btn.OnCharacterSelected += OnCharacterSelected;
+                    btn.OnCharacterSelected += HandleCharacterSelected;
             }
         }
 
@@ -68,6 +69,11 @@ public class CharacterSelectManager : MonoBehaviour
         if (restartCoinsDevButton != null)
         {
             restartCoinsDevButton.onClick.AddListener(RestartDevCoins);
+        }
+
+        if (resetSkinsDevButton != null)
+        {
+            resetSkinsDevButton.onClick.AddListener(ResetSkins);
         }
 
         // Auto-select first available unlocked skin
@@ -123,6 +129,23 @@ public class CharacterSelectManager : MonoBehaviour
         }
     }
 
+    public void ResetSkins()
+    {
+        // Gather every skin across all columns
+        var allSkins = new System.Collections.Generic.List<PlayerCharacterData>();
+        if (skateboardSkins != null) allSkins.AddRange(skateboardSkins);
+        if (trolleySkins != null)    allSkins.AddRange(trolleySkins);
+        if (cheeseWheelSkins != null) allSkins.AddRange(cheeseWheelSkins);
+
+        SkinUnlockManager.ResetAllUnlocks(allSkins.ToArray());
+
+        // Refresh all card visuals so lock overlays reappear immediately
+        RefreshAllCards();
+
+        // Re-select first available unlocked skin
+        SelectDefaultOrFirstSkin();
+    }
+
     private void SetupCoinsUI()
     {
         UpdateCoinsUI();
@@ -138,7 +161,7 @@ public class CharacterSelectManager : MonoBehaviour
 
         if (coinsText != null)
         {
-            coinsText.text = $"💰 Coins: {coins:N0}";
+            coinsText.text = $"Coins: {coins:N0}";
         }
     }
 
@@ -261,7 +284,7 @@ public class CharacterSelectManager : MonoBehaviour
         SceneManager.LoadScene(targetScene);
     }
 
-    private void OnCharacterSelected(PlayerCharacterData characterData)
+    public void HandleCharacterSelected(PlayerCharacterData characterData)
     {
         if (characterData == null) return;
 
@@ -278,13 +301,18 @@ public class CharacterSelectManager : MonoBehaviour
             foreach (CharacterSelectButton btn in characterButtons)
             {
                 if (btn != null)
-                    btn.OnCharacterSelected -= OnCharacterSelected;
+                    btn.OnCharacterSelected -= HandleCharacterSelected;
             }
         }
 
         if (startButton != null)
         {
             startButton.onClick.RemoveListener(StartGameWithSelectedCharacter);
+        }
+
+        if (resetSkinsDevButton != null)
+        {
+            resetSkinsDevButton.onClick.RemoveListener(ResetSkins);
         }
     }
 }
