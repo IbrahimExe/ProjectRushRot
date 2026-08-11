@@ -26,6 +26,7 @@ public class CharacterSelectManager : MonoBehaviour
     [Header("Header & Currency Display")]
     [SerializeField] private TMP_Text coinsText;
     [SerializeField] private Button addCoinsDevButton;
+    [SerializeField] private Button restartCoinsDevButton;
 
     [Header("Selection & Preview Panel")]
     [SerializeField] private TMP_Text selectedSkinNameText;
@@ -61,7 +62,12 @@ public class CharacterSelectManager : MonoBehaviour
 
         if (addCoinsDevButton != null)
         {
-            addCoinsDevButton.onClick.AddListener(() => AddDevCoins(500));
+            addCoinsDevButton.onClick.AddListener(() => AddDevCoins(1000));
+        }
+
+        if (restartCoinsDevButton != null)
+        {
+            restartCoinsDevButton.onClick.AddListener(RestartDevCoins);
         }
 
         // Auto-select first available unlocked skin
@@ -106,6 +112,14 @@ public class CharacterSelectManager : MonoBehaviour
         {
             int current = InventoryManager.Instance.GetItemCount("Gold");
             InventoryManager.Instance.SetItemCount("Gold", current + amount);
+        }
+    }
+
+    public void RestartDevCoins()
+    {
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.SetItemCount("Gold", 0);
         }
     }
 
