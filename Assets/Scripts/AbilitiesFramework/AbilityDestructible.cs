@@ -61,11 +61,11 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
 
         //CamShake
         CameraShake camShake = ServiceLocator.Get<CameraShake>();
-        Debug.LogError($"CameraShake service retrieved: {camShake != null}");
+       // Debug.LogError($"CameraShake service retrieved: {camShake != null}");
         if (camShake != null)
         {
             camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
-            Debug.LogError($"Camera shake triggered with magnitude={camShakeMagnitude} and duration={camShakeDurationSEC}");
+           // Debug.LogError($"Camera shake triggered with magnitude={camShakeMagnitude} and duration={camShakeDurationSEC}");
         }
         //Particles
 

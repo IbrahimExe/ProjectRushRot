@@ -66,6 +66,7 @@ GameObject:
   - component: {fileID: 6791844425725912170}
   - component: {fileID: 707046692329073497}
   - component: {fileID: -1950175630046553182}
+  - component: {fileID: -5307608861278997547}
   m_Layer: 0
   m_Name: Animal
   m_TagString: Enemy
@@ -152,7 +153,6 @@ MonoBehaviour:
   - ground_pound
   - Dash
   returnToPoolInsteadOfDestroy: 1
-  camShake: {fileID: 0}
   camShakeDurationSEC: 0.5
   camShakeMagnitude: 1
 --- !u!114 &-1950175630046553182
@@ -167,6 +167,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2d4267afc5dce049a76a4eb9c67d4df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PooledObject
+--- !u!114 &-5307608861278997547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3207817493276649302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7104954459c25de45b3b60cb724be43d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeactivationEffect
+  effectPoolName: BLOODEFFECT
 --- !u!1 &7059129825452611462
 GameObject:
   m_ObjectHideFlags: 0
