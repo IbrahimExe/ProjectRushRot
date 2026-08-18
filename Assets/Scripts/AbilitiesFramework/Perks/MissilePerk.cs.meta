@@ -5,7 +5,7 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - icon: {fileID: 21300000, guid: a7af451b769d2fe42b72fa3cee467397, type: 3}
-  - missileVisualPrefab: {fileID: 3441939131721710715, guid: 48fa03515e606754cb55998d0cb1f3ec, type: 3}
+  - missileVisualPrefab: {fileID: 919132149155446097, guid: 168bd17de34b2f54ca230ab663a21a6a, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

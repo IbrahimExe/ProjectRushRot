@@ -12,7 +12,7 @@ public class MissilePerk : AbilityBase
     [Header("Visuals")]
     public GameObject missileVisualPrefab;
     public float visualOrbitRadius = 1.5f;
-    public float visualHeight = 1.2f;
+    public float visualHeight = 0.8f;
     public float visualSpinSpeed = 90f;
     public float baseAOERadius = 6f;
     public float aoeRadiusPerLevel = 1.5f;
