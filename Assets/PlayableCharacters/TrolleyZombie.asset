@@ -22,19 +22,19 @@ MonoBehaviour:
   skinIcon: {fileID: 0}
   coinCost: 200
   isDefaultUnlocked: 0
-  maxMoveSpeed: 50
-  acceleration: 25
+  maxMoveSpeed: 80
+  acceleration: 35
   deceleration: 25
   mass: 1
-  rotationSpeed: 100
+  rotationSpeed: 110
   baseGrip: 10
   turnGrip: 2.5
-  jumpForce: 125
-  wallRunCooldown: 1
+  jumpForce: 35
+  wallRunCooldown: 0
   wallRunDuration: 2
   wallRunSpeedMultiplier: 1.1
-  wallJumpUpImpulse: 15
-  wallJumpAwayImpulse: 15
+  wallJumpUpImpulse: 25
+  wallJumpAwayImpulse: 20
   dashCooldown: 2
   dashSpeedBoostMultiplier: 1.15
   dashBoostDuration: 1.5
