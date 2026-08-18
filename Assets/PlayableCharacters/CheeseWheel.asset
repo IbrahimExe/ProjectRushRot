@@ -16,6 +16,12 @@ MonoBehaviour:
   modelOffset: {x: -0.48, y: 0.45, z: 0.91}
   modelScale: {x: 3.0347, y: 3.0347, z: 3.0347}
   modelRotation: {x: 0, y: 180, z: -90}
+  characterCategory: Skateboard
+  skinId: skateboard_default
+  skinName: Default Skateboard
+  skinIcon: {fileID: 0}
+  coinCost: 100
+  isDefaultUnlocked: 1
   maxMoveSpeed: 70
   acceleration: 35
   deceleration: 25
