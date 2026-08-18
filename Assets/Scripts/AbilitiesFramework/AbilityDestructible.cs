@@ -35,17 +35,31 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
         return false;
     }
 
+    private bool destroyedThisSpawn;
+
+    private void OnEnable()
+    {
+        destroyedThisSpawn = false;
+    }
     public void DestroyByAbility(string abilityId, GameObject source)
     {
-       // Debug.LogError($"DestroyByAbility called with abilityId={abilityId}");
+        if (!CanBeDestroyedBy(abilityId))
+            return;
 
-        if (!CanBeDestroyedBy(abilityId))
+        if (destroyedThisSpawn)
+            return;
+
+        destroyedThisSpawn = true;
+
+        // Count this enemy/obstacle toward the score
+        if (ScoreManager.Instance != null)
         {
-           // Debug.LogError("CanBeDestroyedBy returned false — exiting early.");
-            return;
+            ScoreManager.Instance.RegisterDestroyedTarget();
         }
-        if (!CanBeDestroyedBy(abilityId))
-            return;
+        else
+        {
+            Debug.LogWarning("AbilityDestructible: ScoreManager.Instance was not found.");
+        }
 
         if (returnToPoolInsteadOfDestroy && pooledObject != null)
         {
@@ -53,22 +67,19 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
         }
         else
         {
-            //Destroy(gameObject);
-
             gameObject.SetActive(false);
         }
 
-
-        //CamShake
+        // CamShake
         CameraShake camShake = ServiceLocator.Get<CameraShake>();
-        Debug.LogError($"CameraShake service retrieved: {camShake != null}");
+
         if (camShake != null)
         {
             camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
-            Debug.LogError($"Camera shake triggered with magnitude={camShakeMagnitude} and duration={camShakeDurationSEC}");
         }
-        //Particles
 
-        //Audio
+        // Particles
+
+        // Audio
     }
 }

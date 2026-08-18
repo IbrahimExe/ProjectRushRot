@@ -95,6 +95,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   MapGenerator: {fileID: 0}
+  knockbackDuration: 0.6
+  knockbackDrag: 10
 --- !u!114 &1602274331314793161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,6 +113,7 @@ MonoBehaviour:
   - missile
   - shield
   - ground_pound
+  - Dash
   returnToPoolInsteadOfDestroy: 1
   camShakeDurationSEC: 0.3
   camShakeMagnitude: 100

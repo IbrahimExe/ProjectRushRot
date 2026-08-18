@@ -105,6 +105,8 @@ MonoBehaviour:
   maxConeAngleTowardPlayer: 90
   presenceTrigger: {fileID: 1647947134314232257}
   runSpeed: 12.5
+  knockbackDuration: 0.6
+  knockbackDrag: 10
   groundCheckDistance: 2
   groundOffset: 0.5
   groundFollowSpeed: 10
@@ -152,7 +154,6 @@ MonoBehaviour:
   - ground_pound
   - Dash
   returnToPoolInsteadOfDestroy: 1
-  camShake: {fileID: 0}
   camShakeDurationSEC: 0.5
   camShakeMagnitude: 1
 --- !u!114 &-1950175630046553182

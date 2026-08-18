@@ -15,6 +15,11 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Source deck (ScriptableObjects)")]
     public List<CardSO> deck = new List<CardSO>();
 
+    [Header("Card Pick Shockwave")]
+    public Transform playerTransform;
+    public float shockwaveRadius = 12f;
+    public float shockwaveForce = 25f;
+
     [Header("Card target positions")]
     public RectTransform[] cardPositions = new RectTransform[3];
 
@@ -34,6 +39,20 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Selection visuals")]
     public float highlightScale = 1.25f;
     public float scaleLerpSpeed = 12f;
+
+    [Header("Hover animation")]
+    public float hoverMinScale = 1.18f;
+    public float hoverMaxScale = 1.28f;
+    public float zoomSpeed = 3f;
+
+    public float shakeAmount = 2.5f;
+    public float shakeSpeed = 10f;
+
+    [Header("Border shine")]
+    public float borderShineSpeed = 4f;
+    public float borderMinAlpha = 0.15f;
+    public float borderMaxAlpha = 1f;
+    public Vector2 borderThickness = new Vector2(5f, -5f);
 
     [Header("Timing")]
     public float selectedHoldTime = 0.5f;
@@ -271,12 +290,12 @@ public class LevelUpCardSelector : MonoBehaviour
             }
 
             float scroll = Input.mouseScrollDelta.y;
-                if (scroll > 0.001f)
+                if (scroll < -0.001f)
                 {
                     selectedIndex = Mathf.Max(0, selectedIndex - 1);
                     UpdateHighlightImmediate();
                 }
-                else if (scroll < -0.001f)
+                else if (scroll > 0.001f)
                 {
                     selectedIndex = Mathf.Min(spawned.Count - 1, selectedIndex + 1);
                     UpdateHighlightImmediate();
@@ -291,15 +310,99 @@ public class LevelUpCardSelector : MonoBehaviour
                     break;
                 }
 
-                for (int i = 0; i < spawned.Count; i++)
+            for (int i = 0; i < spawned.Count; i++)
+            {
+                if (spawned[i] == null)
+                    continue;
+
+                bool selected = i == selectedIndex;
+
+                // ─────────────────────────────────────
+                // ZOOM IN / OUT
+                // ─────────────────────────────────────
+                if (selected)
                 {
-                    if (spawned[i] == null) continue;
-                    Vector3 t = i == selectedIndex ? Vector3.one * highlightScale : Vector3.one;
+                    float pulse =
+                        (Mathf.Sin(Time.unscaledTime * zoomSpeed) + 1f) * 0.5f;
+
+                    float scale =
+                        Mathf.Lerp(hoverMinScale, hoverMaxScale, pulse);
+
+                    Vector3 targetScale = Vector3.one * scale;
+
                     spawned[i].localScale = Vector3.Lerp(
-                        spawned[i].localScale, t, Time.unscaledDeltaTime * scaleLerpSpeed);
+                        spawned[i].localScale,
+                        targetScale,
+                        Time.unscaledDeltaTime * scaleLerpSpeed);
+                }
+                else
+                {
+                    spawned[i].localScale = Vector3.Lerp(
+                        spawned[i].localScale,
+                        Vector3.one,
+                        Time.unscaledDeltaTime * scaleLerpSpeed);
                 }
 
-                yield return null;
+
+                // ─────────────────────────────────────
+                // SHAKE / WIGGLE
+                // ─────────────────────────────────────
+                if (selected)
+                {
+                    float angle =
+                        Mathf.Sin(Time.unscaledTime * shakeSpeed)
+                        * shakeAmount;
+
+                    spawned[i].localRotation =
+                        Quaternion.Euler(0f, 0f, angle);
+                }
+                else
+                {
+                    spawned[i].localRotation = Quaternion.Lerp(
+                        spawned[i].localRotation,
+                        Quaternion.identity,
+                        Time.unscaledDeltaTime * scaleLerpSpeed);
+                }
+
+
+                // ─────────────────────────────────────
+                // BORDER SHINE
+                // ─────────────────────────────────────
+
+                Outline outline = spawned[i].GetComponent<Outline>();
+
+                if (outline == null)
+                {
+                    outline = spawned[i].gameObject.AddComponent<Outline>();
+
+                    outline.effectDistance = borderThickness;
+                    outline.useGraphicAlpha = false;
+                }
+
+                if (selected)
+                {
+                    float shine =
+                        (Mathf.Sin(Time.unscaledTime * borderShineSpeed) + 1f)
+                        * 0.5f;
+
+                    float alpha =
+                        Mathf.Lerp(
+                            borderMinAlpha,
+                            borderMaxAlpha,
+                            shine);
+
+                    outline.effectColor =
+                        new Color(1f, 1f, 1f, alpha);
+
+                    outline.enabled = true;
+                }
+                else
+                {
+                    outline.enabled = false;
+                }
+            }
+
+            yield return null;
             }
         
         // ── 5. Apply card effect ──────────────────────────────────────
@@ -308,8 +411,16 @@ public class LevelUpCardSelector : MonoBehaviour
             var cardGO = spawnedObjects[selectedIndex];
             if (cardGO != null)
             {
-                var cardUI = cardGO.GetComponent<CardUI>() ?? cardGO.GetComponentInChildren<CardUI>();
-                if (cardUI != null) cardUI.ApplyCardEffect();
+                var cardUI = cardGO.GetComponent<CardUI>()
+                ?? cardGO.GetComponentInChildren<CardUI>();
+
+                if (cardUI != null)
+                {
+                    cardUI.ApplyCardEffect();
+
+                    // Knock nearby enemies away from the player
+                    TriggerCardShockwave();
+                }   
             }
         }
 
@@ -424,8 +535,92 @@ public class LevelUpCardSelector : MonoBehaviour
     private void UpdateHighlightImmediate()
     {
         for (int i = 0; i < spawned.Count; i++)
+        {
             if (spawned[i] != null)
-                spawned[i].localScale = Vector3.one * (i == selectedIndex ? highlightScale : 1f);
+            {
+                spawned[i].localScale =
+                    Vector3.one * (i == selectedIndex
+                        ? hoverMinScale
+                        : 1f);
+            }
+        }
+    }
+
+    private void TriggerCardShockwave()
+    {
+        if (playerTransform == null)
+        {
+            Debug.LogWarning(
+                "[LevelUpCardSelector] Player Transform is not assigned.");
+            return;
+        }
+
+        Collider[] hits = Physics.OverlapSphere(
+            playerTransform.position,
+            shockwaveRadius
+        );
+
+        HashSet<GameObject> hitEnemies = new HashSet<GameObject>();
+
+        foreach (Collider hit in hits)
+        {
+            if (hit == null)
+                continue;
+
+            // Find the actual enemy root.
+            MovingEnemy movingEnemy =
+                hit.GetComponentInParent<MovingEnemy>();
+
+            AfraidAnimal afraidAnimal =
+                hit.GetComponentInParent<AfraidAnimal>();
+
+            GameObject enemyObject = null;
+
+            if (movingEnemy != null)
+                enemyObject = movingEnemy.gameObject;
+            else if (afraidAnimal != null)
+                enemyObject = afraidAnimal.gameObject;
+
+            if (enemyObject == null)
+                continue;
+
+            // Prevent enemies with multiple colliders from
+            // receiving the shockwave multiple times.
+            if (!hitEnemies.Add(enemyObject))
+                continue;
+
+            Vector3 direction =
+                enemyObject.transform.position -
+                playerTransform.position;
+
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude < 0.001f)
+                direction = playerTransform.forward;
+
+            float distance = direction.magnitude;
+
+            // Strong close to player, weaker at edge.
+            float strength =
+                1f - Mathf.Clamp01(
+                    distance / shockwaveRadius);
+
+            float finalForce =
+                shockwaveForce * strength;
+
+            if (movingEnemy != null)
+            {
+                movingEnemy.ApplyKnockback(
+                    direction,
+                    finalForce);
+            }
+            else if (afraidAnimal != null)
+            {
+                afraidAnimal.ApplyKnockback(
+                    direction,
+                    finalForce);
+            }
+        }
     }
 
 #if UNITY_EDITOR

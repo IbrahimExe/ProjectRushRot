@@ -1,4 +1,5 @@
 using LevelGenerator;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class MovingEnemy : MonoBehaviour
@@ -55,6 +56,14 @@ public class MovingEnemy : MonoBehaviour
 
     public MapGenerator MapGenerator;
 
+    [Header("Knockback")]
+    [SerializeField] private float knockbackDuration = 0.4f;
+    [SerializeField] private float knockbackDrag = 5f;
+
+    private bool _isKnockedBack = false;
+    private Vector3 _knockbackVelocity;
+    private float _knockbackTimer;
+
     // Unity Events
     void Start()
     {
@@ -107,10 +116,22 @@ public class MovingEnemy : MonoBehaviour
     {
         UpdateGrounding();
 
+        // Shockwave temporarily overrides normal AI movement.
+        if (_isKnockedBack)
+        {
+            UpdateKnockback();
+            return;
+        }
+
         switch (_state)
         {
-            case EnemyState.Wandering: UpdateWander(); break;
-            case EnemyState.Chasing: UpdateChase(); break;
+            case EnemyState.Wandering:
+                UpdateWander();
+                break;
+
+            case EnemyState.Chasing:
+                UpdateChase();
+                break;
         }
     }
 
@@ -202,6 +223,40 @@ public class MovingEnemy : MonoBehaviour
         _losePlayerTimer = 0f;
         _isPaused = false;
         PickNewWanderTarget();
+    }
+
+    public void ApplyKnockback(Vector3 direction, float force)
+    {
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.001f)
+            return;
+
+        direction.Normalize();
+
+        _knockbackVelocity = direction * force;
+        _knockbackTimer = knockbackDuration;
+        _isKnockedBack = true;
+    }
+
+    private void UpdateKnockback()
+    {
+        transform.position +=
+            _knockbackVelocity * Time.deltaTime;
+
+        _knockbackVelocity = Vector3.Lerp(
+            _knockbackVelocity,
+            Vector3.zero,
+            knockbackDrag * Time.deltaTime
+        );
+
+        _knockbackTimer -= Time.deltaTime;
+
+        if (_knockbackTimer <= 0f)
+        {
+            _isKnockedBack = false;
+            _knockbackVelocity = Vector3.zero;
+        }
     }
 
     // Shared Steering
