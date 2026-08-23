@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.AppUI.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,6 +29,7 @@ public class LevelUpCardSelector : MonoBehaviour
 
     [Header("Panel (optional)")]
     public RectTransform panelBehindCards;
+    private Panel MouseIcons;
 
     [Header("Layout & animation")]
     public float horizontalSpacing = 220f;
@@ -203,7 +205,7 @@ public class LevelUpCardSelector : MonoBehaviour
 
             if (parentTransform == null)
             {
-                var canvas = FindFirstObjectByType<Canvas>();
+                var canvas = FindFirstObjectByType<UnityEngine.Canvas>();
                 parentTransform = canvas != null ? canvas.transform : transform;
             }
 
@@ -290,12 +292,12 @@ public class LevelUpCardSelector : MonoBehaviour
             }
 
             float scroll = Input.mouseScrollDelta.y;
-                if (scroll < -0.001f)
+                if (scroll > 0.001f)
                 {
                     selectedIndex = Mathf.Max(0, selectedIndex - 1);
                     UpdateHighlightImmediate();
                 }
-                else if (scroll > 0.001f)
+                else if (scroll < -0.001f)
                 {
                     selectedIndex = Mathf.Min(spawned.Count - 1, selectedIndex + 1);
                     UpdateHighlightImmediate();
