@@ -38,10 +38,18 @@ public class ScoreboardManager : MonoBehaviour
     private const string SaveKey = "LocalScoreboard_DistanceDestroyed_V2";
 
     private ScoreboardData scoreboardData = new ScoreboardData();
+    private string currentRunDisplay = "";
 
     private void Start()
     {
         LoadScoreboard();
+
+        if (playerNameInput != null)
+        {
+            playerNameInput.characterLimit = 15; 
+            playerNameInput.onValidateInput = ValidateNameCharacter;
+            playerNameInput.onValueChanged.AddListener(_ => ClearNameError());
+        }
 
         if (resultsPanel != null)
             resultsPanel.SetActive(false);
@@ -55,8 +63,8 @@ public class ScoreboardManager : MonoBehaviour
         float distance,
         int targetsDestroyed)
     {
-        if (string.IsNullOrWhiteSpace(playerName))
-            playerName = "Player";
+        if (!IsValidName(playerName) || NameAlreadyExists(playerName))
+            return;
 
         ScoreEntry newEntry = new ScoreEntry
         {
@@ -83,6 +91,29 @@ public class ScoreboardManager : MonoBehaviour
             resultsPanel.SetActive(true);
     }
 
+    public void PreviewRun(int score, float distance, int targetsDestroyed)
+    {
+        ScoreEntry previewEntry = new ScoreEntry
+        {
+            playerName = "Player",
+            score = score,
+            distance = distance,
+            targetsDestroyed = targetsDestroyed
+        };
+
+        ShowCurrentRun(previewEntry);
+        RefreshScoreboardUI();
+
+        if (resultsPanel != null)
+            resultsPanel.SetActive(true);
+
+        if (playerNameInput != null)
+            playerNameInput.interactable = true;
+
+        if (submitScoreButton != null)
+            submitScoreButton.SetActive(true);
+    }
+
     private void ShowCurrentRun(ScoreEntry entry)
     {
         if (currentRunText == null)
@@ -104,7 +135,7 @@ public class ScoreboardManager : MonoBehaviour
         float destructionPoints =
             entry.targetsDestroyed * destructionMultiplier;
 
-        currentRunText.text =
+        currentRunDisplay =
             $"RUN COMPLETE\n\n" +
             $"Score: {entry.score:N0}\n\n" +
             $"Distance: {entry.distance:0.0} m\n" +
@@ -115,6 +146,8 @@ public class ScoreboardManager : MonoBehaviour
             $" = {destructionPoints:N0}\n\n" +
             $"Total: {distancePoints:N0} + " +
             $"{destructionPoints:N0} = {entry.score:N0}";
+
+        currentRunText.text = currentRunDisplay;
     }
 
     public void SubmitPlayerScore()
@@ -128,12 +161,20 @@ public class ScoreboardManager : MonoBehaviour
             return;
         }
 
-        string playerName = "Player";
+        string playerName = playerNameInput != null
+            ? playerNameInput.text.Trim()
+            : "";
 
-        if (playerNameInput != null &&
-            !string.IsNullOrWhiteSpace(playerNameInput.text))
+        if (!IsValidName(playerName))
         {
-            playerName = playerNameInput.text.Trim();
+            ShowNameError("Enter a name using letters and numbers only.");
+            return;
+        }
+
+        if (NameAlreadyExists(playerName))
+        {
+            ShowNameError("That name has already been used.");
+            return;
         }
 
         scoreManager.SubmitPreparedRun(playerName);
@@ -145,6 +186,47 @@ public class ScoreboardManager : MonoBehaviour
 
         if (submitScoreButton != null)
             submitScoreButton.SetActive(false);
+    }
+
+    private char ValidateNameCharacter(string text, int charIndex, char addedChar)
+    {
+        return IsAsciiLetterOrNumber(addedChar) ? addedChar : '\0';
+    }
+
+    private bool IsValidName(string playerName)
+    {
+        if (string.IsNullOrEmpty(playerName))
+            return false;
+
+        return playerName.All(IsAsciiLetterOrNumber);
+    }
+
+    private bool NameAlreadyExists(string playerName)
+    {
+        return scoreboardData.entries.Any(entry =>
+            string.Equals(
+                entry.playerName,
+                playerName,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool IsAsciiLetterOrNumber(char c)
+    {
+        return (c >= 'A' && c <= 'Z') ||
+               (c >= 'a' && c <= 'z') ||
+               (c >= '0' && c <= '9');
+    }
+
+    private void ShowNameError(string message)
+    {
+        if (currentRunText != null)
+            currentRunText.text = currentRunDisplay + "\n\n" + message;
+    }
+
+    private void ClearNameError()
+    {
+        if (currentRunText != null && !string.IsNullOrEmpty(currentRunDisplay))
+            currentRunText.text = currentRunDisplay;
     }
 
     private void RefreshScoreboardUI()

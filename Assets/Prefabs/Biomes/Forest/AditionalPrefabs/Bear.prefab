@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1507926696020317794}
   - component: {fileID: 3181499076207763430}
   - component: {fileID: 1602274331314793161}
-  - component: {fileID: -715763973502098380}
+  - component: {fileID: 1101292751247483963}
   m_Layer: 7
   m_Name: Bear
   m_TagString: Enemy
@@ -117,7 +117,7 @@ MonoBehaviour:
   returnToPoolInsteadOfDestroy: 1
   camShakeDurationSEC: 0.3
   camShakeMagnitude: 100
---- !u!114 &-715763973502098380
+--- !u!114 &1101292751247483963
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
