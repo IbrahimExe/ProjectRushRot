@@ -412756,13 +412756,25 @@ PrefabInstance:
       propertyPath: player
       value: 
       objectReference: {fileID: 648156138}
+    - target: {fileID: 5223784007083903611, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 29
+      objectReference: {fileID: 0}
+    - target: {fileID: 5223784007083903611, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -0
+      objectReference: {fileID: 0}
     - target: {fileID: 5319943551777598967, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1069915819}
+    - target: {fileID: 5424244791461755229, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
+      propertyPath: m_text
+      value: '  Scroll         Select'
+      objectReference: {fileID: 0}
     - target: {fileID: 6131783150119732684, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6742876711606068238, guid: 611fd3d7aa0d31047af2e945ddd9f56b, type: 3}
       propertyPath: m_Name
