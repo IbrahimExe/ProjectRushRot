@@ -9575,8 +9575,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 45, y: 47}
+  m_SizeDelta: {x: 637.11, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!43 &874492509
 Mesh:
@@ -15087,10 +15087,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 236e1de190afa6845a9a3321a277fe8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcDialogue
-  dialogueMessage: Hello, traveler!
+  dialogueMessage: 'i wanannslndlasjfa as;fd kas;lfkas; lfkas;lf kas;f kas fkf klsk
+    f;lasklsa klfksa;l ksal; fka;l fka;lf kasl; ksafl '
   detectionRange: 65.5
   heightAboveNpc: 2.5
-  bubbleSize: {x: 220, y: 120}
+  bubbleSize: {x: 600, y: 250}
   bubblePadding: 20
   bubbleColor: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 0, g: 0, b: 0, a: 1}
