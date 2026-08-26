@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class NpcDialogue : MonoBehaviour
@@ -14,30 +15,62 @@ public class NpcDialogue : MonoBehaviour
     public float detectionRange = 5f;
 
     [Header("Bubble Position")]
-    [Tooltip("Offset from the NPC pivot. Raise Y to push the bubble above the NPC's head.")]
-    public Vector3 bubbleOffset = new Vector3(0f, 2.5f, 0f);
+    [Tooltip("How high above the NPC pivot the bubble floats. Default 2.5 works for a standard capsule.")]
+    public float heightAboveNpc = 2.5f;
+
+    [Header("Bubble Appearance")]
+    [Tooltip("Size of the speech bubble in canvas pixels (Width x Height). Tune this to fit your text.")]
+    public Vector2 bubbleSize = new Vector2(220f, 80f);
+
+    [Tooltip("Padding in canvas pixels between the text and the bubble edge.")]
+    public float bubblePadding = 20f;
+
+    [Tooltip("Background colour of the speech bubble.")]
+    public Color bubbleColor = Color.white;
+
+    [Tooltip("Colour of the dialogue text.")]
+    public Color textColor = Color.black;
 
     [Header("References")]
-    [Tooltip("The World Space Canvas that acts as the speech bubble.")]
+    [Tooltip("The Canvas child of this NPC (set to World Space in the Inspector).")]
     public Canvas dialogueCanvas;
 
-    [Tooltip("The TextMeshPro UGUI component that displays the message.")]
+    [Tooltip("The TextMeshPro UGUI component inside the Canvas.")]
     public TextMeshProUGUI dialogueText;
 
+    // -------------------------------------------------------------------------
     private Transform _playerTransform;
     private Transform _canvasTransform;
 
+    // -------------------------------------------------------------------------
     void Start()
     {
-        // Write the message into the text component.
-        if (dialogueText != null)
-            dialogueText.text = dialogueMessage;
+        if (dialogueCanvas == null || dialogueText == null)
+        {
+            Debug.LogError("[NpcDialogue] Dialogue Canvas or Dialogue Text is not assigned!", this);
+            return;
+        }
 
-        // Cache canvas transform.
-        if (dialogueCanvas != null)
-            _canvasTransform = dialogueCanvas.transform;
+        // Force World Space so the bubble lives in 3D, not as a screen overlay.
+        dialogueCanvas.renderMode = RenderMode.WorldSpace;
 
-        // Hide the bubble at startup.
+        _canvasTransform = dialogueCanvas.transform;
+
+        // Scale down: 1 canvas pixel = 0.01 world unit.
+        // A 300x100 px canvas becomes a compact 3x1 world-unit label.
+        _canvasTransform.localScale = Vector3.one * 0.01f;
+
+        // Place the bubble above the NPC pivot.
+        _canvasTransform.localPosition = new Vector3(0f, heightAboveNpc, 0f);
+
+        // Apply text content and colour.
+        dialogueText.text  = dialogueMessage;
+        dialogueText.color = textColor;
+
+        // Build the white rounded bubble background behind the text.
+        BuildBubbleBackground();
+
+        // Hide until the player steps close.
         SetBubbleVisible(false);
 
         // Cache the player transform by tag.
@@ -45,10 +78,11 @@ public class NpcDialogue : MonoBehaviour
         if (player != null)
             _playerTransform = player.transform;
         else
-            Debug.LogWarning("[NpcDialogue] No GameObject with tag 'Player' found. " +
-                             "Make sure the player has the 'Player' tag.", this);
+            Debug.LogWarning("[NpcDialogue] No GameObject tagged 'Player' found. " +
+                             "Assign the 'Player' tag to the player object.", this);
     }
 
+    // -------------------------------------------------------------------------
     void Update()
     {
         if (_playerTransform == null) return;
@@ -57,30 +91,58 @@ public class NpcDialogue : MonoBehaviour
         SetBubbleVisible(distance <= detectionRange);
     }
 
-    // LateUpdate runs after all movement, so the bubble never lags behind.
+    // LateUpdate: after all movement — bubble never lags a frame behind.
     void LateUpdate()
     {
-        if (_canvasTransform == null) return;
+        if (_canvasTransform == null || Camera.main == null) return;
 
-        // 1. Keep the bubble above the NPC at all times.
-        _canvasTransform.position = transform.position + bubbleOffset;
-
-        // 2. Billboard: rotate canvas so it always faces the camera.
-        if (Camera.main != null)
-        {
-            Vector3 lookDir = _canvasTransform.position - Camera.main.transform.position;
-            lookDir.y = 0f;   // Stay perfectly upright, no tilt.
-            if (lookDir.sqrMagnitude > 0.001f)
-                _canvasTransform.rotation = Quaternion.LookRotation(-lookDir);
-        }
+        // Copy the camera's own rotation so the canvas faces it perfectly.
+        // This is the correct billboard approach and fixes the Y-axis 180 flip
+        // that Quaternion.LookRotation was causing.
+        _canvasTransform.rotation = Camera.main.transform.rotation;
     }
 
+    // -------------------------------------------------------------------------
+    /// <summary>Creates a white rounded-rectangle Image behind the TMP text at runtime.</summary>
+    private void BuildBubbleBackground()
+    {
+        // Remove stale background if this is called more than once (e.g. hot reload).
+        Transform existing = _canvasTransform.Find("BubbleBackground");
+        if (existing != null)
+            Destroy(existing.gameObject);
+
+        // --- Background panel ---
+        GameObject bgGo = new GameObject("BubbleBackground");
+        bgGo.transform.SetParent(_canvasTransform, false);
+        bgGo.transform.SetAsFirstSibling(); // behind the text
+
+        Image bgImage = bgGo.AddComponent<Image>();
+        bgImage.color = bubbleColor;
+
+        // Unity's built-in rounded-rectangle sprite gives a softer bubble look.
+        Sprite roundedSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
+        if (roundedSprite != null)
+        {
+            bgImage.sprite = roundedSprite;
+            bgImage.type   = Image.Type.Sliced;
+        }
+
+        // Use the inspector-defined bubble size, centered in the canvas.
+        RectTransform bgRect = bgGo.GetComponent<RectTransform>();
+        bgRect.anchorMin        = new Vector2(0.5f, 0.5f);
+        bgRect.anchorMax        = new Vector2(0.5f, 0.5f);
+        bgRect.anchoredPosition = Vector2.zero;
+        bgRect.sizeDelta        = bubbleSize;
+    }
+
+    // -------------------------------------------------------------------------
     private void SetBubbleVisible(bool visible)
     {
         if (dialogueCanvas != null)
             dialogueCanvas.gameObject.SetActive(visible);
     }
 
+    // -------------------------------------------------------------------------
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
@@ -88,10 +150,10 @@ public class NpcDialogue : MonoBehaviour
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // Cyan box = where the bubble will appear.
+        // Cyan box = approximate bubble position above the NPC.
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(transform.position + bubbleOffset, new Vector3(0.6f, 0.3f, 0.01f));
+        Vector3 bubblePos = transform.position + Vector3.up * heightAboveNpc;
+        Gizmos.DrawWireCube(bubblePos, new Vector3(0.8f, 0.4f, 0.01f));
     }
 #endif
 }
-
