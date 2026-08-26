@@ -62,7 +62,7 @@ public class GroundReact : MonoBehaviour
     {
         string newRegion = GetRegionFromPlayer();
         //Debug.Log($"[GroundReact] new:'{newRegion}' current:'{currentRegion}'");
-        if (newRegion != currentRegion)
+        if (newRegion != currentRegion || newRegion == "SAND")
         {
             currentRegion = newRegion;
             HandleRegionChange(currentRegion);

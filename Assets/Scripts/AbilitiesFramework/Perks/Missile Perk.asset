@@ -21,7 +21,9 @@ MonoBehaviour:
   baseMissileAmount: 3
   maxMissiles: 5
   searchRadius: 75
-  missileVisualPrefab: {fileID: 3441939131721710715, guid: 48fa03515e606754cb55998d0cb1f3ec, type: 3}
-  visualOrbitRadius: 1.8
-  visualHeight: 6
+  missileVisualPrefab: {fileID: 919132149155446097, guid: 168bd17de34b2f54ca230ab663a21a6a, type: 3}
+  visualOrbitRadius: 2.6
+  visualHeight: 8
   visualSpinSpeed: 90
+  baseAOERadius: 6
+  aoeRadiusPerLevel: 1.5

@@ -303,6 +303,10 @@ public class ChunkSpawner : MonoBehaviour
     {
         if (inst.ActiveObject == null) return;
 
+        var effect = inst.ActiveObject.GetComponent<DeactivationEffect>();
+        if (effect != null)
+            effect.SuppressNextDisable();
+
         if (_poolManager != null)
             _poolManager.Recycle(inst.PrefabDefID, inst.ActiveObject);
         else

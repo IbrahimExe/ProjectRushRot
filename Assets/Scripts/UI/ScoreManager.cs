@@ -57,9 +57,6 @@ public class ScoreManager : MonoBehaviour
 
         targetsDestroyed++;
 
-        Debug.Log(
-            $"Destroyed targets: {targetsDestroyed}"
-        );
     }
 
     public void PrepareRun()
@@ -88,10 +85,16 @@ public class ScoreManager : MonoBehaviour
             targetsDestroyed * destructionMultiplier
         );
 
-        Debug.Log(
-            $"Run prepared — Distance: {finalDistance:0.0} m, " +
-            $"Destroyed: {targetsDestroyed}, Score: {finalScore}"
-        );
+       
+
+        if (scoreboardManager != null)
+        {
+            scoreboardManager.PreviewRun(
+                finalScore,
+                finalDistance,
+                targetsDestroyed
+            );
+        }
     }
 
     public void SubmitPreparedRun(string playerName)

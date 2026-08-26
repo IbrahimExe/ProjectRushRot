@@ -85,7 +85,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         if (!TryFetch(poolName, out GameObject obj) || obj == null)
         {
-            Debug.LogError($"Pool {poolName} is empty or does not exist.");
+            Debug.LogError($"Pool {poolName} is empty or does not exist."); 
             return null;
         }
 

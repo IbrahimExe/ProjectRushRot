@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
     public void PauseGame()
     {
         // Defensively don't pause if a win/lose screen is showing
-        if (IsWinOrLoseActive()) return;
+        if (IsWinOrLoseActive() || GameState.IsStarted == false) return;
 
         if (pauseMenuUI) pauseMenuUI.SetActive(true);
 
