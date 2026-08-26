@@ -11,8 +11,8 @@ public class ProjectilePool
         this.prefab = prefab;
         pool = new ObjectPool<Projectile>(
             createFunc: () => { var p = Object.Instantiate(prefab); p.Init(prefab); return p; },
-            actionOnGet: p => p.gameObject.SetActive(true),
-            actionOnRelease: p => p.gameObject.SetActive(false),
+            actionOnGet: p => { if (p != null) p.gameObject.SetActive(true); },
+            actionOnRelease: p => { if (p != null) p.gameObject.SetActive(false); },
             actionOnDestroy: p => { if (p != null) Object.Destroy(p.gameObject); },
             collectionCheck: true,
             defaultCapacity: defaultCapacity,

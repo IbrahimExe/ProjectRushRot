@@ -15,6 +15,14 @@ public class AfraidAnimal : MonoBehaviour
     [Header("Movement (kept simple)")]
     [SerializeField] private float runSpeed = 6f;
 
+    [Header("Knockback")]
+    [SerializeField] private float knockbackDuration = 0.4f;
+    [SerializeField] private float knockbackDrag = 5f;
+
+    private bool isKnockedBack;
+    private Vector3 knockbackVelocity;
+    private float knockbackTimer;
+
     [Header("Grounding")]
     [SerializeField] private float groundCheckDistance = 2f;
     [SerializeField] private float groundOffset = 0.5f;
@@ -46,7 +54,18 @@ public class AfraidAnimal : MonoBehaviour
     {
 
         UpdateGrounding();
-        if (!playerInRange || startled == true) { MoveIfStartled(); return; }
+
+        if (isKnockedBack)
+        {
+            UpdateKnockback();
+            return;
+        }
+
+        if (!playerInRange || startled == true)
+        {
+            MoveIfStartled();
+            return;
+        }
 
         // "Listening": any of these keys pressed startles it
         if (Input.GetKeyDown(KeyCode.W) ||
@@ -92,6 +111,40 @@ public class AfraidAnimal : MonoBehaviour
 
         // Pick a random direction within the cone centered at centerDir
         runDir = RandomDirectionInConeXZ(centerDir, maxConeAngleTowardPlayer);
+    }
+
+    public void ApplyKnockback(Vector3 direction, float force)
+    {
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.001f)
+            return;
+
+        direction.Normalize();
+
+        knockbackVelocity = direction * force;
+        knockbackTimer = knockbackDuration;
+        isKnockedBack = true;
+    }
+
+    private void UpdateKnockback()
+    {
+        transform.position +=
+            knockbackVelocity * Time.deltaTime;
+
+        knockbackVelocity = Vector3.Lerp(
+            knockbackVelocity,
+            Vector3.zero,
+            knockbackDrag * Time.deltaTime
+        );
+
+        knockbackTimer -= Time.deltaTime;
+
+        if (knockbackTimer <= 0f)
+        {
+            isKnockedBack = false;
+            knockbackVelocity = Vector3.zero;
+        }
     }
 
     private Vector3 RandomXZDirection()

@@ -24,7 +24,7 @@ public class MainMenu : MonoBehaviour
 
     public void StartGame()
     {
-        ShowCharacterSelect("IbrahimScene");
+        SceneManager.LoadScene("IbrahimScene");
     }
 
     public void StartProcedural()
