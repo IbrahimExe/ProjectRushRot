@@ -9483,7 +9483,7 @@ MonoBehaviour:
   m_text: New Text
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 42df1c7856584b6b8db9a509b6b10074, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -9575,7 +9575,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 45, y: 47}
+  m_AnchoredPosition: {x: 45, y: 66}
   m_SizeDelta: {x: 637.11, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!43 &874492509
@@ -15092,9 +15092,11 @@ MonoBehaviour:
   detectionRange: 65.5
   heightAboveNpc: 2.5
   bubbleSize: {x: 600, y: 250}
-  bubblePadding: 20
   bubbleColor: {r: 1, g: 1, b: 1, a: 1}
   textColor: {r: 0, g: 0, b: 0, a: 1}
+  cornerRadius: 0.25
+  spikeWidth: 0.061
+  spikeHeight: 0.28
   dialogueCanvas: {fileID: 2007177070}
   dialogueText: {fileID: 816032188}
 --- !u!136 &1669403723

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -15,21 +15,31 @@ public class NpcDialogue : MonoBehaviour
     public float detectionRange = 5f;
 
     [Header("Bubble Position")]
-    [Tooltip("How high above the NPC pivot the bubble floats. Default 2.5 works for a standard capsule.")]
+    [Tooltip("How high above the NPC pivot the bubble floats.")]
     public float heightAboveNpc = 2.5f;
 
-    [Header("Bubble Appearance")]
-    [Tooltip("Size of the speech bubble in canvas pixels (Width x Height). Tune this to fit your text.")]
+    [Header("Bubble Size & Colours")]
+    [Tooltip("Size of the speech bubble in canvas pixels (Width x Height).")]
     public Vector2 bubbleSize = new Vector2(220f, 80f);
-
-    [Tooltip("Padding in canvas pixels between the text and the bubble edge.")]
-    public float bubblePadding = 20f;
 
     [Tooltip("Background colour of the speech bubble.")]
     public Color bubbleColor = Color.white;
 
     [Tooltip("Colour of the dialogue text.")]
     public Color textColor = Color.black;
+
+    [Header("Bubble Shape")]
+    [Range(0f, 0.45f)]
+    [Tooltip("Corner roundness — 0 = sharp square, 0.45 = pill shape.")]
+    public float cornerRadius = 0.25f;
+
+    [Range(0f, 0.5f)]
+    [Tooltip("Width of the speech spike as a fraction of the bubble width.")]
+    public float spikeWidth = 0.25f;
+
+    [Range(0f, 0.4f)]
+    [Tooltip("Height of the speech spike as a fraction of the bubble height.")]
+    public float spikeHeight = 0.28f;
 
     [Header("References")]
     [Tooltip("The Canvas child of this NPC (set to World Space in the Inspector).")]
@@ -41,6 +51,7 @@ public class NpcDialogue : MonoBehaviour
     // -------------------------------------------------------------------------
     private Transform _playerTransform;
     private Transform _canvasTransform;
+    private Texture2D _bubbleTexture;
 
     // -------------------------------------------------------------------------
     void Start()
@@ -51,29 +62,17 @@ public class NpcDialogue : MonoBehaviour
             return;
         }
 
-        // Force World Space so the bubble lives in 3D, not as a screen overlay.
-        dialogueCanvas.renderMode = RenderMode.WorldSpace;
-
-        _canvasTransform = dialogueCanvas.transform;
-
-        // Scale down: 1 canvas pixel = 0.01 world unit.
-        // A 300x100 px canvas becomes a compact 3x1 world-unit label.
-        _canvasTransform.localScale = Vector3.one * 0.01f;
-
-        // Place the bubble above the NPC pivot.
+        dialogueCanvas.renderMode      = RenderMode.WorldSpace;
+        _canvasTransform               = dialogueCanvas.transform;
+        _canvasTransform.localScale    = Vector3.one * 0.01f;
         _canvasTransform.localPosition = new Vector3(0f, heightAboveNpc, 0f);
 
-        // Apply text content and colour.
         dialogueText.text  = dialogueMessage;
         dialogueText.color = textColor;
 
-        // Build the white rounded bubble background behind the text.
         BuildBubbleBackground();
-
-        // Hide until the player steps close.
         SetBubbleVisible(false);
 
-        // Cache the player transform by tag.
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
             _playerTransform = player.transform;
@@ -86,53 +85,141 @@ public class NpcDialogue : MonoBehaviour
     void Update()
     {
         if (_playerTransform == null) return;
-
         float distance = Vector3.Distance(transform.position, _playerTransform.position);
         SetBubbleVisible(distance <= detectionRange);
     }
 
-    // LateUpdate: after all movement — bubble never lags a frame behind.
     void LateUpdate()
     {
         if (_canvasTransform == null || Camera.main == null) return;
-
-        // Copy the camera's own rotation so the canvas faces it perfectly.
-        // This is the correct billboard approach and fixes the Y-axis 180 flip
-        // that Quaternion.LookRotation was causing.
         _canvasTransform.rotation = Camera.main.transform.rotation;
     }
 
+    void OnDestroy()
+    {
+        if (_bubbleTexture != null)
+            Destroy(_bubbleTexture);
+    }
+
     // -------------------------------------------------------------------------
-    /// <summary>Creates a white rounded-rectangle Image behind the TMP text at runtime.</summary>
     private void BuildBubbleBackground()
     {
-        // Remove stale background if this is called more than once (e.g. hot reload).
+        if (_bubbleTexture != null)
+            Destroy(_bubbleTexture);
+
         Transform existing = _canvasTransform.Find("BubbleBackground");
         if (existing != null)
             Destroy(existing.gameObject);
 
-        // --- Background panel ---
         GameObject bgGo = new GameObject("BubbleBackground");
         bgGo.transform.SetParent(_canvasTransform, false);
-        bgGo.transform.SetAsFirstSibling(); // behind the text
+        bgGo.transform.SetAsFirstSibling();
 
         Image bgImage = bgGo.AddComponent<Image>();
         bgImage.color = bubbleColor;
 
-        // Unity's built-in rounded-rectangle sprite gives a softer bubble look.
-        Sprite roundedSprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Background.psd");
-        if (roundedSprite != null)
-        {
-            bgImage.sprite = roundedSprite;
-            bgImage.type   = Image.Type.Sliced;
-        }
+        _bubbleTexture = GenerateBubbleTexture();
+        bgImage.sprite = Sprite.Create(
+            _bubbleTexture,
+            new Rect(0, 0, _bubbleTexture.width, _bubbleTexture.height),
+            new Vector2(0.5f, 0.5f),
+            100f
+        );
+        bgImage.type = Image.Type.Simple;
 
-        // Use the inspector-defined bubble size, centered in the canvas.
         RectTransform bgRect = bgGo.GetComponent<RectTransform>();
         bgRect.anchorMin        = new Vector2(0.5f, 0.5f);
         bgRect.anchorMax        = new Vector2(0.5f, 0.5f);
         bgRect.anchoredPosition = Vector2.zero;
         bgRect.sizeDelta        = bubbleSize;
+    }
+
+    // -------------------------------------------------------------------------
+    // Generates a speech-bubble shaped texture:
+    //   Upper portion = rounded rectangle body.
+    //   Lower portion = isosceles triangle spike pointing DOWN toward the NPC.
+    //   Uses 2x2 supersampling for smooth, anti-aliased edges.
+    private Texture2D GenerateBubbleTexture()
+    {
+        // Texture resolution matches bubble aspect ratio so corners are not distorted.
+        int texW = 256;
+        int texH = Mathf.Max(32, Mathf.RoundToInt(256f * bubbleSize.y / bubbleSize.x));
+
+        int   spikePxH = Mathf.RoundToInt(texH * spikeHeight);
+        int   bodyPxH  = texH - spikePxH;
+        int   cornerPx = Mathf.RoundToInt(Mathf.Min(texW, bodyPxH) * cornerRadius);
+        float halfSpW  = texW * spikeWidth * 0.5f;
+
+        Texture2D tex = new Texture2D(texW, texH, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color[] pixels = new Color[texW * texH];
+
+        for (int y = 0; y < texH; y++)
+        {
+            for (int x = 0; x < texW; x++)
+            {
+                // 2x2 supersampling for smooth edges.
+                float alpha = 0f;
+                for (int sy = 0; sy < 2; sy++)
+                for (int sx = 0; sx < 2; sx++)
+                {
+                    float fx = x + (sx == 0 ? 0.25f : 0.75f);
+                    float fy = y + (sy == 0 ? 0.25f : 0.75f);
+                    if (IsInsideBubble(fx, fy, texW, spikePxH, bodyPxH, cornerPx, halfSpW))
+                        alpha += 0.25f;
+                }
+
+                // White pixel; the Image.color tints it to bubbleColor at display time.
+                pixels[y * texW + x] = new Color(1f, 1f, 1f, alpha);
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return tex;
+    }
+
+    private bool IsInsideBubble(float x, float y, int w,
+                                int spikePxH, int bodyPxH, int cornerPx, float halfSpW)
+    {
+        // Rounded-rectangle body occupies the top of the texture (y >= spikePxH).
+        if (y >= spikePxH)
+            return IsInsideRoundedRect(x, y - spikePxH, w, bodyPxH, cornerPx);
+
+        // Triangle spike occupies the bottom (y < spikePxH), pointing downward.
+        // Width is zero at the tip (y=0) and full (halfSpW*2) at the base (y=spikePxH).
+        if (spikePxH > 0)
+        {
+            float progress = y / (float)spikePxH; // 0 = tip, 1 = base
+            float centre   = w * 0.5f;
+            return x >= centre - halfSpW * progress &&
+                   x <= centre + halfSpW * progress;
+        }
+
+        return false;
+    }
+
+    private bool IsInsideRoundedRect(float x, float y, int w, int h, int r)
+    {
+        if (x < 0 || x >= w || y < 0 || y >= h) return false;
+        if (r <= 0) return true;
+
+        bool nearLeft   = x < r;
+        bool nearRight  = x >= w - r;
+        bool nearBottom = y < r;
+        bool nearTop    = y >= h - r;
+
+        // Corner zones: use circle test.
+        if ((nearLeft || nearRight) && (nearBottom || nearTop))
+        {
+            float cx = nearLeft   ? r     : w - r;
+            float cy = nearBottom ? r     : h - r;
+            float dx = x - cx, dy = y - cy;
+            return dx * dx + dy * dy <= (float)r * r;
+        }
+
+        return true; // all non-corner pixels are inside the rect
     }
 
     // -------------------------------------------------------------------------
@@ -146,14 +233,12 @@ public class NpcDialogue : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
-        // Yellow sphere = detection range.
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
 
-        // Cyan box = approximate bubble position above the NPC.
         Gizmos.color = Color.cyan;
-        Vector3 bubblePos = transform.position + Vector3.up * heightAboveNpc;
-        Gizmos.DrawWireCube(bubblePos, new Vector3(0.8f, 0.4f, 0.01f));
+        Gizmos.DrawWireCube(transform.position + Vector3.up * heightAboveNpc,
+                            new Vector3(0.8f, 0.4f, 0.01f));
     }
 #endif
 }
