@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 /// <summary>
 /// AppLoader is responsible for loading all systems and managing the application lifecycle.
@@ -40,9 +39,6 @@ public class AppLoader : SystemLoader
         // Run tasks that have been registered.
         await RunTasks();
 
-        RegisterSystems();
-        SceneManager.sceneLoaded += OnSceneLoaded;
-
         Debug.Log($"[{nameof(AppLoader)}] - Loading Completed");
     }
 
@@ -55,51 +51,26 @@ public class AppLoader : SystemLoader
         ServiceLocator.Clear();
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        RegisterSystems();
-    }
-
     /// <summary>
     /// Register all systems in the game that are to be used Globally.
     /// </summary>
     private void RegisterSystems()
     {
-        Debug.Log($"{nameof(RegisterSystems)}");
+        //Debug.Log($"{nameof(RegisterSystems)}");
 
-        if (!ServiceLocator.IsRegistered<PerkManager>())
+        PerkManager pm = new PerkManager();
+        ServiceLocator.Register<PerkManager>(pm);
+
+        ObjectPoolManager poolManager = FindMonoSystem<ObjectPoolManager>();
+
+        if (poolManager != null)
         {
-            PerkManager pm = new PerkManager();
-            ServiceLocator.Register<PerkManager>(pm);
+            poolManager.Initialize();
+            ServiceLocator.Register<ObjectPoolManager>(poolManager);
         }
-
-        if (!ServiceLocator.IsRegistered<ObjectPoolManager>())
+        else
         {
-            ObjectPoolManager poolManager = FindMonoSystem<ObjectPoolManager>();
-
-            if (poolManager != null)
-            {
-                poolManager.Initialize();
-                ServiceLocator.Register<ObjectPoolManager>(poolManager);
-            }
-            else
-            {
-                Debug.LogError("ObjectPoolManager not found in scene.");
-            }
-        }
-
-        if (!ServiceLocator.IsRegistered<CameraShake>())
-        {
-            CameraShake camShake = FindMonoSystem<CameraShake>();
-
-            if (camShake != null)
-            {
-                ServiceLocator.Register<CameraShake>(camShake);
-            }
-            else
-            {
-                Debug.LogError("CameraShake not found in scene.");
-            }
+            Debug.LogError("ObjectPoolManager not found in scene.");
         }
 
         //ProjectilePoolManager projectilePoolManager = FindMonoSystem<ProjectilePoolManager>();
