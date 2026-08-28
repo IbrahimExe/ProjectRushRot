@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Tutorial Manager - Add this check to your player input scripts:
@@ -88,9 +89,11 @@ public class TutorialManager : MonoBehaviour
     private void Update()
     {
         // Allow player to dismiss tutorial with key press
-        if (isTutorialActive && Input.GetKeyDown(dismissKey))
+        if (isTutorialActive )
         {
-            DismissTutorial();
+            // enable cursor when tutorial is active so the player can click the continue button
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
     }
 
@@ -152,7 +155,14 @@ public class TutorialManager : MonoBehaviour
             dismissCoroutine = null;
         }
 
-        StartCoroutine(HideTutorial(currentStep));
+        // Reset cursor lock state after tutorial is dismissed
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        isTutorialActive = false;
+
+        StartCoroutine(HideTutorial(currentStep)); 
+
+        
     }
 
     private IEnumerator HideTutorial(TutorialStep step)
@@ -172,8 +182,22 @@ public class TutorialManager : MonoBehaviour
         EnablePlayerScripts();
 
         IsInputBlocked = false; // Unblock input globally
-        isTutorialActive = false;
+
+        string currentStepName = currentStep.stepName;
         currentStep = null;
+
+        // check if its the final message to save the current character and load the level scene
+        if (currentStepName == "Thanks")
+        {
+            PlayerControllerBase player = FindFirstObjectByType<PlayerControllerBase>();
+            if (CharacterDataPersistence.Instance != null)
+            {
+                CharacterDataPersistence.Instance.SetSelectedCharacter(player.characterData);
+            }
+
+            // Load the level scene
+            SceneManager.LoadScene("ProceduralLoading");
+        }
     }
 
     private void DisablePlayerScripts()

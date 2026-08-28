@@ -14,11 +14,22 @@ public class CollisionBounce : MonoBehaviour
     private PlayerControllerBase player;
     private WallRunAbility wallRun;
     private Vector3 preCollisionVelocity;
+    private CameraShake cameraShake;
+
 
     void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
+    }
+
+    public void Initialize()
+    {
         player = GetComponent<PlayerControllerBase>();
         wallRun = GetComponent<WallRunAbility>();
+        if (cameraShake == null)
+        {
+            cameraShake = FindFirstObjectByType<CameraShake>();
+        }
     }
 
     // Cache velocity BEFORE PhysX runs its collision resolution
@@ -48,10 +59,9 @@ public class CollisionBounce : MonoBehaviour
         // Tell BaseMove not to overwrite this velocity for one frame
         player.SuppressVelocityOverride = true;
 
-        CameraShake camShake = ServiceLocator.Get<CameraShake>();
-        if (camShake != null)
+        if (cameraShake != null)
         {
-            camShake.Shake(camShakeMagnitude, camShakeDurationSEC);
+            cameraShake.Shake(camShakeMagnitude, camShakeDurationSEC);
             //Debug.LogError("AbilityDestructible: CameraShake found in ServiceLocator.");
         }
     }
