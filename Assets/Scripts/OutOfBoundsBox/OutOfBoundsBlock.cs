@@ -6,6 +6,9 @@ public class OutOfBoundsBlock : MonoBehaviour
     [SerializeField] private float yOffset = -10f;
     [SerializeField] private float minY = -30f;
 
+    [SerializeField] private bool tutorialBox = false;
+    [SerializeField] private ParticleSystem[]? waterParticles;
+
 
     // Update is called once per frame
     void Update()
@@ -31,6 +34,13 @@ public class OutOfBoundsBlock : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             other.GetComponent<OutOfBoundsRespawn>()?.RespawnPlayer();
+            if (tutorialBox && waterParticles != null)
+            {
+                foreach (var particle in waterParticles)
+                {
+                    particle.Play();
+                }
+            }
         }
     }
 }

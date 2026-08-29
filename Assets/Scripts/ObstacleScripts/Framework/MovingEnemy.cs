@@ -12,6 +12,7 @@ public class MovingEnemy : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 4f;
     public float rotationSpeed = 5f;
+    [SerializeField] private bool tutorialBear = false;
 
     // Wander
     [Header("Wander")]
@@ -54,7 +55,7 @@ public class MovingEnemy : MonoBehaviour
     public float maxClimbAngle = 45f;
     public LayerMask groundLayer;
 
-    public MapGenerator MapGenerator;
+    public MapGenerator? MapGenerator;
 
     [Header("Knockback")]
     [SerializeField] private float knockbackDuration = 0.4f;
@@ -64,40 +65,49 @@ public class MovingEnemy : MonoBehaviour
     private Vector3 _knockbackVelocity;
     private float _knockbackTimer;
 
+
     // Unity Events
     void Start()
     {
-        if (MapGenerator == null)
+
+        if (!tutorialBear)
         {
-            MapGenerator = FindFirstObjectByType<MapGenerator>();
+            if (MapGenerator == null)
+            {
+                MapGenerator = FindFirstObjectByType<MapGenerator>();
+            }
+
+            // Register after all Awakes have run
+            if (EnemyManager.Instance != null)
+                EnemyManager.Instance.Register(this);
+            else
+                Debug.LogWarning($"{name}: EnemyManager.Instance is null in Start! " +
+                    "Make sure an EnemyManager is in the scene.");
         }
+        
         _spawnPosition = transform.position;
         SnapToGround();
         PickNewWanderTarget();
 
         // Ensure a trigger sphere is present
         SetupDetectionSphere();
-
-        // Register after all Awakes have run
-        if (EnemyManager.Instance != null)
-            EnemyManager.Instance.Register(this);
-        else
-            Debug.LogWarning($"{name}: EnemyManager.Instance is null in Start! " +
-                "Make sure an EnemyManager is in the scene.");
     }
 
     // If we dont want to use the EnemyManager's manual update
 
-    //private void Update()
-    //{
-    //    UpdateGrounding();
+    private void Update()
+    {
+        if (tutorialBear)
+        {
+            UpdateGrounding();
 
-    //    switch(_state)
-    //    {
-    //        case EnemyState.Wandering: UpdateWander(); break;
-    //        case EnemyState.Chasing: UpdateChase(); break;
-    //    }
-    //}
+            switch (_state)
+            {
+                case EnemyState.Wandering: UpdateWander(); break;
+                case EnemyState.Chasing: UpdateChase(); break;
+            }
+        }
+    }
 
     // Called when the spawner destroys this enemy
     void OnDestroy() => EnemyManager.Instance?.Unregister(this);
@@ -308,44 +318,54 @@ public class MovingEnemy : MonoBehaviour
 
     void SnapToGround()
     {
-        //if (Physics.Raycast(transform.position + Vector3.up * 2f, Vector3.down,
-        //    out RaycastHit hit, groundCheckDistance + 2f, groundLayer))
-        //{
-        //    Vector3 pos = transform.position;
-        //    pos.y = hit.point.y + groundOffset;
-        //    transform.position = pos;
-        //}
-
-        // get the ground height at the spawn position and set it there
-        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
-        transform.position = new Vector3(transform.position.x, groundHeight + groundOffset, transform.position.z);
+        if (tutorialBear)
+        {
+            if (Physics.Raycast(transform.position + Vector3.up * 2f, Vector3.down,
+                out RaycastHit hit, groundCheckDistance + 2f, groundLayer))
+            {
+                Vector3 pos = transform.position;
+                pos.y = hit.point.y + groundOffset;
+                transform.position = pos;
+            }
+        }
+        else
+        {
+            // get the ground height at the spawn position and set it there
+            float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+            transform.position = new Vector3(transform.position.x, groundHeight + groundOffset, transform.position.z);
+        }
     }
 
     void UpdateGrounding()
     {
-        //if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down,
-        //    out RaycastHit hit, groundCheckDistance, groundLayer))
-        //{
-        //    float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
-        //    if (slopeAngle <= maxClimbAngle)
-        //    {
-        //        Vector3 pos = transform.position;
-        //        pos.y = Mathf.Lerp(pos.y, hit.point.y + groundOffset, groundFollowSpeed * Time.deltaTime);
-        //        transform.position = pos;
-        //    }
-        //}
-        //else
-        //{
-        //    Vector3 pos = transform.position;
-        //    pos.y -= 9.8f * Time.deltaTime;
-        //    transform.position = pos;
-        //}
-
-        // update the Y position based on the height at the current XZ position
-        float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
-        Vector3 pos = transform.position;
-        pos.y = Mathf.Lerp(pos.y, groundHeight + groundOffset, groundFollowSpeed * Time.deltaTime);
-        transform.position = pos;
+        if (tutorialBear)
+        {
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down,
+                out RaycastHit hit, groundCheckDistance, groundLayer))
+            {
+                float slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+                if (slopeAngle <= maxClimbAngle)
+                {
+                    Vector3 pos = transform.position;
+                    pos.y = Mathf.Lerp(pos.y, hit.point.y + groundOffset, groundFollowSpeed * Time.deltaTime);
+                    transform.position = pos;
+                }
+            }
+            else
+            {
+                Vector3 pos = transform.position;
+                pos.y -= 9.8f * Time.deltaTime;
+                transform.position = pos;
+            }
+        }
+        else
+        {
+            // update the Y position based on the height at the current XZ position
+            float groundHeight = MapGenerator.GetHeightAtWorldPosition(transform.position);
+            Vector3 pos = transform.position;
+            pos.y = Mathf.Lerp(pos.y, groundHeight + groundOffset, groundFollowSpeed * Time.deltaTime);
+            transform.position = pos;
+        }
     }
 
     // Movement
