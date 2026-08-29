@@ -47,6 +47,7 @@ GameObject:
   - component: {fileID: 8408787835288908908}
   - component: {fileID: 6944360715941113140}
   - component: {fileID: 8250513338082327064}
+  - component: {fileID: 6435110689704095327}
   m_Layer: 7
   m_Name: Squirrel
   m_TagString: Enemy
@@ -227,6 +228,19 @@ MonoBehaviour:
     m_Bits: 256
   playerInRange: 0
   cooldown: 1.5
+--- !u!114 &6435110689704095327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5140710637632324602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7104954459c25de45b3b60cb724be43d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeactivationEffect
+  effectPoolName: BLOODEFFECT
 --- !u!1 &7159070397187133128
 GameObject:
   m_ObjectHideFlags: 0
