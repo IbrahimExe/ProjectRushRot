@@ -192,7 +192,6 @@ public class AfraidAnimal : MonoBehaviour
     {
         // disable the object so it return to the pool and doesn't cause a memoryleak
         gameObject.SetActive(false);
-
     }
 
     void SnapToGround()

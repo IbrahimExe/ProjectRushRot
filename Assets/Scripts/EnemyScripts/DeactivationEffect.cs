@@ -9,6 +9,7 @@ public class DeactivationEffect : MonoBehaviour
 
     private void OnEnable()
     {
+        _suppressNextDisable = false;
         Application.quitting -= HandleQuitting; // avoid double subscription
         Application.quitting += HandleQuitting;
     }
@@ -30,14 +31,19 @@ public class DeactivationEffect : MonoBehaviour
 
     private void OnDisable()
     {
-        if (_isQuitting) return;
+        if (_isQuitting) return; // Do not spawn effects when the application is quitting
 
-        if (_suppressNextDisable)
+        if (_suppressNextDisable) // Do not spawn the effect if SuppressNextDisable was called
         {
             _suppressNextDisable = false;
             return;
         }
 
+        // check if the ObjectPoolManager is available
+        if (ServiceLocator.Get<ObjectPoolManager>() == null)
+        {
+            return;
+        }
         ObjectPoolManager poolManager = ServiceLocator.Get<ObjectPoolManager>();
         if (poolManager == null) return;
 
@@ -46,6 +52,8 @@ public class DeactivationEffect : MonoBehaviour
 
         ParticleSystem ps = effect.GetComponentInChildren<ParticleSystem>();
         ps.Play(true);
+        // debug what object is spawning the effect
+        //Debug.Log($"DeactivationEffect: Spawning effect '{effectPoolName}' at position {transform.position} for object '{gameObject.name}'");
 
         poolManager.StartCoroutine(ReturnWhenFinished(poolManager, ps, effect));
     }
@@ -58,5 +66,11 @@ public class DeactivationEffect : MonoBehaviour
         }
 
         poolManager.Return(effectPoolName, effect);
+    }
+
+    public void SuppressAndDeactivate()
+    {
+        _suppressNextDisable = true;
+        gameObject.SetActive(false);
     }
 }
