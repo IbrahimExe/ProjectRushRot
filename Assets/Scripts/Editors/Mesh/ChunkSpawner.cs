@@ -303,7 +303,7 @@ public class ChunkSpawner : MonoBehaviour
     {
         if (inst.ActiveObject == null) return;
 
-        var effect = inst.ActiveObject.GetComponent<DeactivationEffect>();
+        var effect = inst.ActiveObject.GetComponentInChildren<DeactivationEffect>();
         if (effect != null)
             effect.SuppressNextDisable();
 
