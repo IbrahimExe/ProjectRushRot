@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 // ── Runtime struct ────────────────────────────────────────────────────────────
@@ -60,7 +60,52 @@ public class BiomeEntry
 public class WorldConfig : ScriptableObject
 {
     [Header("Seed")]
-    public int Seed = 0;
+    public string SeedString = "0";
+    public bool UseRandomSeed = false;
+
+    public int Seed
+    {
+        get => GetNumericSeed(SeedString);
+        set => SeedString = value.ToString();
+    }
+
+    public void RandomizeSeed()
+    {
+        SeedString = GenerateRandomSeedString();
+    }
+
+    public static string GenerateRandomSeedString()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        char[] buffer = new char[8];
+        byte[] randomBytes = new byte[8];
+        using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(randomBytes);
+        }
+        for (int i = 0; i < 8; i++)
+        {
+            buffer[i] = chars[randomBytes[i] % chars.Length];
+        }
+        return new string(buffer);
+    }
+
+    public static int GetNumericSeed(string seedStr)
+    {
+        if (string.IsNullOrEmpty(seedStr)) return 0;
+        if (int.TryParse(seedStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out int num))
+            return num;
+
+        unchecked
+        {
+            uint hash = 2166136261;
+            for (int i = 0; i < seedStr.Length; i++)
+            {
+                hash = (hash ^ seedStr[i]) * 16777619;
+            }
+            return (int)hash;
+        }
+    }
 
     // ── Tab 1: World Noise ────────────────────────────────────────────────────
 

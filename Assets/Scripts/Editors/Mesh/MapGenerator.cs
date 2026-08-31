@@ -25,8 +25,8 @@ namespace LevelGenerator
         // -- Single-biome path (unchanged) -------------------------------------
         public LevelGeneratorCommon Common;
 
-        // -- Multi-biome path (optional — if null, falls back to Common) -------
-        [Header("World Config (optional — overrides Common when assigned)")]
+        // -- Multi-biome path (optional â€” if null, falls back to Common) -------
+        [Header("World Config (optional â€” overrides Common when assigned)")]
         public WorldConfig WorldConfig;
 
         // -- Shared settings ----------------------------------------------------
@@ -44,6 +44,38 @@ namespace LevelGenerator
 
         [Tooltip("Scales noise sampling. Match to meshScale for consistent density.")]
         public float noiseWorldScale = 1f;
+
+        [Header("Seed Settings")]
+        public string seedString = "0";
+        public bool useRandomSeed;
+        public Vector2 offset;
+
+        public int seed
+        {
+            get => WorldConfig.GetNumericSeed(seedString);
+            set => seedString = value.ToString();
+        }
+
+        public void InitRandomSeed()
+        {
+            if (useRandomSeed)
+            {
+                seedString = WorldConfig.GenerateRandomSeedString();
+            }
+
+            if (WorldConfig != null)
+            {
+                if (useRandomSeed)
+                {
+                    WorldConfig.SeedString = seedString;
+                }
+                else if (WorldConfig.UseRandomSeed)
+                {
+                    WorldConfig.RandomizeSeed();
+                    seedString = WorldConfig.SeedString;
+                }
+            }
+        }
 
         public bool autoUpdate;
 
@@ -130,13 +162,16 @@ namespace LevelGenerator
             int borderedSize = mapChunkSize + 2;
             float[,] noiseMap = new float[borderedSize, borderedSize];
 
+            System.Random prng = new System.Random(seed);
+            Vector2 seedOffset = new Vector2(prng.Next(-100000, 100000) + offset.x, prng.Next(-100000, 100000) - offset.y);
+
             for (int y = 0; y < borderedSize; y++)
                 for (int x = 0; x < borderedSize; x++)
                 {
                     float worldX = centre.x + (x - borderedSize * 0.5f) * meshScale;
                     float worldZ = centre.y - (y - borderedSize * 0.5f) * meshScale;
                     noiseMap[x, y] = NoiseSampler.SampleWorld(Common.NoiseConfig,
-                        new Vector2(worldX / noiseWorldScale, worldZ / noiseWorldScale));
+                        new Vector2((worldX + seedOffset.x) / noiseWorldScale, (worldZ + seedOffset.y) / noiseWorldScale));
                 }
 
             if (Common.OverlayConfig != null)
@@ -171,7 +206,7 @@ namespace LevelGenerator
 
             if (configA == null)
             {
-                Debug.LogWarning($"[MapGenerator] No config resolved for chunk {centre} — assign LevelGeneratorCommon to all biomes or set OceanConfig.");
+                Debug.LogWarning($"[MapGenerator] No config resolved for chunk {centre} â€” assign LevelGeneratorCommon to all biomes or set OceanConfig.");
                 return new MapData();
             }
 
@@ -187,13 +222,13 @@ namespace LevelGenerator
             if (chunkSample.HasSecondary && configB?.OverlayConfig != null)
                 ApplyOverlays(noiseMapB, centre, configB.OverlayConfig, meshScale, noiseWorldScale);
 
-            // Per-pixel blend — WorldGenerator.Sample gives accurate per-pixel BlendT
+            // Per-pixel blend â€” WorldGenerator.Sample gives accurate per-pixel BlendT
             float[,] finalNoise = new float[borderedSize, borderedSize];
-            // Cache BlendT per pixel — one WorldGenerator.Sample call per pixel max
+            // Cache BlendT per pixel â€” one WorldGenerator.Sample call per pixel max
             float[,] blendCache = new float[borderedSize, borderedSize];
             Color[] colourMap = new Color[mapChunkSize * mapChunkSize];
 
-            // Pass 1 — noise + blend cache
+            // Pass 1 â€” noise + blend cache
             for (int y = 0; y < borderedSize; y++)
             {
                 for (int x = 0; x < borderedSize; x++)
@@ -204,7 +239,7 @@ namespace LevelGenerator
                     float ha = noiseMapA[x, y];
                     float hb = noiseMapB[x, y];
 
-                    // Ocean check — if ocean, skip biome blending and just use noiseMapA
+                    // Ocean check â€” if ocean, skip biome blending and just use noiseMapA
                     if (ha < WorldConfig.OceanLevel)
                     {
                         finalNoise[x, y] = ha;
@@ -262,13 +297,16 @@ namespace LevelGenerator
             float[,] map = new float[borderedSize, borderedSize];
             if (config?.NoiseConfig == null) return map;
 
+            System.Random prng = new System.Random(seed);
+            Vector2 seedOffset = new Vector2(prng.Next(-100000, 100000) + offset.x, prng.Next(-100000, 100000) - offset.y);
+
             for (int y = 0; y < borderedSize; y++)
                 for (int x = 0; x < borderedSize; x++)
                 {
                     float worldX = centre.x + (x - borderedSize * 0.5f) * meshScale;
                     float worldZ = centre.y - (y - borderedSize * 0.5f) * meshScale;
                     map[x, y] = NoiseSampler.SampleWorld(config.NoiseConfig,
-                        new Vector2(worldX / noiseWorldScale, worldZ / noiseWorldScale));
+                        new Vector2((worldX + seedOffset.x) / noiseWorldScale, (worldZ + seedOffset.y) / noiseWorldScale));
                 }
 
             return map;
@@ -339,6 +377,8 @@ namespace LevelGenerator
             if (meshHeightCurve == null)
                 meshHeightCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);  // must be BEFORE GenerateMapData
 
+            InitRandomSeed();
+
             MapDisplay display = GetComponent<MapDisplay>();
             if (display == null) return;
 
@@ -353,7 +393,7 @@ namespace LevelGenerator
             {
                 if (mapData.heightMap == null)
                 {
-                    Debug.LogWarning("[MapGenerator] Cannot draw mesh — heightMap is null. Check biome configs.");
+                    Debug.LogWarning("[MapGenerator] Cannot draw mesh â€” heightMap is null. Check biome configs.");
                     return;
                 }
                 display.DrawMesh(
