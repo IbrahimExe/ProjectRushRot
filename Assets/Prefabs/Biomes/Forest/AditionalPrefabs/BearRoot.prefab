@@ -44,6 +44,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -5082521014415873500, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
+      propertyPath: m_Size.z
+      value: 11.606201
+      objectReference: {fileID: 0}
+    - target: {fileID: -5082521014415873500, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
+      propertyPath: m_Center.z
+      value: 0.80773926
+      objectReference: {fileID: 0}
     - target: {fileID: -4811945495365252592, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
       propertyPath: rayCount
       value: 1

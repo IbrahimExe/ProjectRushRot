@@ -56,8 +56,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.2108154, y: 6.184076, z: 10.009644}
-  m_Center: {x: 0.12017822, y: 2.592038, z: 0.3723755}
+  m_Size: {x: 5.0651855, y: 6.4410043, z: 10.08374}
+  m_Center: {x: -0.010192871, y: 2.7205021, z: 0.14233398}
 --- !u!114 &3181499076207763430
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72,6 +72,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMovement
   moveSpeed: 20
   rotationSpeed: 5
+  tutorialBear: 0
   wanderSpeed: 10
   wanderRadius: 6
   waypointReachedDist: 0.5
