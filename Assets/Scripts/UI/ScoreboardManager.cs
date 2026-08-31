@@ -141,11 +141,10 @@ public class ScoreboardManager : MonoBehaviour
             $"Distance: {entry.distance:0.0} m\n" +
             $"{entry.distance:0.0} × {distanceMultiplier:0.##}" +
             $" = {distancePoints:N0}\n\n" +
-            $"Destroyed: {entry.targetsDestroyed}\n" +
+            $"Enemies destroyed: {entry.targetsDestroyed}\n" +
             $"{entry.targetsDestroyed} × {destructionMultiplier:0.##}" +
-            $" = {destructionPoints:N0}\n\n" +
-            $"Total: {distancePoints:N0} + " +
-            $"{destructionPoints:N0} = {entry.score:N0}";
+            $" = {destructionPoints:N0}\n\n"
+          ;
 
         currentRunText.text = currentRunDisplay;
     }
