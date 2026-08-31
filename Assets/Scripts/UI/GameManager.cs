@@ -29,7 +29,7 @@ public class GameManager : MonoBehaviour
     public MonoBehaviour[] disableOnPause;
 
     [Header("Options")]
-    public bool pauseAudio = true;
+    public bool pauseAudio = false;
     public string mainMenuSceneName = "00_MainMenu";
 
     [Header("Score System")]
@@ -41,6 +41,10 @@ public class GameManager : MonoBehaviour
     //health
     [SerializeField] private float hp = 3f;
 
+    [Header("Sounds")]
+    [SerializeField] private AudioClip countDown;
+    [SerializeField] private AudioManager audioManager;
+
 
     void Start()
     {
@@ -49,7 +53,7 @@ public class GameManager : MonoBehaviour
 
     void Initialize()
     {
-        //GameState.StartGame(); uncomment this line if you are not in the totorial or procedural level scene to be able to move
+/*        GameState.StartGame();*/ //uncomment this line if you are not in the totorial or procedural level scene to be able to move
         GameState.ResetGame();
         if (pauseMenuUI)
             pauseMenuUI.SetActive(false);
@@ -112,14 +116,19 @@ public class GameManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        if (pauseAudio)
-            AudioListener.pause = true;
+        //if (pauseAudio)
+        //    AudioListener.pause = true;
+
+        if (audioManager != null)
+            audioManager.PauseMusic();
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
         isPaused = true;
     }
+
+    public bool GetPausedState() => isPaused;
 
     public IEnumerator ResumeWithCountdown()
     {
@@ -135,6 +144,13 @@ public class GameManager : MonoBehaviour
         if (countdownUI) countdownUI.SetActive(true);
 
         int seconds = Mathf.Max(1, resumeCountdownSeconds);
+
+        //if (pauseAudio)
+        //    AudioListener.pause = false;
+
+        // Play countdown sound
+        if (countDown != null)
+            AudioSource.PlayClipAtPoint(countDown, Camera.main.transform.position);
 
         // Countdown while game is paused (use realtime)
         for (int s = seconds; s > 0; s--)
@@ -155,7 +171,7 @@ public class GameManager : MonoBehaviour
         // Flash "GO!"
         if (countdownText != null)
             countdownText.text = "RUSH!";
-        yield return new WaitForSecondsRealtime(0.35f);
+        yield return new WaitForSecondsRealtime(1.306f);
 
         if (countdownUI) countdownUI.SetActive(false);
 
@@ -165,11 +181,14 @@ public class GameManager : MonoBehaviour
         if (levelUpCardSelector != null)
             levelUpCardSelector.SetPaused(false);
 
-        if (pauseAudio)
-            AudioListener.pause = false;
-
         foreach (var comp in disableOnPause)
             if (comp != null) comp.enabled = true;
+
+        //if (pauseAudio)
+        //    AudioListener.pause = false;
+
+        if (audioManager != null)
+            audioManager.ResumeMusic();
 
         // Only hide and lock the cursor if neither Win nor Lose screens are active
         if (!IsWinOrLoseActive())
@@ -210,8 +229,8 @@ public class GameManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        if (pauseAudio)
-            AudioListener.pause = true;
+        //if (pauseAudio)
+        //    AudioListener.pause = true;
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
@@ -226,8 +245,8 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         GameState.ResetGame();
 
-        if (pauseAudio)
-            AudioListener.pause = false;
+        //if (pauseAudio)
+        //    AudioListener.pause = false;
 
         PlayerAbilityRunner runner =
             FindFirstObjectByType<PlayerAbilityRunner>();
@@ -244,8 +263,8 @@ public class GameManager : MonoBehaviour
 
     public void OnQuitToMenuButton()
     {
-        Time.timeScale = 1f;
-        if (pauseAudio) AudioListener.pause = false;
+        //Time.timeScale = 1f;
+        //if (pauseAudio) AudioListener.pause = false;
 
         PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
         if (runner != null) runner.ClearAllPerks();
@@ -267,4 +286,6 @@ public class GameManager : MonoBehaviour
         if (loseScreen != null && loseScreen.activeInHierarchy) return true;
         return false;
     }
+
+    // Helpers
 }

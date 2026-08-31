@@ -34,7 +34,13 @@ public static class ServiceLocator
 
         _serviceMap.Add(typeof(T), service);
     }
-
+    /// <summary>
+    /// Check whether a service of type T is currently registered
+    /// </summary>
+    public static bool IsRegistered<T>()
+    {
+        return _serviceMap.ContainsKey(typeof(T));
+    }
     /// <summary>
     /// Deregister an object in the service map
     /// </summary>

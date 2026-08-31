@@ -13,7 +13,13 @@ public class MapGeneratorEditor : Editor
             mapGen.DrawMapInEditor();
 
         if (GUILayout.Button("Generate", GUILayout.Height(28)))
+        {
+            if (mapGen.useRandomSeed)
+            {
+                mapGen.seedString = WorldConfig.GenerateRandomSeedString();
+            }
+            mapGen.InitRandomSeed();
             mapGen.DrawMapInEditor();
-
+        }
     }
 }

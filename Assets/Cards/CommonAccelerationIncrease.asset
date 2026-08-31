@@ -12,9 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f0b20e8d20fe0649bb21d285c306d4d, type: 3}
   m_Name: CommonAccelerationIncrease
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
-  cardImage: {fileID: 21300000, guid: c0210998fa6ab734794b087b9405ce16, type: 3}
+  cardImage: {fileID: 21300000, guid: 78fb2838bdbf865429e7a620f26ecbf5, type: 3}
   cardText: Slight acceleration speed
   cardEffect: 3
   effectValue: 0.05
+  effectValue2: 0
+  perkToApply: {fileID: 0}
+  rarity: 0
   isUnique: 0
   unlockLevel: 0

@@ -11,7 +11,12 @@ public class CameraShake : MonoBehaviour {
 
     private void Awake()
     {
+        SystemLoader.CallOnComplete(Initialize);
 
+    }
+
+    public void Initialize()
+    {
         if (virtualCamera == null)
         {
             //Debug.LogError("CameraShake: virtualCamera reference not assigned in the Inspector.");

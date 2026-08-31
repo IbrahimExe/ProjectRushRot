@@ -76,8 +76,15 @@ public class ChunkSpawner : MonoBehaviour
         // Copy heightmap — threading safety, we're on main thread here
         _heightMap = (float[,])mapData.heightMap.Clone();
 
-        // Deterministic seed from chunk position
-        _seed = Mathf.RoundToInt(chunkCenter.x * 1000f) ^ Mathf.RoundToInt(chunkCenter.y * 1000f);
+        // Deterministic seed from world seed + chunk position
+        int worldSeed = 0;
+        if (MapGenerator.mapInstance != null)
+        {
+            worldSeed = MapGenerator.mapInstance.WorldConfig != null
+                ? MapGenerator.mapInstance.WorldConfig.Seed
+                : MapGenerator.mapInstance.seed;
+        }
+        _seed = worldSeed ^ Mathf.RoundToInt(chunkCenter.x * 1000f) ^ Mathf.RoundToInt(chunkCenter.y * 1000f);
 
         Dictionary<string, PrefabDef> snapshot = BuildDefSnapshot();
 
@@ -302,6 +309,10 @@ public class ChunkSpawner : MonoBehaviour
     void DestroyInstance(SpawnedInstance inst)
     {
         if (inst.ActiveObject == null) return;
+
+        var effect = inst.ActiveObject.GetComponentInChildren<DeactivationEffect>();
+        if (effect != null)
+            effect.SuppressNextDisable();
 
         if (_poolManager != null)
             _poolManager.Recycle(inst.PrefabDefID, inst.ActiveObject);

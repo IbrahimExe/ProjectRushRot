@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f0b20e8d20fe0649bb21d285c306d4d, type: 3}
   m_Name: Shampoo
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
-  cardImage: {fileID: 21300000, guid: da2063590a679bb418aa9de40b737ab1, type: 3}
+  cardImage: {fileID: 21300000, guid: d769869b55831684f9facadc725a341c, type: 3}
   cardText: Shampoo Perk
   cardEffect: 18
   effectValue: 0

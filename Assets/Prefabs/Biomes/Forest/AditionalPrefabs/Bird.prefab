@@ -76,6 +76,7 @@ GameObject:
   - component: {fileID: 6526873373997902055}
   - component: {fileID: 4029407681911897341}
   - component: {fileID: 3745213092398087099}
+  - component: {fileID: 6559594720608549964}
   m_Layer: 0
   m_Name: Bird
   m_TagString: Enemy
@@ -191,6 +192,19 @@ MonoBehaviour:
     m_Bits: 256
   playerInRange: 0
   cooldown: 2
+--- !u!114 &6559594720608549964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9019290654752494829}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7104954459c25de45b3b60cb724be43d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeactivationEffect
+  effectPoolName: BLOODEFFECT
 --- !u!1001 &8459684282052561776
 PrefabInstance:
   m_ObjectHideFlags: 0
