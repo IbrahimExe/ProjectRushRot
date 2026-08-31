@@ -22,8 +22,8 @@ MonoBehaviour:
   skinIcon: {fileID: 0}
   coinCost: 0
   isDefaultUnlocked: 1
-  maxMoveSpeed: 50
-  acceleration: 25
+  maxMoveSpeed: 70
+  acceleration: 30
   deceleration: 25
   mass: 1
   rotationSpeed: 100
@@ -41,4 +41,4 @@ MonoBehaviour:
   baseNumOfJumps: 1
   numOfJumps: 1
   xpMultiplierOnKill: 1
-  canAirSideDash: 0
+  canAirSideDash: 1

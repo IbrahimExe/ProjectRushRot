@@ -123,12 +123,21 @@ namespace Level.Editor
                 if (ok) LoadConfig(newCfg);
             }
 
-            // Seed — own line
+            // Seed
             if (_so != null)
             {
                 _so.Update();
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(_so.FindProperty("Seed"), new GUIContent("Seed"));
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PropertyField(_so.FindProperty("SeedString"), new GUIContent("Seed"));
+                EditorGUILayout.PropertyField(_so.FindProperty("UseRandomSeed"), new GUIContent("Random Seed"));
+                if (GUILayout.Button("Randomize Seed", GUILayout.Width(110f)))
+                {
+                    _config.RandomizeSeed();
+                    _so.Update();
+                    MarkAllDirty();
+                }
+                EditorGUILayout.EndHorizontal();
                 if (EditorGUI.EndChangeCheck())
                 {
                     _so.ApplyModifiedPropertiesWithoutUndo();

@@ -51,6 +51,11 @@ public class AbilityDestructible : MonoBehaviour, IAbilityDestructible
         {
             pooledObject.ReturnToPool();
         }
+        // Count this enemy/obstacle toward the score
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.RegisterDestroyedTarget();
+        }
         else
         {
             //Destroy(gameObject);
