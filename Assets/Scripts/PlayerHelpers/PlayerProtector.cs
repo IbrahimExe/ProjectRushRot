@@ -27,4 +27,17 @@ public class PlayerProtector : MonoBehaviour
             }
         }
     }
+
+    public void OnTriggerEnter(Collider other)
+    {
+        // deactivate everything that is not in the protected layers
+        foreach (var layer in protectedLayers)
+        {
+            if (other.gameObject.layer != layer)
+            {
+                other.gameObject.SetActive(false);
+            }
+        }
+    }
+
 }
