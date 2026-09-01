@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterData
   modelPrefab: {fileID: 1265947539236716198, guid: 541432a52f363e740965bbb603659ff0, type: 3}
   modelOffset: {x: 0, y: -1.47, z: -1.14}
-  modelScale: {x: 0.032, y: 0.032, z: 0.032}
-  modelRotation: {x: 90, y: 0, z: 0}
+  modelScale: {x: 8, y: 8, z: 8}
+  modelRotation: {x: 0, y: 0, z: 0}
   characterCategory: Skateboard
   skinId: skateboard_default
   skinName: Default Skateboard

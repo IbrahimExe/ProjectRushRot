@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4749848615555561526}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Bird
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -41,7 +41,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5459314566891463144}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cloaca
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -78,7 +78,7 @@ GameObject:
   - component: {fileID: 4029407681911897341}
   - component: {fileID: 3745213092398087099}
   - component: {fileID: 6559594720608549964}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Bird
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -237,15 +237,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: m_LocalScale.x
-      value: 33.197975
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: m_LocalScale.y
-      value: 33.197975
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: m_LocalScale.z
-      value: 33.197975
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: m_LocalPosition.x
@@ -287,18 +287,46 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -5407564841801386796, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: -5012139870655895668, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 34f05a50f1d54804cac9c788c9b1c3a8, type: 2}
+      objectReference: {fileID: 2100000, guid: c4b33e0559d97274ab2765e1f135c314, type: 2}
+    - target: {fileID: -3704452092244181234, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 8314571269056883277, guid: 6ccdd4ff2cfc74e4995ef94c2b32c0ff, type: 3}
     - target: {fileID: 919132149155446097, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: m_Name
       value: Sparrow_Low
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 2114717632153077627, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 34f05a50f1d54804cac9c788c9b1c3a8, type: 2}
+    - target: {fileID: 4432858316680300197, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5994721076960434074, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8196798520224901374, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8729168364240475161, guid: 4aad7196439c0ec4f99a7d5676621d12, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
