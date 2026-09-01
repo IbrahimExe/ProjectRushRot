@@ -218677,7 +218677,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6cdc79c690f10648bcbc3583f0b3ef1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
-  mainSoundtrack: {fileID: 8300000, guid: 14e178bdb8016574bb201ec133bf2418, type: 3}
+  mainSoundtrack: {fileID: 8300000, guid: 6045e10228c6b7649bf13ec261ccf2b8, type: 3}
   volume: 0.53
 --- !u!82 &1069915821
 AudioSource:
@@ -218690,7 +218690,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 24300002, guid: 6e5b56c80ddaea146b591bf293fc0433, type: 2}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: 14e178bdb8016574bb201ec133bf2418, type: 3}
+  m_Resource: {fileID: 8300000, guid: 6045e10228c6b7649bf13ec261ccf2b8, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -361570,7 +361570,7 @@ PrefabInstance:
     - target: {fileID: 3294469309054466338, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: characterData
       value: 
-      objectReference: {fileID: 11400000, guid: b876b434fab27f84ab32a8e97bf2f408, type: 2}
+      objectReference: {fileID: 11400000, guid: 247e1d2042db9c7418efacdba1577585, type: 2}
     - target: {fileID: 3294469309054466338, guid: 673d2dbfc6327a84fa02ce19587e4087, type: 3}
       propertyPath: groundMask.m_Bits
       value: 200

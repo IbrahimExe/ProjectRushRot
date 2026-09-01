@@ -51,6 +51,9 @@ public class PlayerCharacterData : ScriptableObject
     [Tooltip("Allows this character to side dash while airborne, and transition into a wall run if they dash into a wall.")]
     public bool canAirSideDash = false;
 
+    [Header("Animations (optional)")]
+    public RuntimeAnimatorController animatorController;
+
     public void ResetRuntimeValues()
     {
         numOfJumps = baseNumOfJumps;

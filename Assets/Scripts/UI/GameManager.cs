@@ -227,6 +227,9 @@ public class GameManager : MonoBehaviour
         if (loseScreen)
             loseScreen.SetActive(true);
 
+        if (audioManager != null)
+            audioManager.PauseMusic();
+
         Time.timeScale = 0f;
 
         //if (pauseAudio)
@@ -270,6 +273,9 @@ public class GameManager : MonoBehaviour
         if (runner != null) runner.ClearAllPerks();
 
         EndlessTerrain.CleanupForReload();
+
+        if (audioManager != null)
+            audioManager.PauseMusic();
 
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);

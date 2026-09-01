@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RareAccelerationUpgrade
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: ac02be8d8c4d31b479deab3568938a2e, type: 3}
-  cardText: Moderate acceleration increase
+  cardText: 10% Acceleration increase
   cardEffect: 4
   effectValue: 0.1
   effectValue2: 0

@@ -17,6 +17,7 @@ MonoBehaviour:
   cardEffect: 15
   effectValue: 0.05
   effectValue2: 0.5
+  perkToApply: {fileID: 0}
   rarity: 0
   isUnique: 0
   unlockLevel: 0
