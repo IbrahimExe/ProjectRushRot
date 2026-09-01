@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RareMaxSpeedUpgrade
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: d965a7de830dd1d4aa9eeba34b5e68d0, type: 3}
-  cardText: Moderate max speed Increase
+  cardText: 10% Max speed increase
   cardEffect: 1
   effectValue: 0.1
   effectValue2: 0

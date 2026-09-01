@@ -7,6 +7,8 @@ public class PlayerControllerBase : MonoBehaviour
     [Header("Character")]
     public PlayerCharacterData characterData;
     private GameObject currentModel;
+    private Animator currentModelAnimator;
+    private bool animationIsPlaying = false;
 
     [Header("Movement Settings")]
     public float baseMaxMoveSpeed = 70f;
@@ -167,6 +169,20 @@ public class PlayerControllerBase : MonoBehaviour
         t.localRotation = Quaternion.Euler(data.modelRotation);
         t.localScale = data.modelScale;
 
+        // If the character data has an AnimatorController, make sure the spawned model has
+        // an Animator and assign the controller to it.
+        // Use GetComponentInChildren so the Animator is found even if it lives on a child mesh object.
+        currentModelAnimator = null;
+        animationIsPlaying = false;
+        if (data.animatorController != null)
+        {
+            Animator anim = currentModel.GetComponentInChildren<Animator>();
+            if (anim == null)
+                anim = currentModel.AddComponent<Animator>();
+            anim.runtimeAnimatorController = data.animatorController;
+            currentModelAnimator = anim;
+        }
+
         if (dash != null) dash.cartModel = cartModel;
         if (wallRun != null) wallRun.cartModel = cartModel;
     }
@@ -223,6 +239,12 @@ public class PlayerControllerBase : MonoBehaviour
         AlignModelToGroundAndTilt_GroundOnly();
         UprightModelInAir();
         ApplyAirMovementTilt();
+
+        // check if the character has an animator controller to run the animation
+        if (characterData != null && characterData.animatorController != null && currentModel != null)
+        {
+            PlayAnimationBasedOnSpeed("Move");
+        }
     }
 
     void FixedUpdate()
@@ -576,6 +598,64 @@ public class PlayerControllerBase : MonoBehaviour
         if (runner != null)
         {
             runner.RecalculateStats();
+        }
+
+        
+    }
+
+    // Function to play an animation if the character has an Animator Controller assigned
+    // The animation will play faster the higher the player's current speed is, relative to their max speed.
+    // The base speed of the animation is determined by the "baseMaxMoveSpeed" variable, which is set in the PlayerControllerBase script.
+    // The animation will play backwards if the player is moving backwards, and will not play if the player is not moving.
+    // The animation already must be set in the Animator Controller
+    public void PlayAnimationBasedOnSpeed(string animationName)
+    {
+        if (characterData == null || characterData.animatorController == null || currentModel == null)
+        {
+            Debug.LogWarning("PlayAnimation: Missing characterData, animatorController, or currentModel.");
+            return;
+        }
+
+        // Use the cached animator reference (set in ApplyCharacter).
+        // Fall back to a search if somehow null (e.g. called before ApplyCharacter).
+        if (currentModelAnimator == null)
+            currentModelAnimator = currentModel.GetComponentInChildren<Animator>();
+        if (currentModelAnimator == null)
+        {
+            Debug.LogWarning("PlayAnimation: No Animator found on currentModel.");
+            return;
+        }
+
+        // Use signed forward speed so we can detect backward movement.
+        Vector3 planarVel = Vector3.ProjectOnPlane(RB.linearVelocity, Vector3.up);
+        float forwardSpeed = Vector3.Dot(planarVel, transform.forward);
+
+        // Normalise against base max speed; negative = moving backwards.
+        float speedPercent = forwardSpeed / baseMaxMoveSpeed;
+
+        if (Mathf.Abs(forwardSpeed) > 0.1f)
+        {
+            // Only call Play() once when transitioning from stopped to moving,
+            // so the animation is not reset to frame 0 on every Update tick.
+            if (!animationIsPlaying)
+            {
+                Debug.Log($"PlayAnimation: Starting {animationName} (Speed: {forwardSpeed})");
+                currentModelAnimator.Play(animationName);
+                animationIsPlaying = true;
+            }
+            // Positive speed plays forward, negative speed plays in reverse.
+            currentModelAnimator.speed = speedPercent;
+            // Debug.Log($"PlayAnimation: Moving, Animator speed set to {speedPercent}");
+        }
+        else
+        {
+            // Standing still – pause the animation.
+            if (animationIsPlaying)
+            {
+                Debug.Log("PlayAnimation: Stopping (Speed < 0.1)");
+                currentModelAnimator.speed = 0f;
+                animationIsPlaying = false;
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LegendaryMaxSpeedUpgrade
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: 4c2babe700a76ce41914b9db646fe6eb, type: 3}
-  cardText: Significant max speed upgrade
+  cardText: 20% Max speed increase
   cardEffect: 2
   effectValue: 0.2
   effectValue2: 0

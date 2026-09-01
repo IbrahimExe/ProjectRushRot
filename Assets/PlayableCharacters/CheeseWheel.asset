@@ -16,11 +16,11 @@ MonoBehaviour:
   modelOffset: {x: -0.48, y: 0.45, z: 0.91}
   modelScale: {x: 3.0347, y: 3.0347, z: 3.0347}
   modelRotation: {x: 0, y: 180, z: -90}
-  characterCategory: Skateboard
-  skinId: skateboard_default
-  skinName: Default Skateboard
+  characterCategory: CheeseWheel
+  skinId: CheeseWheel_Default
+  skinName: Default CheeseWheel
   skinIcon: {fileID: 0}
-  coinCost: 100
+  coinCost: 0
   isDefaultUnlocked: 1
   maxMoveSpeed: 70
   acceleration: 35
@@ -42,3 +42,4 @@ MonoBehaviour:
   numOfJumps: 2
   xpMultiplierOnKill: 2
   canAirSideDash: 0
+  animatorController: {fileID: 9100000, guid: 3825432dd5892514282250c471659378, type: 2}

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LegendaryJumpHeightUpgrade
   m_EditorClassIdentifier: Assembly-CSharp::CardSO
   cardImage: {fileID: 21300000, guid: 14a87f854ba57ab409db806b142fff4c, type: 3}
-  cardText: Significant jump height increase
+  cardText: 20% Jump force increase
   cardEffect: 8
   effectValue: 0
   effectValue2: 0
