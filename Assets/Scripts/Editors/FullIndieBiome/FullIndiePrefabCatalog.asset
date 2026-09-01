@@ -101,5 +101,5 @@ MonoBehaviour:
     ID: VINETRAP2
     Category: 0
     Variants:
-    - {fileID: 7009052279643311491, guid: e468f0f263a95fe4c957ac27a0df8bc7, type: 3}
+    - {fileID: 4590935467214533170, guid: b58e3674e4331a24b9c6ce98230a6df9, type: 3}
     Footprint: 1

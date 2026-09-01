@@ -70,7 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: e16258ea68c23154eaf246aeda2a580d, type: 2}
     - target: {fileID: 919132149155446097, guid: 8025f6f9cfb16c743809c2bc58a7667e, type: 3}
       propertyPath: m_Name
-      value: VineTrap
+      value: VineTrap2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -103,7 +103,8 @@ MonoBehaviour:
   debuffType: 0
   debuffAmount: 0.75
   debuffDuration: 5
-  disappearAfterTrigger: 0
+  poolName: VINETRAP2
+  returnToPoolAfterTrigger: 0
 --- !u!65 &1112533209741831860
 BoxCollider:
   m_ObjectHideFlags: 0
