@@ -46,15 +46,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private AudioManager audioManager;
 
 
-    void Start()
+    void Awake()
     {
        SystemLoader.CallOnComplete(Initialize);
     }
 
     void Initialize()
     {
-/*        GameState.StartGame();*/ //uncomment this line if you are not in the totorial or procedural level scene to be able to move
+/*      GameState.StartGame();*/ //uncomment this line if you are not in the totorial or procedural level scene to be able to move
         GameState.ResetGame();
+
         if (pauseMenuUI)
             pauseMenuUI.SetActive(false);
 
@@ -248,8 +249,8 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         GameState.ResetGame();
 
-        //if (pauseAudio)
-        //    AudioListener.pause = false;
+        if (audioManager != null)
+            audioManager.StopMusic();
 
         PlayerAbilityRunner runner =
             FindFirstObjectByType<PlayerAbilityRunner>();
@@ -266,7 +267,7 @@ public class GameManager : MonoBehaviour
 
     public void OnQuitToMenuButton()
     {
-        //Time.timeScale = 1f;
+        Time.timeScale = 1f;
         //if (pauseAudio) AudioListener.pause = false;
 
         PlayerAbilityRunner runner = FindFirstObjectByType<PlayerAbilityRunner>();
@@ -275,7 +276,7 @@ public class GameManager : MonoBehaviour
         EndlessTerrain.CleanupForReload();
 
         if (audioManager != null)
-            audioManager.PauseMusic();
+            audioManager.StopMusic();
 
         if (!string.IsNullOrEmpty(mainMenuSceneName))
             SceneManager.LoadScene(mainMenuSceneName);
