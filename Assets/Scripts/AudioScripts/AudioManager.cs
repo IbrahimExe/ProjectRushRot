@@ -51,4 +51,10 @@ public class AudioManager : MonoBehaviour
         if (!_audioSource.isPlaying && _hasStarted)
             _audioSource.UnPause();
     }
+
+    public void StopMusic()
+    {
+        if (_audioSource.isPlaying)
+            _audioSource.Stop();
+    }
 }

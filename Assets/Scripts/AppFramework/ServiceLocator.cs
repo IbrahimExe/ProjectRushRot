@@ -29,6 +29,9 @@ public static class ServiceLocator
         if (_serviceMap.ContainsKey(typeof(T)))
         {
             //Debug.LogError($"Service of type {service.GetType()} already registered");
+            Debug.LogWarning($"Service of type {service.GetType()} already registered. Overwriting with new instance.");
+            _serviceMap[typeof(T)] = service;
+
             return;
         }
 
