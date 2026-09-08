@@ -44,10 +44,10 @@ public class PlayerDebuffReceiver : MonoBehaviour
                 break;
 
             case DebuffType.ReducedJump:
-                if (jumpDebuffActive)
-                    return;
+                //if (jumpDebuffActive)
+                //    return;
 
-                jumpRoutine = StartCoroutine(JumpRoutine(amount, duration));
+                //jumpRoutine = StartCoroutine(JumpRoutine(amount, duration));
                 break;
 
             case DebuffType.DisableDash:
