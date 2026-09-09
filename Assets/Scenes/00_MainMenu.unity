@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 21362289}
   - component: {fileID: 21362288}
   - component: {fileID: 21362291}
+  - component: {fileID: 21362292}
   m_Layer: 5
   m_Name: Trolley
   m_TagString: Untagged
@@ -271,6 +272,35 @@ MonoBehaviour:
   BuyButton: {fileID: 0}
   CancelButton: {fileID: 0}
   BackgroundButton: {fileID: 0}
+--- !u!114 &21362292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 21362286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayTrolleyHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &24367923
 GameObject:
   m_ObjectHideFlags: 0
@@ -509,6 +539,7 @@ GameObject:
   - component: {fileID: 162443979}
   - component: {fileID: 162443978}
   - component: {fileID: 162443977}
+  - component: {fileID: 162443980}
   m_Layer: 5
   m_Name: Play_Button
   m_TagString: Untagged
@@ -630,6 +661,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 162443975}
   m_CullTransparentMesh: 1
+--- !u!114 &162443980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162443975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &217876865
 GameObject:
   m_ObjectHideFlags: 0
@@ -1043,6 +1103,7 @@ GameObject:
   - component: {fileID: 428968455}
   - component: {fileID: 428968454}
   - component: {fileID: 428968457}
+  - component: {fileID: 428968458}
   m_Layer: 5
   m_Name: Cheese Wheel
   m_TagString: Untagged
@@ -1182,6 +1243,35 @@ MonoBehaviour:
   BuyButton: {fileID: 0}
   CancelButton: {fileID: 0}
   BackgroundButton: {fileID: 0}
+--- !u!114 &428968458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 428968452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayCheeseHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &435851237
 GameObject:
   m_ObjectHideFlags: 0
@@ -1468,6 +1558,7 @@ GameObject:
   - component: {fileID: 457661393}
   - component: {fileID: 457661392}
   - component: {fileID: 457661395}
+  - component: {fileID: 457661396}
   m_Layer: 5
   m_Name: Skateboard
   m_TagString: Untagged
@@ -1607,6 +1698,35 @@ MonoBehaviour:
   BuyButton: {fileID: 0}
   CancelButton: {fileID: 0}
   BackgroundButton: {fileID: 0}
+--- !u!114 &457661396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 457661390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlaySkateboardHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &468874823
 GameObject:
   m_ObjectHideFlags: 0
@@ -1770,6 +1890,7 @@ GameObject:
   - component: {fileID: 488538820}
   - component: {fileID: 488538819}
   - component: {fileID: 488538818}
+  - component: {fileID: 488538821}
   m_Layer: 5
   m_Name: BackButton
   m_TagString: Untagged
@@ -1891,6 +2012,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 488538816}
   m_CullTransparentMesh: 1
+--- !u!114 &488538821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 488538816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 4
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayQuitSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &505942858
 GameObject:
   m_ObjectHideFlags: 0
@@ -1903,6 +2069,7 @@ GameObject:
   - component: {fileID: 505942862}
   - component: {fileID: 505942861}
   - component: {fileID: 505942860}
+  - component: {fileID: 505942863}
   m_Layer: 5
   m_Name: PlayProcedural_Button
   m_TagString: Untagged
@@ -2024,6 +2191,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 505942858}
   m_CullTransparentMesh: 1
+--- !u!114 &505942863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 505942858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &506752561
 GameObject:
   m_ObjectHideFlags: 0
@@ -2651,6 +2847,7 @@ GameObject:
   - component: {fileID: 596126696}
   - component: {fileID: 596126695}
   - component: {fileID: 596126694}
+  - component: {fileID: 596126697}
   m_Layer: 5
   m_Name: Quit_Button
   m_TagString: Untagged
@@ -2772,6 +2969,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 596126692}
   m_CullTransparentMesh: 1
+--- !u!114 &596126697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 596126692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventTrigger
+  m_Delegates:
+  - eventID: 0
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 2052404452}
+          m_TargetAssemblyTypeName: MainMenu, Assembly-CSharp
+          m_MethodName: PlayHoverSound
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &612963285
 GameObject:
   m_ObjectHideFlags: 0
@@ -5940,7 +6166,16 @@ MonoBehaviour:
   mainMenuCanvas: {fileID: 341424364}
   characterSelectCanvas: {fileID: 1496723875}
   characterSelectManager: {fileID: 0}
+  tutorialButton: {fileID: 162443977}
+  startGameButton: {fileID: 505942860}
   mainMenuAudioSource: {fileID: 2052404454}
+  mainMenuMusicClip: {fileID: 8300000, guid: 6045e10228c6b7649bf13ec261ccf2b8, type: 3}
+  hoverButtons: {fileID: 8300000, guid: 10b535a04094f7d4bb39d927327b28c3, type: 3}
+  clickButtons: {fileID: 8300000, guid: 5a746852bec45714286e74a371f7b4be, type: 3}
+  quitButton: {fileID: 8300000, guid: b7c1eddcea6962947a703c81754d5789, type: 3}
+  skateboardHover: {fileID: 8300000, guid: 72cea48d7ffacad4abe172fd8e7b0525, type: 3}
+  trolleyHover: {fileID: 8300000, guid: 907c099d0b005c14689a75fcdb24f1f5, type: 3}
+  cheeseHover: {fileID: 8300000, guid: 8d7af7c0a7164a54896231c8471b6be4, type: 3}
   volume: 0.61
 --- !u!4 &2052404453
 Transform:

@@ -153,6 +153,7 @@ public class AltExpManager : MonoBehaviour
 
     private void Update()
     {
+        if (GameState.IsStarted == false) return;
         // ── Master gate ──────────────────────────────────────────────
         // Everything below is skipped when the system is disabled.
         // Speed sampling still runs so the multiplier doesn't snap
