@@ -170,7 +170,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 2bbb54cd7e9ed1e4c94a1ab7f63d232e, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e44971c30631cbf4f8fbeb01a86e5cb1, type: 2}
+      objectReference: {fileID: 2100000, guid: 5f01e74fd14e0c5488840f9c3b8fa515, type: 2}
     - target: {fileID: 919132149155446097, guid: 2bbb54cd7e9ed1e4c94a1ab7f63d232e, type: 3}
       propertyPath: m_Name
       value: Skateboard
@@ -674,6 +674,10 @@ PrefabInstance:
     - target: {fileID: 1624771766977897113, guid: 661e6c11fe0a0a4489bf92ae4c1d9ec4, type: 3}
       propertyPath: m_Name
       value: Squirrel
+      objectReference: {fileID: 0}
+    - target: {fileID: 1624771766977897113, guid: 661e6c11fe0a0a4489bf92ae4c1d9ec4, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2145835466404755491, guid: 661e6c11fe0a0a4489bf92ae4c1d9ec4, type: 3}
       propertyPath: m_LocalPosition.x
