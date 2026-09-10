@@ -8,7 +8,19 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Canvas characterSelectCanvas;
     [SerializeField] private CharacterSelectManager characterSelectManager;
 
+    [Header("UI Buttons")]
+    [SerializeField] private Button tutorialButton;
+    [SerializeField] private Button startGameButton;
+
+    [Header("Audio Settings")]
     [SerializeField] private AudioSource mainMenuAudioSource;
+    [SerializeField] private AudioClip mainMenuMusicClip;
+    [SerializeField] private AudioClip hoverButtons;
+    [SerializeField] private AudioClip clickButtons;
+    [SerializeField] private AudioClip quitButton;
+    [SerializeField] private AudioClip skateboardHover;
+    [SerializeField] private AudioClip trolleyHover;
+    [SerializeField] private AudioClip cheeseHover;
     [SerializeField][Range(0f, 1f)] private float volume = 1f;
 
     private void Start()
@@ -28,24 +40,41 @@ public class MainMenu : MonoBehaviour
         mainMenuAudioSource.loop = true;
         mainMenuAudioSource.volume = volume;
 
-        mainMenuAudioSource.Play();
+        if (mainMenuMusicClip != null)
+        {
+            mainMenuAudioSource.clip = mainMenuMusicClip;
+            mainMenuAudioSource.Play();
+        }
     }
+
+
+
+
 
     public void StartGame()
     {
-        SceneManager.LoadScene("IbrahimScene");
-        if (mainMenuAudioSource != null)
+        if (clickButtons != null && mainMenuAudioSource != null)
         {
-            mainMenuAudioSource.Stop();
+            mainMenuAudioSource.PlayOneShot(clickButtons, volume);
         }
+        SceneManager.LoadScene("IbrahimScene");
+        //if (mainMenuAudioSource != null)
+        //{
+        //    mainMenuAudioSource.Stop();
+        //}
+
     }
 
     public void StartProcedural()
     {
-        if (mainMenuAudioSource != null)
+        if (clickButtons != null && mainMenuAudioSource != null)
         {
-            mainMenuAudioSource.Stop();
+            mainMenuAudioSource.PlayOneShot(clickButtons, volume);
         }
+        //if (mainMenuAudioSource != null)
+        //{
+        //    mainMenuAudioSource.Stop();
+        //}
         ShowCharacterSelect("ProceduralLoading");
     }
 
@@ -73,5 +102,52 @@ public class MainMenu : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public void PlayHoverSound()
+    {
+        if (hoverButtons != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(hoverButtons, volume);
+        }
+    }
+
+    public void PlaySelectSound()
+    {
+        if (clickButtons != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(clickButtons, volume);
+        }
+    }
+
+    public void PlaySkateboardHoverSound()
+    {
+        if (skateboardHover != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(skateboardHover, volume);
+        }
+    }
+
+    public void PlayTrolleyHoverSound()
+    {
+        if (trolleyHover != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(trolleyHover, volume);
+        }
+    }
+
+    public void PlayCheeseHoverSound()
+    {
+        if (cheeseHover != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(cheeseHover, volume);
+        }
+    }
+    public void PlayQuitSound()
+    {
+        if (quitButton != null && mainMenuAudioSource != null)
+        {
+            mainMenuAudioSource.PlayOneShot(quitButton, volume);
+        }
     }
 }

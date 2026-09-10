@@ -76,6 +76,14 @@ PrefabInstance:
       propertyPath: separationStrength
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: -4561666159662795520, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4561666159662795520, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -3582708671096336533, guid: 5f98ab8b40e5ad543b99dd62785dd6dd, type: 3}
       propertyPath: camShakeMagnitude
       value: 2

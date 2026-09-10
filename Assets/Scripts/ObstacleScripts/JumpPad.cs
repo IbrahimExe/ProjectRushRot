@@ -26,6 +26,10 @@ public class JumpPad : MonoBehaviour
     [Tooltip("Which layers the pad affects.")]
     [SerializeField] private LayerMask affectedLayers = ~0;
 
+    [Header("Sound effect")]
+    [SerializeField] private AudioSource jumpPadSound;
+    [SerializeField][Range(0f, 1f)] private float volume = 1f;
+
     // Tracks last activation time per rigidbody to enforce cooldown
     private readonly Dictionary<Rigidbody, float> _lastActivated = new Dictionary<Rigidbody, float>();
 
@@ -50,6 +54,11 @@ public class JumpPad : MonoBehaviour
                 Debug.LogWarning("JumpPad collider is not a trigger. Set __isTrigger__ to true.", this);
 #endif
             }
+        }
+
+        if (jumpPadSound != null)
+        {
+            jumpPadSound.volume = volume;
         }
     }
 
@@ -110,6 +119,11 @@ public class JumpPad : MonoBehaviour
         {
             // Apply an instantaneous change
             rb.AddForce(launch, ForceMode.VelocityChange);
+        }
+
+        if (jumpPadSound != null)
+        {
+            jumpPadSound.Play();
         }
     }
 }

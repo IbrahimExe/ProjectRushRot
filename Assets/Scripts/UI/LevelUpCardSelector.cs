@@ -59,6 +59,14 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Timing")]
     public float selectedHoldTime = 0.5f;
 
+    [Header("Bullet Time")]
+    [Range(0.01f, 1f)]
+    public float levelUpTimeScale = 0.15f;
+
+    private float normalTimeScale = 1f;
+    private float normalFixedDeltaTime;
+    private bool bulletTimeActive = false;
+
     [Header("Curve")]
     public AnimationCurve easeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
@@ -111,6 +119,8 @@ public class LevelUpCardSelector : MonoBehaviour
         StopAllCoroutines();
         DestroyAllCards();
 
+        StopBulletTime();
+
         if (panelBehindCards != null)
         {
             panelBehindCards.gameObject.SetActive(false);
@@ -122,7 +132,11 @@ public class LevelUpCardSelector : MonoBehaviour
 
     // ── Init ───────────────────────────────────────────────────────────
 
-    private void Awake() => CachePanelHome();
+    private void Awake()
+    {
+        CachePanelHome();
+        normalFixedDeltaTime = Time.fixedDeltaTime;
+    }
     private void OnValidate() => CachePanelHome();
 
     private void CachePanelHome()
@@ -168,6 +182,8 @@ public class LevelUpCardSelector : MonoBehaviour
     {
         isBusy = true;
         isOpen = false;
+
+        StartBulletTime();
 
         // Safety: destroy any leftover cards from a previous broken state
         DestroyAllCards();
@@ -455,18 +471,53 @@ public class LevelUpCardSelector : MonoBehaviour
         {
             if (panelBehindCards != null)
             {
-                Vector2 offPos = panelHome + new Vector2(offscreenOffset, 0f);
-                yield return StartCoroutine(Slide(panelBehindCards, offPos, slideOutDuration, false));
+                Vector2 offPos =
+                    panelHome + new Vector2(offscreenOffset, 0f);
+
+                yield return StartCoroutine(
+                    Slide(
+                        panelBehindCards,
+                        offPos,
+                        slideOutDuration,
+                        false
+                    )
+                );
+
                 panelBehindCards.gameObject.SetActive(false);
                 panelBehindCards.anchoredPosition = panelHome;
             }
 
             isBusy = false;
+
+            StopBulletTime();
         }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
 
+    private void StartBulletTime()
+    {
+        if (bulletTimeActive)
+            return;
+
+        bulletTimeActive = true;
+
+        normalTimeScale = Time.timeScale;
+
+        Time.timeScale = levelUpTimeScale;
+        Time.fixedDeltaTime = normalFixedDeltaTime * levelUpTimeScale;
+    }
+
+    private void StopBulletTime()
+    {
+        if (!bulletTimeActive)
+            return;
+
+        bulletTimeActive = false;
+
+        Time.timeScale = normalTimeScale;
+        Time.fixedDeltaTime = normalFixedDeltaTime;
+    }
     private void DestroyAllCards()
     {
         foreach (var go in spawnedObjects)
