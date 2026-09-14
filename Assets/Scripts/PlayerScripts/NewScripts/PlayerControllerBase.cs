@@ -100,6 +100,9 @@ public class PlayerControllerBase : MonoBehaviour
 
     public string lastGroundRegion;
 
+    // Level-up card selection
+    public bool LevelUpInputLocked { get; set; } = false;
+
     private float lastGroundedTime;
     private float lastJumpPressedTime = -999f;
     public float baseDashKillWindow = 0.25f;
@@ -235,7 +238,7 @@ public class PlayerControllerBase : MonoBehaviour
             currentJumps = 1;
         }
 
-        if (!SuppressJumpBuffer)
+        if (!SuppressJumpBuffer && !LevelUpInputLocked)
         {
             if (Input.GetButtonDown("Jump"))
                 lastJumpPressedTime = Time.time;
@@ -363,6 +366,9 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void DoNormalJump()
     {
+        if (LevelUpInputLocked)
+            return;
+
         RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps = 1;
     }
@@ -376,6 +382,9 @@ public class PlayerControllerBase : MonoBehaviour
 
     public void DoAirJump()
     {
+        if (LevelUpInputLocked)
+            return;
+
         RB.linearVelocity = new Vector3(RB.linearVelocity.x, 0f, RB.linearVelocity.z);
         RB.AddForce(Vector3.up * jumpForce * debuffJumpMultiplier, ForceMode.Impulse);
         currentJumps++;

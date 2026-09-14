@@ -119,32 +119,14 @@ public class ScoreboardManager : MonoBehaviour
         if (currentRunText == null)
             return;
 
-        float distanceMultiplier =
-            scoreManager != null
-                ? scoreManager.DistanceMultiplier
-                : 1f;
-
-        float destructionMultiplier =
-            scoreManager != null
-                ? scoreManager.DestructionMultiplier
-                : 100f;
-
-        float distancePoints =
-            entry.distance * distanceMultiplier;
-
-        float destructionPoints =
-            entry.targetsDestroyed * destructionMultiplier;
-
         currentRunDisplay =
-            $"RUN COMPLETE\n\n" +
-            $"Score: {entry.score:N0}\n\n" +
-            $"Distance: {entry.distance:0.0} m\n" +
-            $"{entry.distance:0.0} × {distanceMultiplier:0.##}" +
-            $" = {distancePoints:N0}\n\n" +
-            $"Enemies destroyed: {entry.targetsDestroyed}\n" +
-            $"{entry.targetsDestroyed} × {destructionMultiplier:0.##}" +
-            $" = {destructionPoints:N0}\n\n"
-          ;
+            $"<size=180%><b>RUN COMPLETE</b></size>\n\n" +
+
+            $"Enemies Killed: {entry.targetsDestroyed}\n" +
+            $"Distance Travelled: {entry.distance:0.0} m\n\n" +
+
+            $"<size=140%><b>FINAL SCORE</b></size>\n" +
+            $"<size=200%><b>{entry.score:N0}</b></size>";
 
         currentRunText.text = currentRunDisplay;
     }
@@ -240,14 +222,15 @@ public class ScoreboardManager : MonoBehaviour
             return;
         }
 
-        string display = "TOP SCORES\n\n";
+        string display = "<size=130%><b>TOP SCORES</b></size>\n\n";
 
         for (int i = 0; i < scoreboardData.entries.Count; i++)
         {
             ScoreEntry entry = scoreboardData.entries[i];
 
             display +=
-                $"{i + 1}. {entry.playerName}    {entry.score:N0}\n";
+                $"{i + 1}. {entry.playerName}" +
+                $"<pos=82%>{entry.score:N0}\n";
         }
 
         scoreboardText.text = display;

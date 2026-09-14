@@ -60,6 +60,8 @@ public class LevelUpCardSelector : MonoBehaviour
     public float selectedHoldTime = 0.5f;
 
     [Header("Bullet Time")]
+    public bool enableBulletTime = true;
+
     [Range(0.01f, 1f)]
     public float levelUpTimeScale = 0.15f;
 
@@ -70,6 +72,7 @@ public class LevelUpCardSelector : MonoBehaviour
     [Header("Curve")]
     public AnimationCurve easeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
+    private PlayerControllerBase playerController;
 
     // ── Runtime ────────────────────────────────────────────────────────
 
@@ -136,6 +139,9 @@ public class LevelUpCardSelector : MonoBehaviour
     {
         CachePanelHome();
         normalFixedDeltaTime = Time.fixedDeltaTime;
+
+        if (playerTransform != null)
+            playerController = playerTransform.GetComponent<PlayerControllerBase>();
     }
     private void OnValidate() => CachePanelHome();
 
@@ -497,10 +503,19 @@ public class LevelUpCardSelector : MonoBehaviour
 
     private void StartBulletTime()
     {
+        if (!enableBulletTime)
+            return;
+
         if (bulletTimeActive)
             return;
 
         bulletTimeActive = true;
+
+        if (playerController != null)
+        {
+            playerController.LevelUpInputLocked = true;
+            playerController.ConsumeJumpBuffer();
+        }
 
         normalTimeScale = Time.timeScale;
 
@@ -514,6 +529,12 @@ public class LevelUpCardSelector : MonoBehaviour
             return;
 
         bulletTimeActive = false;
+
+        if (playerController != null)
+        {
+            playerController.LevelUpInputLocked = false;
+            playerController.ConsumeJumpBuffer();
+        }
 
         Time.timeScale = normalTimeScale;
         Time.fixedDeltaTime = normalFixedDeltaTime;
