@@ -58,22 +58,21 @@ namespace LevelGenerator
 
         public void InitRandomSeed()
         {
-            if (useRandomSeed)
-            {
-                seedString = WorldConfig.GenerateRandomSeedString();
-            }
-
             if (WorldConfig != null)
             {
-                if (useRandomSeed)
-                {
-                    WorldConfig.SeedString = seedString;
-                }
-                else if (WorldConfig.UseRandomSeed)
+                if (useRandomSeed || WorldConfig.UseRandomSeed)
                 {
                     WorldConfig.RandomizeSeed();
                     seedString = WorldConfig.SeedString;
                 }
+                else
+                {
+                    WorldConfig.SeedString = seedString;
+                }
+            }
+            else if (useRandomSeed)
+            {
+                seedString = WorldConfig.GenerateRandomSeedString();
             }
         }
 
@@ -90,7 +89,11 @@ namespace LevelGenerator
 
         // -- Static instance ---------------------------------------------------
         public static MapGenerator mapInstance;
-        void Awake() => mapInstance = this;
+        void Awake()
+        {
+            mapInstance = this;
+            InitRandomSeed();
+        }
 
         // -- Request API -------------------------------------------------------
         public void RequestMapData(Vector2 centre, Action<MapData> callback)
@@ -477,8 +480,8 @@ namespace LevelGenerator
                 // Climate lookup
                 float worldX = worldPosition.x;
                 float worldZ = worldPosition.z;
-                float temp = ClimateSampler.Sample(mapInstance.WorldConfig.TemperatureNoise, worldX, worldZ);
-                float hum = ClimateSampler.Sample(mapInstance.WorldConfig.HumidityNoise, worldX, worldZ);
+                float temp = ClimateSampler.Sample(mapInstance.WorldConfig.TemperatureNoise, worldX, worldZ, mapInstance.WorldConfig.Seed);
+                float hum = ClimateSampler.Sample(mapInstance.WorldConfig.HumidityNoise, worldX, worldZ, mapInstance.WorldConfig.Seed);
                 BiomeEntry entry = mapInstance.WorldConfig.GetNearestBiome(temp, hum);
                 return entry?.Config?.TerrainConfig?.Regions;
             }

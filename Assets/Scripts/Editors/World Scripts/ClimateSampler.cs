@@ -38,12 +38,25 @@ public static class ClimateSampler
     // Constant offset to avoid Unity's Perlin symmetry around (0,0)
     const float ORIGIN_OFFSET = 10000f;
 
+    static (float ox, float oz) GetSeedOffset(int seed)
+    {
+        if (seed == 0) return (0f, 0f);
+        unchecked
+        {
+            uint h1 = (uint)seed * 16777619u;
+            uint h2 = (uint)seed * 2166136261u;
+            float ox = (float)(h1 % 200000u) - 100000f;
+            float oz = (float)(h2 % 200000u) - 100000f;
+            return (ox, oz);
+        }
+    }
+
     /// <summary>
     /// Samples climate noise at a world position.
     /// Returns a value in the range [-1, 1].
     /// Used for temperature and humidity axes.
     /// </summary>
-    public static float Sample(ClimateNoiseSettings settings, float worldX, float worldZ)
+    public static float Sample(ClimateNoiseSettings settings, float worldX, float worldZ, int seed = 0)
     {
         if (settings == null) return 0f;
 
@@ -51,11 +64,12 @@ public static class ClimateSampler
         float amplitude = 1f;
         float frequency = Mathf.Max(0.00001f, settings.Frequency);
         float maxValue = 0f;
+        var (seedOx, seedOz) = GetSeedOffset(seed);
 
         for (int i = 0; i < settings.Octaves; i++)
         {
-            float sx = (worldX + settings.Offset.x + ORIGIN_OFFSET) * frequency;
-            float sz = (worldZ + settings.Offset.y + ORIGIN_OFFSET) * frequency;
+            float sx = (worldX + settings.Offset.x + seedOx + ORIGIN_OFFSET) * frequency;
+            float sz = (worldZ + settings.Offset.y + seedOz + ORIGIN_OFFSET) * frequency;
 
             value += (Mathf.PerlinNoise(sx, sz) - 0.5f) * amplitude;
             maxValue += amplitude * 0.5f;
@@ -72,7 +86,7 @@ public static class ClimateSampler
     /// Returns a value in the range [0, 1].
     /// Used for the world/ocean noise mask.
     /// </summary>
-    public static float Sample01(ClimateNoiseSettings settings, float worldX, float worldZ)
+    public static float Sample01(ClimateNoiseSettings settings, float worldX, float worldZ, int seed = 0)
     {
         if (settings == null) return 0.5f;
 
@@ -80,11 +94,12 @@ public static class ClimateSampler
         float amplitude = 1f;
         float frequency = Mathf.Max(0.00001f, settings.Frequency);
         float maxValue = 0f;
+        var (seedOx, seedOz) = GetSeedOffset(seed);
 
         for (int i = 0; i < settings.Octaves; i++)
         {
-            float sx = (worldX + settings.Offset.x + ORIGIN_OFFSET) * frequency;
-            float sz = (worldZ + settings.Offset.y + ORIGIN_OFFSET) * frequency;
+            float sx = (worldX + settings.Offset.x + seedOx + ORIGIN_OFFSET) * frequency;
+            float sz = (worldZ + settings.Offset.y + seedOz + ORIGIN_OFFSET) * frequency;
 
             value += Mathf.PerlinNoise(sx, sz) * amplitude;
             maxValue += amplitude;

@@ -26,7 +26,7 @@ public static class WorldGenerator
             return default;
 
         // Pass 1 - Ocean mask (sampled internally - single source of truth)
-        float worldNoise = ClimateSampler.Sample01(config.WorldNoise, worldPos.x, worldPos.y);
+        float worldNoise = ClimateSampler.Sample01(config.WorldNoise, worldPos.x, worldPos.y, config.Seed);
         if (worldNoise < config.OceanLevel)
         {
             return new BiomeSample
@@ -150,8 +150,8 @@ public static class WorldGenerator
         float centerZ = (cellY + 0.5f) * cellSize;
 
         // Pass 5 - sample climate at cell center via shared ClimateSampler
-        float temperature = ClimateSampler.Sample(config.TemperatureNoise, centerX, centerZ);
-        float humidity = ClimateSampler.Sample(config.HumidityNoise, centerX, centerZ);
+        float temperature = ClimateSampler.Sample(config.TemperatureNoise, centerX, centerZ, config.Seed);
+        float humidity = ClimateSampler.Sample(config.HumidityNoise, centerX, centerZ, config.Seed);
 
         BiomeEntry entry = config.GetNearestBiome(temperature, humidity);
         return entry?.Config;
